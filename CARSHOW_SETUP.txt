@@ -1,0 +1,64 @@
+
+Install required tools
+----------------------
+
+Node.JS
+  - brew install node
+
+SQLite
+  - brew install sqlite
+
+Verify the installations
+  - node --version
+  - npm --version
+  - sqlite3 --version
+
+
+Setup application directory and initialize Node.JS environment
+--------------------------------------------------------------
+
+Create the application directory
+  - mkdir carshow_management_app
+
+Change to the application directory and initialize it
+  - cd carshow_management_app
+  - npm init -y
+
+Install required packages
+  - npm install express sqlite3 bcrypt 
+  - npm install cookie-session multer sharp
+
+
+Setup SQLite database
+---------------------
+cd carshow_management_app
+sqlite3 carshow.db < setup_db.sql
+
+
+Accessing the database from the CLI
+-----------------------------------
+sqlite3 carshow.db ".tables"
+sqlite3 carshow.db ".schema cars"
+sqlite3 carshow.db "SELECT * FROM users;"
+
+Generate an SSL certificate and store outside of the application dir
+--------------------------------------------------------------------
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
+
+
+Start the application
+---------------------
+cd carshow_management_app
+node app.js
+
+
+Access the application
+----------------------
+
+Bring up a web browser and point it to:
+https://localhost:3001
+
+
+
+
+

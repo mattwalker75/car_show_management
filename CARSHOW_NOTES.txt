@@ -1,0 +1,41 @@
+
+Main Directory Structure
+------------------------
+app.js
+  - Main application
+setup_db.sql
+  - Setup script to create database file
+carshow.db
+  - SQLite Database file
+images
+  - Contains all the uploaded pictures
+     - user uploaded images
+        - profile pictures
+        - car pictures
+
+User Roles
+----------
+admin
+  - Can do ANYTHING
+  - Create and modify users
+  - Configures the following
+     - Front page title of app
+     - Car types ( cars, trucks, motorcycles, etc )
+     - Classes
+     - Judging parameters
+judge
+  - Judges the car show
+  - Allowed to reset anyone's password but the admin's
+  - Can change vehicle classification and type
+registrar
+  - Performs vehicle checkin 
+     - Assign card number for voting
+     - Enable a vehicle registration
+        - This means that the vehicle registration is paid for
+        - If this is not enabled, then judges can not judge on it
+  - Allowed to reset anyone's password but the admin's
+  - Can change vehicle information 
+user
+  - Add vehicles to show and fill out vehicle information
+
+
