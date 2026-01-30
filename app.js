@@ -18,8 +18,8 @@ const configPath = path.join(__dirname, 'config.json');
 let appConfig = {
   appTitle: 'Car Show Manager',
   appSubtitle: 'Sign in to your account',
-  judgeVotingLocked: false,
-  specialtyVotingLocked: false
+  judgeVotingStatus: 'Close',
+  specialtyVotingStatus: 'Close'
 };
 
 function loadConfig() {
@@ -404,6 +404,27 @@ const styles = `
       background: #e94560;
       color: white;
       border-color: #e94560;
+    }
+
+    .profile-btn {
+      background: #f8f9fa;
+      color: #666;
+      padding: 12px 20px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      border: 2px solid #e1e1e1;
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+    }
+
+    .profile-btn:active {
+      background: #3498db;
+      color: white;
+      border-color: #3498db;
     }
 
     .welcome-card {
@@ -1495,6 +1516,19 @@ const adminStyles = `
       opacity: 0.9;
     }
 
+    .config-subnav {
+      margin-top: -12px;
+      margin-bottom: 20px;
+      background: #f0f0f5;
+      border-radius: 10px;
+      padding: 8px;
+    }
+
+    .config-subnav a {
+      background: white;
+      min-width: calc(50% - 12px);
+    }
+
     /* Table wrapper for horizontal scroll on mobile */
     .table-wrapper {
       width: 100%;
@@ -1865,6 +1899,12 @@ const adminStyles = `
         display: none;
       }
 
+      .table-wrapper.report-table {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
       .scroll-hint {
         display: none;
       }
@@ -1878,6 +1918,28 @@ const adminStyles = `
       }
     }
   </style>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var navs = document.querySelectorAll('.admin-nav');
+      if (navs.length > 0) {
+        var nav = navs[0];
+        var configToggle = nav.querySelector('a[onclick*="configSubnav"]');
+        if (configToggle) {
+          var subnav = document.createElement('div');
+          subnav.id = 'configSubnav';
+          subnav.className = 'admin-nav config-subnav';
+          var path = window.location.pathname;
+          var isConfigPage = path.startsWith('/admin/app-config') || path.startsWith('/admin/vehicle-config') || path.startsWith('/admin/categories') || path.startsWith('/admin/specialty-vote') || path.startsWith('/admin/edit-category') || path.startsWith('/admin/category-questions') || path.startsWith('/admin/edit-question') || path.startsWith('/admin/add-vehicle-type') || path.startsWith('/admin/edit-vehicle-type') || path.startsWith('/admin/add-class') || path.startsWith('/admin/edit-class') || path.startsWith('/admin/edit-specialty-vote') || path.startsWith('/admin/add-specialty-vote');
+          subnav.style.display = isConfigPage ? 'flex' : 'none';
+          subnav.innerHTML = '<a href="/admin/app-config"' + (path.startsWith('/admin/app-config') ? ' class="active"' : '') + '>App Config</a>' +
+            '<a href="/admin/vehicle-config"' + (path.startsWith('/admin/vehicle-config') || path.startsWith('/admin/add-vehicle-type') || path.startsWith('/admin/edit-vehicle-type') || path.startsWith('/admin/add-class') || path.startsWith('/admin/edit-class') ? ' class="active"' : '') + '>Vehicle Config</a>' +
+            '<a href="/admin/categories"' + (path.startsWith('/admin/categories') || path.startsWith('/admin/edit-category') || path.startsWith('/admin/category-questions') || path.startsWith('/admin/edit-question') ? ' class="active"' : '') + '>Judge Config</a>' +
+            '<a href="/admin/specialty-votes"' + (path.startsWith('/admin/specialty-vote') || path.startsWith('/admin/edit-specialty-vote') || path.startsWith('/admin/add-specialty-vote') ? ' class="active"' : '') + '>Special Vote Config</a>';
+          nav.parentNode.insertBefore(subnav, nav.nextSibling);
+        }
+      }
+    });
+  </script>
 `;
 
 // Require admin role middleware
@@ -1972,7 +2034,8 @@ app.get('/admin', requireAdmin, (req, res) => {
             <h1>🏎️ Admin Dashboard</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
@@ -1982,16 +2045,13 @@ app.get('/admin', requireAdmin, (req, res) => {
           </div>
 
           <div class="admin-nav">
-            <a href="/admin/app-config">App Config</a>
-            <a href="/admin/vehicle-config">Vehicle Config</a>
-            <a href="/admin/categories">Judge Config</a>
-            <a href="/admin/specialty-votes">Special Vote Config</a>
+            <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
             <a href="/admin" class="active">Users</a>
             <a href="/admin/vehicles">Cars</a>
             <a href="/admin/judge-status">Judge Status</a>
             <a href="/admin/vote-status">Vote Status</a>
             <a href="/admin/reports">Reports</a>
-            <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">All Users</h3>
@@ -2054,21 +2114,19 @@ app.get('/admin/add-user', requireAdmin, (req, res) => {
           <h1>🏎️ Admin Dashboard</h1>
           <div class="user-info">
             <div class="user-avatar">${avatarContent}</div>
-            <a href="/logout" class="logout-btn">Sign Out</a>
+            <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
           </div>
         </div>
 
         <div class="admin-nav">
-          <a href="/admin/app-config">App Config</a>
-          <a href="/admin/vehicle-config">Vehicle Config</a>
-          <a href="/admin/categories">Judge Config</a>
-          <a href="/admin/specialty-votes">Special Vote Config</a>
+          <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
           <a href="/admin">Users</a>
           <a href="/admin/vehicles">Cars</a>
           <a href="/admin/judge-status">Judge Status</a>
           <a href="/admin/vote-status">Vote Status</a>
           <a href="/admin/reports">Reports</a>
-          <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
         </div>
 
         <h3 class="section-title">Add New User</h3>
@@ -2208,21 +2266,19 @@ app.get('/admin/edit-user/:id', requireAdmin, (req, res) => {
             <h1>🏎️ Admin Dashboard</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
           <div class="admin-nav">
-            <a href="/admin/app-config">App Config</a>
-            <a href="/admin/vehicle-config">Vehicle Config</a>
-            <a href="/admin/categories">Judge Config</a>
-            <a href="/admin/specialty-votes">Special Vote Config</a>
+            <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
             <a href="/admin">Users</a>
             <a href="/admin/vehicles">Cars</a>
             <a href="/admin/judge-status">Judge Status</a>
             <a href="/admin/vote-status">Vote Status</a>
             <a href="/admin/reports">Reports</a>
-            <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">Edit User: ${editUser.username}</h3>
@@ -2449,21 +2505,19 @@ app.get('/admin/profile', requireAdmin, (req, res) => {
             <h1>🏎️ Admin Dashboard</h1>
             <div class="user-info">
               <div class="user-avatar">${currentUser.image_url ? `<img src="${currentUser.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : initials}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
           <div class="admin-nav">
-            <a href="/admin/app-config">App Config</a>
-            <a href="/admin/vehicle-config">Vehicle Config</a>
-            <a href="/admin/categories">Judge Config</a>
-            <a href="/admin/specialty-votes">Special Vote Config</a>
+            <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
             <a href="/admin">Users</a>
             <a href="/admin/vehicles">Cars</a>
             <a href="/admin/judge-status">Judge Status</a>
             <a href="/admin/vote-status">Vote Status</a>
             <a href="/admin/reports">Reports</a>
-            <a href="/admin/profile" class="active">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <div class="profile-card">
@@ -2481,7 +2535,7 @@ app.get('/admin/profile', requireAdmin, (req, res) => {
                   <input type="file" name="profile_photo" accept="image/jpeg,image/png,image/gif,image/webp" onchange="updateFileName(this)">
                 </div>
                 <div class="file-name" id="fileName"></div>
-                <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin-top:10px;border-radius:8px;border:2px solid #e1e1e1;">
+                <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin:10px auto 0;border-radius:8px;border:2px solid #e1e1e1;">
               </div>
               <button type="submit">Upload Photo</button>
             </form>
@@ -2497,6 +2551,8 @@ app.get('/admin/profile', requireAdmin, (req, res) => {
                   reader.onload = function(e) {
                     preview.src = e.target.result;
                     preview.style.display = 'block';
+                    preview.style.marginLeft = 'auto';
+                    preview.style.marginRight = 'auto';
                   };
                   reader.readAsDataURL(input.files[0]);
                 } else {
@@ -3053,21 +3109,19 @@ app.get('/admin/vehicles', requireAdmin, (req, res) => {
             <h1>🏎️ Admin Dashboard</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
           <div class="admin-nav">
-            <a href="/admin/app-config">App Config</a>
-            <a href="/admin/vehicle-config">Vehicle Config</a>
-            <a href="/admin/categories">Judge Config</a>
-            <a href="/admin/specialty-votes">Special Vote Config</a>
+            <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
             <a href="/admin">Users</a>
             <a href="/admin/vehicles" class="active">Cars</a>
             <a href="/admin/judge-status">Judge Status</a>
             <a href="/admin/vote-status">Vote Status</a>
             <a href="/admin/reports">Reports</a>
-            <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">All Vehicles (${cars.length})</h3>
@@ -3222,21 +3276,19 @@ app.get('/admin/edit-vehicle/:id', requireAdmin, (req, res) => {
                 <h1>🏎️ Admin Dashboard</h1>
                 <div class="user-info">
                   <div class="user-avatar">${avatarContent}</div>
-                  <a href="/logout" class="logout-btn">Sign Out</a>
+                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
                 </div>
               </div>
 
               <div class="admin-nav">
-                <a href="/admin/app-config">App Config</a>
-                <a href="/admin/vehicle-config">Vehicle Config</a>
-                <a href="/admin/categories">Judge Config</a>
-                <a href="/admin/specialty-votes">Special Vote Config</a>
+                <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                 <a href="/admin">Users</a>
                 <a href="/admin/vehicles">Cars</a>
                 <a href="/admin/judge-status">Judge Status</a>
                 <a href="/admin/vote-status">Vote Status</a>
                 <a href="/admin/reports">Reports</a>
-                <a href="/admin/profile">Profile</a>
+                <a href="/user/vote">Vote Here!</a>
               </div>
 
               <h3 class="section-title">Edit Vehicle: ${car.make} ${car.model}</h3>
@@ -3298,7 +3350,7 @@ app.get('/admin/edit-vehicle/:id', requireAdmin, (req, res) => {
                       <input type="file" name="vehicle_photo" accept="image/jpeg,image/png,image/gif,image/webp" onchange="updateFileName(this)">
                     </div>
                     <div class="file-name" id="fileName"></div>
-                    <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin-top:10px;border-radius:8px;border:2px solid #e1e1e1;">
+                    <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin:10px auto 0;border-radius:8px;border:2px solid #e1e1e1;">
                   </div>
                   <button type="submit">Update Vehicle</button>
                 </div>
@@ -3334,6 +3386,8 @@ app.get('/admin/edit-vehicle/:id', requireAdmin, (req, res) => {
                     reader.onload = function(e) {
                       preview.src = e.target.result;
                       preview.style.display = 'block';
+                    preview.style.marginLeft = 'auto';
+                    preview.style.marginRight = 'auto';
                     };
                     reader.readAsDataURL(input.files[0]);
                   } else {
@@ -3545,7 +3599,8 @@ app.get('/judge', requireJudge, (req, res) => {
                 <h1>🏎️ Car Judge</h1>
                 <div class="user-info">
                   <div class="user-avatar">${avatarContent}</div>
-                  <a href="/logout" class="logout-btn">Sign Out</a>
+                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
                 </div>
               </div>
 
@@ -3560,7 +3615,7 @@ app.get('/judge', requireJudge, (req, res) => {
                 <a href="/judge/vehicles">Vehicles</a>
                 <a href="/judge/users">View Users</a>
                 <a href="/judge/results">Results</a>
-                <a href="/judge/profile">My Profile</a>
+                <a href="/user/vote">Vote Here!</a>
               </div>
 
               <div class="stats-grid">
@@ -3578,9 +3633,13 @@ app.get('/judge', requireJudge, (req, res) => {
                 </div>
               </div>
 
-              ${appConfig.judgeVotingLocked ? `
+              ${appConfig.judgeVotingStatus === 'Lock' ? `
                 <div style="margin-top:20px;padding:15px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;text-align:center;">
                   <strong>🔒 Voting is Locked</strong> - Results have been published. <a href="/judge/results">View Results</a>
+                </div>
+              ` : appConfig.judgeVotingStatus === 'Close' ? `
+                <div style="margin-top:20px;padding:15px;background:#f0f0f5;border:1px solid #ccc;border-radius:8px;text-align:center;">
+                  <strong>🚫 Voting is Closed</strong> - Contact administrator to Open Voting.
                 </div>
               ` : carsToJudgeCount > 0 ? `
                 <div style="margin-top:20px;text-align:center;">
@@ -3662,7 +3721,8 @@ app.get('/judge/users', requireJudge, (req, res) => {
             <h1>🏎️ Car Judge</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
@@ -3671,7 +3731,6 @@ app.get('/judge/users', requireJudge, (req, res) => {
             <a href="/judge/judge-vehicles">Judge Vehicles</a>
             <a href="/judge/vehicles">Vehicles</a>
             <a href="/judge/users" class="active">View Users</a>
-            <a href="/judge/profile">My Profile</a>
           </div>
 
           <h3 class="section-title">Users & Judges</h3>
@@ -3740,7 +3799,8 @@ app.get('/judge/reset-password/:id', requireJudge, (req, res) => {
             <h1>🏎️ Car Judge</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
@@ -3750,7 +3810,7 @@ app.get('/judge/reset-password/:id', requireJudge, (req, res) => {
             <a href="/judge/vehicles">Vehicles</a>
             <a href="/judge/users">View Users</a>
             <a href="/judge/results">Results</a>
-            <a href="/judge/profile">My Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">Reset Password for: ${targetUser.name}</h3>
@@ -3876,8 +3936,9 @@ app.get('/judge/judge-vehicles', requireJudge, (req, res) => {
     ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
     : initials;
 
-  // Check if voting is locked
-  if (appConfig.judgeVotingLocked) {
+  // Check if voting is not open
+  if (appConfig.judgeVotingStatus !== 'Open') {
+    const isLocked = appConfig.judgeVotingStatus === 'Lock';
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -3893,7 +3954,8 @@ app.get('/judge/judge-vehicles', requireJudge, (req, res) => {
             <h1>🏎️ Car Judge</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
@@ -3903,13 +3965,13 @@ app.get('/judge/judge-vehicles', requireJudge, (req, res) => {
             <a href="/judge/vehicles">Vehicles</a>
             <a href="/judge/users">View Users</a>
             <a href="/judge/results">Results</a>
-            <a href="/judge/profile">My Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <div style="text-align:center;padding:40px;background:#f8f9fa;border-radius:8px;">
-            <div style="font-size:48px;margin-bottom:20px;">🔒</div>
-            <h3 style="color:#666;margin-bottom:10px;">Voting is Locked</h3>
-            <p style="color:#999;">Judging has been finalized by the administrator. <a href="/judge/results">View Results</a></p>
+            <div style="font-size:48px;margin-bottom:20px;">${isLocked ? '🔒' : '🚫'}</div>
+            <h3 style="color:#666;margin-bottom:10px;">${isLocked ? 'Voting is Locked' : 'Voting is not open yet'}</h3>
+            <p style="color:#999;">${isLocked ? 'Judging has been finalized by the administrator. <a href="/judge/results">View Results</a>' : 'Contact the administrator to open voting.'}</p>
           </div>
         </div>
       </body>
@@ -4091,6 +4153,7 @@ app.get('/judge/judge-vehicles', requireJudge, (req, res) => {
               <h1>🏎️ Car Judge</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -4101,7 +4164,7 @@ app.get('/judge/judge-vehicles', requireJudge, (req, res) => {
               <a href="/judge/vehicles">Vehicles</a>
               <a href="/judge/users">View Users</a>
               <a href="/judge/results">Results</a>
-              <a href="/judge/profile">My Profile</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             <h3 class="section-title">Vehicles Ready to Judge (${carsToJudge.length})</h3>
@@ -4129,8 +4192,8 @@ app.get('/judge/score-vehicle/:carId', requireJudge, (req, res) => {
     ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
     : initials;
 
-  // Check if voting is locked
-  if (appConfig.judgeVotingLocked) {
+  // Check if voting is not open
+  if (appConfig.judgeVotingStatus !== 'Open') {
     res.redirect('/judge/judge-vehicles');
     return;
   }
@@ -4351,7 +4414,8 @@ app.get('/judge/score-vehicle/:carId', requireJudge, (req, res) => {
                   <h1>🏎️ Car Judge</h1>
                   <div class="user-info">
                     <div class="user-avatar">${avatarContent}</div>
-                    <a href="/logout" class="logout-btn">Sign Out</a>
+                    <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
                   </div>
                 </div>
 
@@ -4361,7 +4425,7 @@ app.get('/judge/score-vehicle/:carId', requireJudge, (req, res) => {
                   <a href="/judge/vehicles">Vehicles</a>
                   <a href="/judge/users">View Users</a>
                   <a href="/judge/results">Results</a>
-                  <a href="/judge/profile">My Profile</a>
+                  <a href="/user/vote">Vote Here!</a>
                 </div>
 
                 <div class="car-header">
@@ -4431,8 +4495,8 @@ app.post('/judge/submit-scores/:carId', requireJudge, (req, res) => {
   const user = req.session.user;
   const carId = req.params.carId;
 
-  // Check if voting is locked
-  if (appConfig.judgeVotingLocked) {
+  // Check if voting is not open
+  if (appConfig.judgeVotingStatus !== 'Open') {
     res.redirect('/judge/judge-vehicles');
     return;
   }
@@ -4486,8 +4550,8 @@ app.get('/judge/results', requireJudge, (req, res) => {
     : initials;
 
   // Check if results are published
-  const judgeResultsPublished = appConfig.judgeVotingLocked;
-  const specialtyResultsPublished = appConfig.specialtyVotingLocked;
+  const judgeResultsPublished = appConfig.judgeVotingStatus === 'Lock';
+  const specialtyResultsPublished = appConfig.specialtyVotingStatus === 'Lock';
 
   if (!judgeResultsPublished && !specialtyResultsPublished) {
     res.send(`
@@ -4505,7 +4569,8 @@ app.get('/judge/results', requireJudge, (req, res) => {
             <h1>🏎️ Judge Dashboard</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
@@ -4515,7 +4580,7 @@ app.get('/judge/results', requireJudge, (req, res) => {
             <a href="/judge/vehicles">Vehicles</a>
             <a href="/judge/users">View Users</a>
             <a href="/judge/results" class="active">Results</a>
-            <a href="/judge/profile">My Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">Results</h3>
@@ -4631,6 +4696,7 @@ app.get('/judge/results', requireJudge, (req, res) => {
               <h1>🏎️ Judge Dashboard</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -4641,7 +4707,7 @@ app.get('/judge/results', requireJudge, (req, res) => {
               <a href="/judge/vehicles">Vehicles</a>
               <a href="/judge/users">View Users</a>
               <a href="/judge/results" class="active">Results</a>
-              <a href="/judge/profile">My Profile</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             ${judgeResultsHtml}
@@ -4753,7 +4819,8 @@ app.get('/judge/profile', requireJudge, (req, res) => {
             <h1>🏎️ Car Judge</h1>
             <div class="user-info">
               <div class="user-avatar">${currentUser.image_url ? `<img src="${currentUser.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : initials}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
@@ -4762,7 +4829,6 @@ app.get('/judge/profile', requireJudge, (req, res) => {
             <a href="/judge/judge-vehicles">Judge Vehicles</a>
             <a href="/judge/vehicles">Vehicles</a>
             <a href="/judge/users">View Users</a>
-            <a href="/judge/profile" class="active">My Profile</a>
           </div>
 
           <div class="profile-card">
@@ -4780,7 +4846,7 @@ app.get('/judge/profile', requireJudge, (req, res) => {
                   <input type="file" name="profile_photo" accept="image/jpeg,image/png,image/gif,image/webp" onchange="updateFileName(this)">
                 </div>
                 <div class="file-name" id="fileName"></div>
-                <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin-top:10px;border-radius:8px;border:2px solid #e1e1e1;">
+                <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin:10px auto 0;border-radius:8px;border:2px solid #e1e1e1;">
               </div>
               <button type="submit">Upload Photo</button>
             </form>
@@ -4796,6 +4862,8 @@ app.get('/judge/profile', requireJudge, (req, res) => {
                   reader.onload = function(e) {
                     preview.src = e.target.result;
                     preview.style.display = 'block';
+                    preview.style.marginLeft = 'auto';
+                    preview.style.marginRight = 'auto';
                   };
                   reader.readAsDataURL(input.files[0]);
                 } else {
@@ -5202,12 +5270,12 @@ app.get('/judge/vehicles', requireJudge, (req, res) => {
 
       const vehicleCards = activeCars.map(car => `
         <div class="vehicle-card">
-          <div class="vehicle-image">
+          <a href="/judge/view-vehicle/${car.car_id}" class="vehicle-image" style="cursor:pointer;display:block;text-decoration:none;">
             ${car.image_url
               ? `<img src="${car.image_url}" alt="${car.make} ${car.model}">`
               : `<div class="vehicle-placeholder">🚗</div>`
             }
-          </div>
+          </a>
           <div class="vehicle-info">
             <div class="vehicle-title">${car.year || ''} ${car.make} ${car.model}</div>
             <div class="vehicle-meta">Owner: ${car.owner_name || 'Unknown'}</div>
@@ -5226,12 +5294,12 @@ app.get('/judge/vehicles', requireJudge, (req, res) => {
 
       const inactiveVehicleCards = inactiveCars.map(car => `
         <div class="vehicle-card" style="opacity: 0.7; border-color: #ffc107;">
-          <div class="vehicle-image">
+          <a href="/judge/view-vehicle/${car.car_id}" class="vehicle-image" style="cursor:pointer;display:block;text-decoration:none;">
             ${car.image_url
               ? `<img src="${car.image_url}" alt="${car.make} ${car.model}">`
               : `<div class="vehicle-placeholder">🚗</div>`
             }
-          </div>
+          </a>
           <div class="vehicle-info">
             <div class="vehicle-title">${car.year || ''} ${car.make} ${car.model}</div>
             <div class="vehicle-meta">Owner: ${car.owner_name || 'Unknown'}</div>
@@ -5363,7 +5431,8 @@ app.get('/judge/vehicles', requireJudge, (req, res) => {
             <h1>🏎️ Car Judge</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
@@ -5373,7 +5442,7 @@ app.get('/judge/vehicles', requireJudge, (req, res) => {
             <a href="/judge/vehicles" class="active">Vehicles</a>
             <a href="/judge/users">View Users</a>
             <a href="/judge/results">Results</a>
-            <a href="/judge/profile">My Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">Active Vehicles (${activeCars.length})</h3>
@@ -5389,6 +5458,179 @@ app.get('/judge/vehicles', requireJudge, (req, res) => {
       </html>
     `);
     });
+  });
+});
+
+// Judge view vehicle page - read-only vehicle details
+app.get('/judge/view-vehicle/:id', requireJudge, (req, res) => {
+  const user = req.session.user;
+  const carId = req.params.id;
+  const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const avatarContent = user.image_url
+    ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+    : initials;
+
+  db.get(`SELECT c.*, u.name as owner_name, u.username as owner_username, u.email as owner_email, u.phone as owner_phone,
+          cl.class_name, v.vehicle_name
+          FROM cars c
+          LEFT JOIN users u ON c.user_id = u.user_id
+          LEFT JOIN classes cl ON c.class_id = cl.class_id
+          LEFT JOIN vehicles v ON c.vehicle_id = v.vehicle_id
+          WHERE c.car_id = ?`, [carId], (err, car) => {
+    if (err || !car) {
+      res.redirect('/judge/vehicles');
+      return;
+    }
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>View Vehicle - Judge Dashboard</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        ${styles}
+        ${adminStyles}
+        <style>
+          .vehicle-preview {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 20px;
+          }
+          .vehicle-preview-image {
+            width: 100%;
+            max-width: 300px;
+            height: 200px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #e1e1e1;
+          }
+          .vehicle-preview-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+          .vehicle-preview-placeholder {
+            width: 100%;
+            max-width: 300px;
+            height: 200px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+          }
+          .vehicle-preview-info h4 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: #1a1a2e;
+          }
+          .vehicle-preview-info p {
+            color: #666;
+            margin-bottom: 4px;
+            font-size: 14px;
+          }
+          .owner-details {
+            background: #e8f4fd;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+          }
+          .owner-details h4 {
+            color: #2980b9;
+            margin-bottom: 10px;
+          }
+          .owner-details p {
+            margin: 4px 0;
+            color: #333;
+          }
+          .detail-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+          }
+          .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+          }
+          .detail-row:last-child {
+            border-bottom: none;
+          }
+          .detail-label {
+            font-weight: 600;
+            color: #555;
+          }
+          .detail-value {
+            color: #333;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container dashboard-container">
+          <div class="dashboard-header">
+            <h1>🏎️ Judge Dashboard</h1>
+            <div class="user-info">
+              <div class="user-avatar">${avatarContent}</div>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+              <a href="/logout" class="logout-btn">Sign Out</a>
+            </div>
+          </div>
+
+          <div class="admin-nav">
+            <a href="/judge">Dashboard</a>
+            <a href="/judge/judge-vehicles">Judge Vehicles</a>
+            <a href="/judge/vehicles">Vehicles</a>
+            <a href="/judge/users">View Users</a>
+            <a href="/judge/results">Results</a>
+              <a href="/user/vote">Vote Here!</a>
+          </div>
+
+          <h3 class="section-title">Vehicle Details</h3>
+
+          <div class="vehicle-preview">
+            ${car.image_url
+              ? `<div class="vehicle-preview-image"><img src="${car.image_url}" alt="${car.make} ${car.model}"></div>`
+              : `<div class="vehicle-preview-placeholder">🚗</div>`
+            }
+            <div class="vehicle-preview-info">
+              <h4>${car.year || ''} ${car.make} ${car.model}</h4>
+              <p><strong>Type:</strong> ${car.vehicle_name || 'N/A'}</p>
+              <p><strong>Class:</strong> ${car.class_name || 'N/A'}</p>
+              ${car.description ? `<p><strong>Description:</strong> ${car.description}</p>` : ''}
+            </div>
+          </div>
+
+          <div class="detail-card">
+            <div class="detail-row">
+              <span class="detail-label">Status</span>
+              <span class="detail-value"><span class="status-badge ${car.is_active ? 'active' : 'pending'}">${car.is_active ? 'Active' : 'Pending'}</span></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Voter ID</span>
+              <span class="detail-value">${car.voter_id ? '#' + car.voter_id : 'Not assigned'}</span>
+            </div>
+          </div>
+
+          <div class="owner-details">
+            <h4>Owner Information</h4>
+            <p><strong>Name:</strong> ${car.owner_name || 'Unknown'}</p>
+            <p><strong>Username:</strong> @${car.owner_username || 'N/A'}</p>
+            <p><strong>Email:</strong> ${car.owner_email || 'N/A'}</p>
+            <p><strong>Phone:</strong> ${car.owner_phone || 'N/A'}</p>
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <a href="/judge/vehicles" class="action-btn" style="background:#6c757d;">Back to Vehicles</a>
+          </div>
+        </div>
+      </body>
+      </html>
+    `);
   });
 });
 
@@ -5477,6 +5719,7 @@ app.get('/judge/edit-vehicle/:id', requireJudge, (req, res) => {
               <h1>🏎️ Car Judge</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -5487,7 +5730,7 @@ app.get('/judge/edit-vehicle/:id', requireJudge, (req, res) => {
               <a href="/judge/vehicles">Vehicles</a>
               <a href="/judge/users">View Users</a>
               <a href="/judge/results">Results</a>
-              <a href="/judge/profile">My Profile</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             <h3 class="section-title">Change Vehicle Class</h3>
@@ -5577,6 +5820,11 @@ app.get('/registrar', requireRegistrar, (req, res) => {
       users = [];
     }
 
+    db.get('SELECT COUNT(*) as cnt FROM cars WHERE is_active = 1', (err, activeCount) => {
+      db.get('SELECT COUNT(*) as cnt FROM cars WHERE is_active = 0', (err, pendingCount) => {
+        const activeCars = activeCount ? activeCount.cnt : 0;
+        const pendingCars = pendingCount ? pendingCount.cnt : 0;
+
     res.send(`
       <!DOCTYPE html>
       <html>
@@ -5592,7 +5840,8 @@ app.get('/registrar', requireRegistrar, (req, res) => {
             <h1>🏎️ Registrar</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
@@ -5605,7 +5854,7 @@ app.get('/registrar', requireRegistrar, (req, res) => {
             <a href="/registrar" class="active">Dashboard</a>
             <a href="/registrar/vehicles">Vehicles</a>
             <a href="/registrar/users">View Users</a>
-            <a href="/registrar/profile">My Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <div class="stats-grid">
@@ -5614,14 +5863,20 @@ app.get('/registrar', requireRegistrar, (req, res) => {
               <div class="stat-label">Registered Users</div>
             </div>
             <div class="stat-card">
-              <div class="stat-number">0</div>
-              <div class="stat-label">Checked In</div>
+              <div class="stat-number">${activeCars}</div>
+              <div class="stat-label">Registered Vehicles</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">${pendingCars}</div>
+              <div class="stat-label">Unregistered Vehicles</div>
             </div>
           </div>
         </div>
       </body>
       </html>
     `);
+      });
+    });
   });
 });
 
@@ -5691,7 +5946,8 @@ app.get('/registrar/users', requireRegistrar, (req, res) => {
             <h1>🏎️ Registrar</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
@@ -5699,7 +5955,7 @@ app.get('/registrar/users', requireRegistrar, (req, res) => {
             <a href="/registrar">Dashboard</a>
             <a href="/registrar/vehicles">Vehicles</a>
             <a href="/registrar/users" class="active">View Users</a>
-            <a href="/registrar/profile">My Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">Users & Judges</h3>
@@ -5768,7 +6024,8 @@ app.get('/registrar/reset-password/:id', requireRegistrar, (req, res) => {
             <h1>🏎️ Registrar</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
@@ -5776,7 +6033,7 @@ app.get('/registrar/reset-password/:id', requireRegistrar, (req, res) => {
             <a href="/registrar">Dashboard</a>
             <a href="/registrar/vehicles">Vehicles</a>
             <a href="/registrar/users">View Users</a>
-            <a href="/registrar/profile">My Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">Reset Password for: ${targetUser.name}</h3>
@@ -5993,7 +6250,8 @@ app.get('/registrar/profile', requireRegistrar, (req, res) => {
             <h1>🏎️ Registrar</h1>
             <div class="user-info">
               <div class="user-avatar">${currentUser.image_url ? `<img src="${currentUser.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : initials}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
@@ -6001,7 +6259,7 @@ app.get('/registrar/profile', requireRegistrar, (req, res) => {
             <a href="/registrar">Dashboard</a>
             <a href="/registrar/vehicles">Vehicles</a>
             <a href="/registrar/users">View Users</a>
-            <a href="/registrar/profile" class="active">My Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <div class="profile-card">
@@ -6019,7 +6277,7 @@ app.get('/registrar/profile', requireRegistrar, (req, res) => {
                   <input type="file" name="profile_photo" accept="image/jpeg,image/png,image/gif,image/webp" onchange="updateFileName(this)">
                 </div>
                 <div class="file-name" id="fileName"></div>
-                <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin-top:10px;border-radius:8px;border:2px solid #e1e1e1;">
+                <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin:10px auto 0;border-radius:8px;border:2px solid #e1e1e1;">
               </div>
               <button type="submit">Upload Photo</button>
             </form>
@@ -6035,6 +6293,8 @@ app.get('/registrar/profile', requireRegistrar, (req, res) => {
                   reader.onload = function(e) {
                     preview.src = e.target.result;
                     preview.style.display = 'block';
+                    preview.style.marginLeft = 'auto';
+                    preview.style.marginRight = 'auto';
                   };
                   reader.readAsDataURL(input.files[0]);
                 } else {
@@ -6435,12 +6695,12 @@ app.get('/registrar/vehicles', requireRegistrar, (req, res) => {
 
     const vehicleCards = cars.map(car => `
       <div class="vehicle-card ${car.is_active ? '' : 'pending'}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-status="${car.is_active ? 'active' : 'pending'}" data-voterid="${car.voter_id || ''}">
-        <div class="vehicle-image">
+        <a href="/registrar/view-vehicle/${car.car_id}" class="vehicle-image" style="cursor:pointer;display:block;text-decoration:none;">
           ${car.image_url
             ? `<img src="${car.image_url}" alt="${car.make} ${car.model}">`
             : `<div class="vehicle-placeholder">🚗</div>`
           }
-        </div>
+        </a>
         <div class="vehicle-info">
           <div class="vehicle-title">${car.make} ${car.model}</div>
           <div class="vehicle-meta">${car.owner_name || 'Unknown'} &mdash; ${car.owner_email || 'N/A'}</div>
@@ -6611,7 +6871,8 @@ app.get('/registrar/vehicles', requireRegistrar, (req, res) => {
             <h1>🏎️ Registrar</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
@@ -6619,7 +6880,7 @@ app.get('/registrar/vehicles', requireRegistrar, (req, res) => {
             <a href="/registrar">Dashboard</a>
             <a href="/registrar/vehicles" class="active">Vehicles</a>
             <a href="/registrar/users">View Users</a>
-            <a href="/registrar/profile">My Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <div class="summary-cards">
@@ -6677,6 +6938,178 @@ app.get('/registrar/vehicles', requireRegistrar, (req, res) => {
             document.getElementById('noResults').style.display = visibleCount === 0 && cards.length > 0 ? '' : 'none';
           }
         </script>
+      </body>
+      </html>
+    `);
+  });
+});
+
+// Registrar view vehicle page - read-only vehicle details
+app.get('/registrar/view-vehicle/:id', requireRegistrar, (req, res) => {
+  const user = req.session.user;
+  const carId = req.params.id;
+  const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const avatarContent = user.image_url
+    ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+    : initials;
+
+  db.get(`SELECT c.*, u.name as owner_name, u.username as owner_username, u.email as owner_email, u.phone as owner_phone,
+          cl.class_name, v.vehicle_name
+          FROM cars c
+          LEFT JOIN users u ON c.user_id = u.user_id
+          LEFT JOIN classes cl ON c.class_id = cl.class_id
+          LEFT JOIN vehicles v ON c.vehicle_id = v.vehicle_id
+          WHERE c.car_id = ?`, [carId], (err, car) => {
+    if (err || !car) {
+      res.redirect('/registrar/vehicles');
+      return;
+    }
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>View Vehicle - Registrar Dashboard</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        ${styles}
+        ${adminStyles}
+        <style>
+          .vehicle-preview {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 20px;
+          }
+          .vehicle-preview-image {
+            width: 100%;
+            max-width: 300px;
+            height: 200px;
+            border-radius: 12px;
+            overflow: hidden;
+            background: #e1e1e1;
+          }
+          .vehicle-preview-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+          .vehicle-preview-placeholder {
+            width: 100%;
+            max-width: 300px;
+            height: 200px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 64px;
+          }
+          .vehicle-preview-info h4 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: #1a1a2e;
+          }
+          .vehicle-preview-info p {
+            color: #666;
+            margin-bottom: 4px;
+            font-size: 14px;
+          }
+          .owner-details {
+            background: #e8f4fd;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+          }
+          .owner-details h4 {
+            color: #2980b9;
+            margin-bottom: 10px;
+          }
+          .owner-details p {
+            margin: 4px 0;
+            color: #333;
+          }
+          .detail-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+          }
+          .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+          }
+          .detail-row:last-child {
+            border-bottom: none;
+          }
+          .detail-label {
+            font-weight: 600;
+            color: #555;
+          }
+          .detail-value {
+            color: #333;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container dashboard-container">
+          <div class="dashboard-header">
+            <h1>🏎️ Registrar</h1>
+            <div class="user-info">
+              <div class="user-avatar">${avatarContent}</div>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+              <a href="/logout" class="logout-btn">Sign Out</a>
+            </div>
+          </div>
+
+          <div class="admin-nav">
+            <a href="/registrar">Dashboard</a>
+            <a href="/registrar/vehicles">Vehicles</a>
+            <a href="/registrar/users">View Users</a>
+              <a href="/user/vote">Vote Here!</a>
+          </div>
+
+          <h3 class="section-title">Vehicle Details</h3>
+
+          <div class="vehicle-preview">
+            ${car.image_url
+              ? `<div class="vehicle-preview-image"><img src="${car.image_url}" alt="${car.make} ${car.model}"></div>`
+              : `<div class="vehicle-preview-placeholder">🚗</div>`
+            }
+            <div class="vehicle-preview-info">
+              <h4>${car.year || ''} ${car.make} ${car.model}</h4>
+              <p><strong>Type:</strong> ${car.vehicle_name || 'N/A'}</p>
+              <p><strong>Class:</strong> ${car.class_name || 'N/A'}</p>
+              ${car.description ? `<p><strong>Description:</strong> ${car.description}</p>` : ''}
+            </div>
+          </div>
+
+          <div class="detail-card">
+            <div class="detail-row">
+              <span class="detail-label">Status</span>
+              <span class="detail-value"><span class="status-badge ${car.is_active ? 'active' : 'pending'}">${car.is_active ? 'Active' : 'Pending Payment'}</span></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Voter ID</span>
+              <span class="detail-value">${car.voter_id ? '#' + car.voter_id : 'Not assigned'}</span>
+            </div>
+          </div>
+
+          <div class="owner-details">
+            <h4>Owner Information</h4>
+            <p><strong>Name:</strong> ${car.owner_name || 'Unknown'}</p>
+            <p><strong>Username:</strong> @${car.owner_username || 'N/A'}</p>
+            <p><strong>Email:</strong> ${car.owner_email || 'N/A'}</p>
+            <p><strong>Phone:</strong> ${car.owner_phone || 'N/A'}</p>
+          </div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <a href="/registrar/vehicles" class="action-btn" style="background:#6c757d;">Back to Vehicles</a>
+            <a href="/registrar/edit-vehicle/${car.car_id}" class="action-btn edit">${car.is_active ? 'Edit' : 'Activate'}</a>
+          </div>
+        </div>
       </body>
       </html>
     `);
@@ -6779,7 +7212,8 @@ app.get('/registrar/edit-vehicle/:id', requireRegistrar, (req, res) => {
             <h1>🏎️ Registrar</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
@@ -6787,7 +7221,7 @@ app.get('/registrar/edit-vehicle/:id', requireRegistrar, (req, res) => {
             <a href="/registrar">Dashboard</a>
             <a href="/registrar/vehicles">Vehicles</a>
             <a href="/registrar/users">View Users</a>
-            <a href="/registrar/profile">My Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">${car.is_active ? 'Edit' : 'Activate'} Vehicle</h3>
@@ -6819,7 +7253,7 @@ app.get('/registrar/edit-vehicle/:id', requireRegistrar, (req, res) => {
                 <label>Voter ID Number</label>
                 <div style="display:flex;gap:8px;align-items:center;">
                   <input type="text" name="voter_id" id="voterIdInput" value="${car.voter_id || ''}" placeholder="Assign a voter number" style="flex:1;">
-                  <button type="button" onclick="document.getElementById('voterIdInput').value='${nextVoterId}'" style="white-space:nowrap;background:#3498db;padding:10px 16px;">Auto-Assign (#${nextVoterId})</button>
+                  <button type="button" onclick="document.getElementById('voterIdInput').value='${nextVoterId}'" style="white-space:nowrap;background:#3498db;color:#000;padding:10px 16px;">Auto-Assign (#${nextVoterId})</button>
                 </div>
               </div>
               <div class="form-group">
@@ -7163,7 +7597,8 @@ app.get('/user', requireAuth, (req, res) => {
             <h1>🏎️ Car Show Manager</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
@@ -7175,7 +7610,6 @@ app.get('/user', requireAuth, (req, res) => {
           <div class="admin-nav">
             <a href="/user" class="active">Dashboard</a>
             <a href="/user/vote">Vote Here!</a>
-            <a href="/user/profile">My Profile</a>
           </div>
 
           <h3 class="section-title">My Registered Vehicles (${cars.length})</h3>
@@ -7319,14 +7753,14 @@ app.get('/user/profile', requireAuth, (req, res) => {
             <h1>🏎️ Car Show Manager</h1>
             <div class="user-info">
               <div class="user-avatar">${currentUser.image_url ? `<img src="${currentUser.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : initials}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
           <div class="admin-nav">
             <a href="/user">Dashboard</a>
             <a href="/user/vote">Vote Here!</a>
-            <a href="/user/profile" class="active">My Profile</a>
           </div>
 
           <div class="profile-card">
@@ -7344,7 +7778,7 @@ app.get('/user/profile', requireAuth, (req, res) => {
                   <input type="file" name="profile_photo" accept="image/jpeg,image/png,image/gif,image/webp" onchange="updateFileName(this)">
                 </div>
                 <div class="file-name" id="fileName"></div>
-                <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin-top:10px;border-radius:8px;border:2px solid #e1e1e1;">
+                <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin:10px auto 0;border-radius:8px;border:2px solid #e1e1e1;">
               </div>
               <button type="submit">Upload Photo</button>
             </form>
@@ -7360,6 +7794,8 @@ app.get('/user/profile', requireAuth, (req, res) => {
                   reader.onload = function(e) {
                     preview.src = e.target.result;
                     preview.style.display = 'block';
+                    preview.style.marginLeft = 'auto';
+                    preview.style.marginRight = 'auto';
                   };
                   reader.readAsDataURL(input.files[0]);
                 } else {
@@ -7849,6 +8285,7 @@ app.get('/user/register-vehicle', requireAuth, (req, res) => {
               <h1>🏎️ Car Show Manager</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -7904,7 +8341,7 @@ app.get('/user/register-vehicle', requireAuth, (req, res) => {
                     <input type="file" name="vehicle_photo" accept="image/jpeg,image/png,image/gif,image/webp" onchange="updateFileName(this)">
                   </div>
                   <div class="file-name" id="fileName"></div>
-                  <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin-top:10px;border-radius:8px;border:2px solid #e1e1e1;">
+                  <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin:10px auto 0;border-radius:8px;border:2px solid #e1e1e1;">
                 </div>
                 <button type="submit">Register Vehicle</button>
               </div>
@@ -7939,6 +8376,8 @@ app.get('/user/register-vehicle', requireAuth, (req, res) => {
                   reader.onload = function(e) {
                     preview.src = e.target.result;
                     preview.style.display = 'block';
+                    preview.style.marginLeft = 'auto';
+                    preview.style.marginRight = 'auto';
                   };
                   reader.readAsDataURL(input.files[0]);
                 } else {
@@ -8213,7 +8652,8 @@ app.get('/user/edit-vehicle/:id', requireAuth, (req, res) => {
                 <h1>🏎️ Car Show Manager</h1>
                 <div class="user-info">
                   <div class="user-avatar">${avatarContent}</div>
-                  <a href="/logout" class="logout-btn">Sign Out</a>
+                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
                 </div>
               </div>
 
@@ -8267,7 +8707,7 @@ app.get('/user/edit-vehicle/:id', requireAuth, (req, res) => {
                       <input type="file" name="vehicle_photo" accept="image/jpeg,image/png,image/gif,image/webp" onchange="updateFileName(this)">
                     </div>
                     <div class="file-name" id="fileName"></div>
-                    <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin-top:10px;border-radius:8px;border:2px solid #e1e1e1;">
+                    <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin:10px auto 0;border-radius:8px;border:2px solid #e1e1e1;">
                   </div>
                   <button type="submit">Update Vehicle</button>
                 </div>
@@ -8307,6 +8747,8 @@ app.get('/user/edit-vehicle/:id', requireAuth, (req, res) => {
                     reader.onload = function(e) {
                       preview.src = e.target.result;
                       preview.style.display = 'block';
+                    preview.style.marginLeft = 'auto';
+                    preview.style.marginRight = 'auto';
                     };
                     reader.readAsDataURL(input.files[0]);
                   } else {
@@ -8609,6 +9051,7 @@ app.get('/user/vote', requireAuth, (req, res) => {
               <h1>🏎️ Car Show Manager</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -8621,14 +9064,19 @@ app.get('/user/vote', requireAuth, (req, res) => {
             <div class="admin-nav">
               <a href="/user">Dashboard</a>
               <a href="/user/vote" class="active">Vote Here!</a>
-              <a href="/user/profile">My Profile</a>
             </div>
 
-            ${appConfig.specialtyVotingLocked ? `
+            ${appConfig.specialtyVotingStatus === 'Lock' ? `
               <div class="no-votes-message">
                 <div class="icon">🔒</div>
-                <h3>Voting is Closed</h3>
+                <h3>Voting is Locked</h3>
                 <p>Specialty voting has been locked by the administrator. Results will be announced soon.</p>
+              </div>
+            ` : appConfig.specialtyVotingStatus === 'Close' ? `
+              <div class="no-votes-message">
+                <div class="icon">🚫</div>
+                <h3>Voting is not open yet</h3>
+                <p>Contact the administrator to open voting.</p>
               </div>
             ` : pendingVotes.length > 0 ? `
               <div class="vote-select-card">
@@ -8991,7 +9439,8 @@ app.get('/user/vote/:id', requireAuth, (req, res) => {
                 <h1>🏎️ Car Show Manager</h1>
                 <div class="user-info">
                   <div class="user-avatar">${avatarContent}</div>
-                  <a href="/logout" class="logout-btn">Sign Out</a>
+                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
                 </div>
               </div>
 
@@ -9052,8 +9501,8 @@ app.post('/user/vote/:id/submit', requireAuth, (req, res) => {
   const specialtyVoteId = req.params.id;
   const carId = req.body.car_id;
 
-  // Check if voting is locked
-  if (appConfig.specialtyVotingLocked) {
+  // Check if voting is not open
+  if (appConfig.specialtyVotingStatus !== 'Open') {
     res.redirect('/user/vote');
     return;
   }
@@ -9218,21 +9667,19 @@ app.get('/admin/vehicle-config', requireAdmin, (req, res) => {
                   <h1>🏎️ Admin Dashboard</h1>
                   <div class="user-info">
                     <div class="user-avatar">${avatarContent}</div>
-                    <a href="/logout" class="logout-btn">Sign Out</a>
+                    <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
                   </div>
                 </div>
 
                 <div class="admin-nav">
-                  <a href="/admin/app-config">App Config</a>
-                  <a href="/admin/vehicle-config" class="active">Vehicle Config</a>
-                  <a href="/admin/categories">Judge Config</a>
-                  <a href="/admin/specialty-votes">Special Vote Config</a>
+                  <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                   <a href="/admin">Users</a>
                   <a href="/admin/vehicles">Cars</a>
                   <a href="/admin/judge-status">Judge Status</a>
                   <a href="/admin/vote-status">Vote Status</a>
                   <a href="/admin/reports">Reports</a>
-                  <a href="/admin/profile">Profile</a>
+                  <a href="/user/vote">Vote Here!</a>
                 </div>
 
                 <h3 class="section-title">Vehicle Types</h3>
@@ -9351,21 +9798,19 @@ app.get('/admin/vehicle-types', requireAdmin, (req, res) => {
             <h1>🏎️ Admin Dashboard</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
           <div class="admin-nav">
-            <a href="/admin/app-config">App Config</a>
-            <a href="/admin/vehicle-config" class="active">Vehicle Config</a>
-            <a href="/admin/categories">Judge Config</a>
-            <a href="/admin/specialty-votes">Special Vote Config</a>
+            <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
             <a href="/admin">Users</a>
             <a href="/admin/vehicles">Cars</a>
             <a href="/admin/judge-status">Judge Status</a>
             <a href="/admin/vote-status">Vote Status</a>
             <a href="/admin/reports">Reports</a>
-            <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">Vehicle Types</h3>
@@ -9456,21 +9901,19 @@ app.get('/admin/edit-vehicle-type/:id', requireAdmin, (req, res) => {
             <h1>🏎️ Admin Dashboard</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
           <div class="admin-nav">
-            <a href="/admin/app-config">App Config</a>
-            <a href="/admin/vehicle-config">Vehicle Config</a>
-            <a href="/admin/categories">Judge Config</a>
-            <a href="/admin/specialty-votes">Special Vote Config</a>
+            <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
             <a href="/admin">Users</a>
             <a href="/admin/vehicles">Cars</a>
             <a href="/admin/judge-status">Judge Status</a>
             <a href="/admin/vote-status">Vote Status</a>
             <a href="/admin/reports">Reports</a>
-            <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">Edit Vehicle Type</h3>
@@ -9559,21 +10002,19 @@ app.get('/admin/classes', requireAdmin, (req, res) => {
               <h1>🏎️ Admin Dashboard</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
 
             <div class="admin-nav">
-              <a href="/admin/app-config">App Config</a>
-              <a href="/admin/vehicle-config" class="active">Vehicle Config</a>
-              <a href="/admin/categories">Judge Config</a>
-              <a href="/admin/specialty-votes">Special Vote Config</a>
+              <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
               <a href="/admin/vehicles">Cars</a>
               <a href="/admin/judge-status">Judge Status</a>
               <a href="/admin/vote-status">Vote Status</a>
               <a href="/admin/reports">Reports</a>
-              <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             <h3 class="section-title">Vehicle Classes</h3>
@@ -9677,21 +10118,19 @@ app.get('/admin/edit-class/:id', requireAdmin, (req, res) => {
               <h1>🏎️ Admin Dashboard</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
 
             <div class="admin-nav">
-              <a href="/admin/app-config">App Config</a>
-              <a href="/admin/vehicle-config">Vehicle Config</a>
-              <a href="/admin/categories">Judge Config</a>
-              <a href="/admin/specialty-votes">Special Vote Config</a>
+              <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
               <a href="/admin/vehicles">Cars</a>
               <a href="/admin/judge-status">Judge Status</a>
               <a href="/admin/vote-status">Vote Status</a>
               <a href="/admin/reports">Reports</a>
-              <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             <h3 class="section-title">Edit Class</h3>
@@ -9759,15 +10198,15 @@ app.get('/admin/categories', requireAdmin, (req, res) => {
       if (err) categories = [];
 
       const rows = categories.map(c => `
-        <tr>
-          <td>${c.catagory_name}</td>
-          <td>${c.vehicle_name || 'N/A'}</td>
-          <td>${c.display_order}</td>
-          <td>${c.question_count}</td>
-          <td><span class="status-badge ${c.is_active ? 'active' : 'inactive'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
+        <tr style="border-bottom:none;">
+          <td style="border-bottom:none;">${c.catagory_name}</td>
+          <td style="border-bottom:none;">${c.vehicle_name || 'N/A'}</td>
+          <td style="border-bottom:none;">${c.display_order}</td>
+          <td style="border-bottom:none;">${c.question_count}</td>
+          <td style="border-bottom:none;"><span class="status-badge ${c.is_active ? 'active' : 'inactive'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
         </tr>
         <tr>
-          <td colspan="5" style="border-top:none;padding-top:0;">
+          <td colspan="5" style="border-top:none;padding-top:0;text-align:center;">
             <a href="/admin/edit-category/${c.judge_catagory_id}" class="action-btn edit">Edit</a>
             <a href="/admin/category-questions/${c.judge_catagory_id}" class="action-btn" style="background:#3498db;">Questions</a>
             <a href="#" onclick="confirmDeleteCategory(${c.judge_catagory_id}, '${c.catagory_name.replace(/'/g, "\\'")}'); return false;" class="action-btn" style="background:#e74c3c;">Delete</a>
@@ -9794,21 +10233,19 @@ app.get('/admin/categories', requireAdmin, (req, res) => {
               <h1>🏎️ Admin Dashboard</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
 
             <div class="admin-nav">
-              <a href="/admin/app-config">App Config</a>
-              <a href="/admin/vehicle-config">Vehicle Config</a>
-              <a href="/admin/categories" class="active">Judge Config</a>
-              <a href="/admin/specialty-votes">Special Vote Config</a>
+              <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
               <a href="/admin/vehicles">Cars</a>
               <a href="/admin/judge-status">Judge Status</a>
               <a href="/admin/vote-status">Vote Status</a>
               <a href="/admin/reports">Reports</a>
-              <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             <h3 class="section-title">Judging Categories</h3>
@@ -9917,21 +10354,19 @@ app.get('/admin/edit-category/:id', requireAdmin, (req, res) => {
               <h1>🏎️ Admin Dashboard</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
 
             <div class="admin-nav">
-              <a href="/admin/app-config">App Config</a>
-              <a href="/admin/vehicle-config">Vehicle Config</a>
-              <a href="/admin/categories">Judge Config</a>
-              <a href="/admin/specialty-votes">Special Vote Config</a>
+              <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
               <a href="/admin/vehicles">Cars</a>
               <a href="/admin/judge-status">Judge Status</a>
               <a href="/admin/vote-status">Vote Status</a>
               <a href="/admin/reports">Reports</a>
-              <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             <h3 class="section-title">Edit Category</h3>
@@ -10034,21 +10469,19 @@ app.get('/admin/category-questions/:id', requireAdmin, (req, res) => {
               <h1>🏎️ Admin Dashboard</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
 
             <div class="admin-nav">
-              <a href="/admin/app-config">App Config</a>
-              <a href="/admin/vehicle-config">Vehicle Config</a>
-              <a href="/admin/categories">Judge Config</a>
-              <a href="/admin/specialty-votes">Special Vote Config</a>
+              <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
               <a href="/admin/vehicles">Cars</a>
               <a href="/admin/judge-status">Judge Status</a>
               <a href="/admin/vote-status">Vote Status</a>
               <a href="/admin/reports">Reports</a>
-              <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             <h3 class="section-title">Questions: ${category.catagory_name}</h3>
@@ -10176,21 +10609,19 @@ app.get('/admin/edit-question/:id', requireAdmin, (req, res) => {
             <h1>🏎️ Admin Dashboard</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
           <div class="admin-nav">
-            <a href="/admin/app-config">App Config</a>
-            <a href="/admin/vehicle-config">Vehicle Config</a>
-            <a href="/admin/categories">Judge Config</a>
-            <a href="/admin/specialty-votes">Special Vote Config</a>
+            <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
             <a href="/admin">Users</a>
             <a href="/admin/vehicles">Cars</a>
             <a href="/admin/judge-status">Judge Status</a>
             <a href="/admin/vote-status">Vote Status</a>
             <a href="/admin/reports">Reports</a>
-            <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">Edit Question</h3>
@@ -10288,16 +10719,16 @@ app.get('/admin/specialty-votes', requireAdmin, (req, res) => {
         ? (sv.class_name ? `${sv.vehicle_name} / ${sv.class_name}` : sv.vehicle_name)
         : 'All Vehicles';
       return `
-      <tr>
-        <td>${sv.vote_name}</td>
-        <td>${sv.description || '-'}</td>
-        <td>${sv.allow_all_users ? 'All Users' : 'Specific Users'}</td>
-        <td>${filterLabel}</td>
-        <td><span style="background:#27ae60;color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">${sv.vote_count} votes</span></td>
-        <td><span class="status-badge ${sv.is_active ? 'active' : 'inactive'}">${sv.is_active ? 'Active' : 'Inactive'}</span></td>
+      <tr style="border-bottom:none;">
+        <td style="border-bottom:none;">${sv.vote_name}</td>
+        <td style="border-bottom:none;">${sv.description || '-'}</td>
+        <td style="border-bottom:none;">${sv.allow_all_users ? 'All Users' : 'Specific Users'}</td>
+        <td style="border-bottom:none;">${filterLabel}</td>
+        <td style="border-bottom:none;"><span style="background:#27ae60;color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">${sv.vote_count} votes</span></td>
+        <td style="border-bottom:none;"><span class="status-badge ${sv.is_active ? 'active' : 'inactive'}">${sv.is_active ? 'Active' : 'Inactive'}</span></td>
       </tr>
       <tr>
-        <td colspan="6" style="border-top:none;padding-top:0;">
+        <td colspan="6" style="border-top:none;padding-top:0;text-align:center;">
           <a href="/admin/specialty-vote-results/${sv.specialty_vote_id}" class="action-btn" style="background:#27ae60;">Results</a>
           <a href="/admin/edit-specialty-vote/${sv.specialty_vote_id}" class="action-btn edit">Edit</a>
           <a href="/admin/specialty-vote-voters/${sv.specialty_vote_id}" class="action-btn" style="background:#3498db;">Voters</a>
@@ -10321,21 +10752,19 @@ app.get('/admin/specialty-votes', requireAdmin, (req, res) => {
             <h1>🏎️ Admin Dashboard</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
           <div class="admin-nav">
-            <a href="/admin/app-config">App Config</a>
-            <a href="/admin/vehicle-config">Vehicle Config</a>
-            <a href="/admin/categories">Judge Config</a>
-            <a href="/admin/specialty-votes" class="active">Special Vote Config</a>
+            <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
             <a href="/admin">Users</a>
             <a href="/admin/vehicles">Cars</a>
             <a href="/admin/judge-status">Judge Status</a>
             <a href="/admin/vote-status">Vote Status</a>
             <a href="/admin/reports">Reports</a>
-            <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">Special Vote Config</h3>
@@ -10479,21 +10908,19 @@ app.get('/admin/edit-specialty-vote/:id', requireAdmin, (req, res) => {
             <h1>🏎️ Admin Dashboard</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
           <div class="admin-nav">
-            <a href="/admin/app-config">App Config</a>
-            <a href="/admin/vehicle-config">Vehicle Config</a>
-            <a href="/admin/categories">Judge Config</a>
-            <a href="/admin/specialty-votes">Special Vote Config</a>
+            <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
             <a href="/admin">Users</a>
             <a href="/admin/vehicles">Cars</a>
             <a href="/admin/judge-status">Judge Status</a>
             <a href="/admin/vote-status">Vote Status</a>
             <a href="/admin/reports">Reports</a>
-            <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">Edit Specialty Vote</h3>
@@ -10733,21 +11160,19 @@ app.get('/admin/specialty-vote-results/:id', requireAdmin, (req, res) => {
               <h1>🏎️ Admin Dashboard</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
 
             <div class="admin-nav">
-              <a href="/admin/app-config">App Config</a>
-              <a href="/admin/vehicle-config">Vehicle Config</a>
-              <a href="/admin/categories">Judge Config</a>
-              <a href="/admin/specialty-votes">Special Vote Config</a>
+              <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
               <a href="/admin/vehicles">Cars</a>
               <a href="/admin/judge-status">Judge Status</a>
               <a href="/admin/vote-status">Vote Status</a>
               <a href="/admin/reports">Reports</a>
-              <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             <div class="results-header">
@@ -10859,21 +11284,19 @@ app.get('/admin/specialty-vote-voters/:id', requireAdmin, (req, res) => {
                 <h1>🏎️ Admin Dashboard</h1>
                 <div class="user-info">
                   <div class="user-avatar">${avatarContent}</div>
-                  <a href="/logout" class="logout-btn">Sign Out</a>
+                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
                 </div>
               </div>
 
               <div class="admin-nav">
-                <a href="/admin/app-config">App Config</a>
-                <a href="/admin/vehicle-config">Vehicle Config</a>
-                <a href="/admin/categories">Judge Config</a>
-                <a href="/admin/specialty-votes">Special Vote Config</a>
+                <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                 <a href="/admin">Users</a>
                 <a href="/admin/vehicles">Cars</a>
                 <a href="/admin/judge-status">Judge Status</a>
                 <a href="/admin/vote-status">Vote Status</a>
                 <a href="/admin/reports">Reports</a>
-                <a href="/admin/profile">Profile</a>
+                <a href="/user/vote">Vote Here!</a>
               </div>
 
               <h3 class="section-title">Voters: ${vote.vote_name}</h3>
@@ -11048,34 +11471,36 @@ app.get('/admin/judge-status', requireAdmin, (req, res) => {
                 <h1>🏎️ Admin Dashboard</h1>
                 <div class="user-info">
                   <div class="user-avatar">${avatarContent}</div>
-                  <a href="/logout" class="logout-btn">Sign Out</a>
+                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
                 </div>
               </div>
 
               <div class="admin-nav">
-                <a href="/admin/app-config">App Config</a>
-                <a href="/admin/vehicle-config">Vehicle Config</a>
-                <a href="/admin/categories">Judge Config</a>
-                <a href="/admin/specialty-votes">Special Vote Config</a>
+                <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                 <a href="/admin">Users</a>
                 <a href="/admin/vehicles">Cars</a>
                 <a href="/admin/judge-status" class="active">Judge Status</a>
                 <a href="/admin/vote-status">Vote Status</a>
                 <a href="/admin/reports">Reports</a>
-                <a href="/admin/profile">Profile</a>
+                <a href="/user/vote">Vote Here!</a>
               </div>
 
               <h3 class="section-title">Judge Voting Status</h3>
 
               <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-                <span style="padding: 8px 16px; border-radius: 20px; font-weight: 600; ${appConfig.judgeVotingLocked ? 'background:#e74c3c;color:white;' : 'background:#27ae60;color:white;'}">
-                  ${appConfig.judgeVotingLocked ? '🔒 Voting LOCKED' : '🔓 Voting OPEN'}
+                <span style="padding: 8px 16px; border-radius: 20px; font-weight: 600; ${appConfig.judgeVotingStatus === 'Lock' ? 'background:#e74c3c;color:white;' : appConfig.judgeVotingStatus === 'Open' ? 'background:#27ae60;color:white;' : 'background:#999;color:white;'}">
+                  ${appConfig.judgeVotingStatus === 'Lock' ? '🔒 Voting LOCKED' : appConfig.judgeVotingStatus === 'Open' ? '🔓 Voting OPEN' : '🚫 Voting CLOSED'}
                 </span>
                 <a href="/admin/preview-judge-results" class="action-btn" style="background:#3498db;">Preview Results</a>
-                ${appConfig.judgeVotingLocked
-                  ? `<a href="/admin/unlock-judge-voting" class="action-btn" style="background:#27ae60;" onclick="return confirm('Unlock voting? Judges will be able to vote again.')">Unlock Voting</a>`
-                  : `<a href="/admin/lock-judge-voting" class="action-btn" style="background:#e74c3c;" onclick="return confirm('Lock voting and publish results? Judges will no longer be able to vote.')">Lock & Publish Results</a>`
-                }
+                ${appConfig.judgeVotingStatus === 'Close' ? `
+                  <a href="/admin/open-judge-voting" class="action-btn" style="background:#27ae60;" onclick="return confirm('Open voting? Judges will be able to score vehicles.')">Open Voting</a>
+                ` : appConfig.judgeVotingStatus === 'Open' ? `
+                  <a href="/admin/close-judge-voting" class="action-btn" style="background:#999;" onclick="return confirm('Close voting? Judges will no longer be able to vote.')">Close Voting</a>
+                  <a href="/admin/lock-judge-voting" class="action-btn" style="background:#e74c3c;" onclick="return confirm('Lock voting and publish results? Judges will no longer be able to vote.')">Lock & Publish Results</a>
+                ` : `
+                  <a href="/admin/open-judge-voting" class="action-btn" style="background:#27ae60;" onclick="return confirm('Reopen voting? Judges will be able to vote again.')">Open Voting</a>
+                `}
               </div>
 
               <div style="overflow-x: auto;">
@@ -11193,21 +11618,19 @@ app.get('/admin/edit-judge-scores/:carId', requireAdmin, (req, res) => {
                   <h1>🏎️ Admin Dashboard</h1>
                   <div class="user-info">
                     <div class="user-avatar">${avatarContent}</div>
-                    <a href="/logout" class="logout-btn">Sign Out</a>
+                    <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
                   </div>
                 </div>
 
                 <div class="admin-nav">
-                  <a href="/admin/app-config">App Config</a>
-                  <a href="/admin/vehicle-config">Vehicle Config</a>
-                  <a href="/admin/categories">Judge Config</a>
-                  <a href="/admin/specialty-votes">Special Vote Config</a>
+                  <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                   <a href="/admin">Users</a>
                   <a href="/admin/vehicles">Cars</a>
                   <a href="/admin/judge-status" class="active">Judge Status</a>
                   <a href="/admin/vote-status">Vote Status</a>
                   <a href="/admin/reports">Reports</a>
-                  <a href="/admin/profile">Profile</a>
+                  <a href="/user/vote">Vote Here!</a>
                 </div>
 
                 <h3 class="section-title">Edit Scores: ${car.year || ''} ${car.make} ${car.model}</h3>
@@ -11345,21 +11768,19 @@ app.get('/admin/preview-judge-results', requireAdmin, (req, res) => {
               <h1>🏎️ Admin Dashboard</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
 
             <div class="admin-nav">
-              <a href="/admin/app-config">App Config</a>
-              <a href="/admin/vehicle-config">Vehicle Config</a>
-              <a href="/admin/categories">Judge Config</a>
-              <a href="/admin/specialty-votes">Special Vote Config</a>
+              <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
               <a href="/admin/vehicles">Cars</a>
               <a href="/admin/judge-status" class="active">Judge Status</a>
               <a href="/admin/vote-status">Vote Status</a>
               <a href="/admin/reports">Reports</a>
-              <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             <h3 class="section-title">Preview Judge Results - Top 3 by Class</h3>
@@ -11369,7 +11790,7 @@ app.get('/admin/preview-judge-results', requireAdmin, (req, res) => {
 
             <div style="margin-top:20px;">
               <a href="/admin/judge-status" class="action-btn" style="background:#666;">Back to Judge Status</a>
-              ${!appConfig.judgeVotingLocked
+              ${appConfig.judgeVotingStatus !== 'Lock'
                 ? `<a href="/admin/lock-judge-voting" class="action-btn" style="background:#e74c3c;" onclick="return confirm('Lock voting and publish these results?')">Lock & Publish Results</a>`
                 : ''
               }
@@ -11384,7 +11805,7 @@ app.get('/admin/preview-judge-results', requireAdmin, (req, res) => {
 
 // Lock judge voting and publish results
 app.get('/admin/lock-judge-voting', requireAdmin, (req, res) => {
-  appConfig.judgeVotingLocked = true;
+  appConfig.judgeVotingStatus = 'Lock';
   saveConfig();
 
   // Clear any existing published judge results
@@ -11445,9 +11866,16 @@ app.get('/admin/lock-judge-voting', requireAdmin, (req, res) => {
   });
 });
 
-// Unlock judge voting
-app.get('/admin/unlock-judge-voting', requireAdmin, (req, res) => {
-  appConfig.judgeVotingLocked = false;
+// Open judge voting
+app.get('/admin/open-judge-voting', requireAdmin, (req, res) => {
+  appConfig.judgeVotingStatus = 'Open';
+  saveConfig();
+  res.redirect('/admin/judge-status');
+});
+
+// Close judge voting
+app.get('/admin/close-judge-voting', requireAdmin, (req, res) => {
+  appConfig.judgeVotingStatus = 'Close';
   saveConfig();
   res.redirect('/admin/judge-status');
 });
@@ -11526,34 +11954,36 @@ app.get('/admin/vote-status', requireAdmin, (req, res) => {
               <h1>🏎️ Admin Dashboard</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
 
             <div class="admin-nav">
-              <a href="/admin/app-config">App Config</a>
-              <a href="/admin/vehicle-config">Vehicle Config</a>
-              <a href="/admin/categories">Judge Config</a>
-              <a href="/admin/specialty-votes">Special Vote Config</a>
+              <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
               <a href="/admin/vehicles">Cars</a>
               <a href="/admin/judge-status">Judge Status</a>
               <a href="/admin/vote-status" class="active">Vote Status</a>
               <a href="/admin/reports">Reports</a>
-              <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             <h3 class="section-title">Specialty Vote Status</h3>
 
             <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-              <span style="padding: 8px 16px; border-radius: 20px; font-weight: 600; ${appConfig.specialtyVotingLocked ? 'background:#e74c3c;color:white;' : 'background:#27ae60;color:white;'}">
-                ${appConfig.specialtyVotingLocked ? '🔒 Voting LOCKED' : '🔓 Voting OPEN'}
+              <span style="padding: 8px 16px; border-radius: 20px; font-weight: 600; ${appConfig.specialtyVotingStatus === 'Lock' ? 'background:#e74c3c;color:white;' : appConfig.specialtyVotingStatus === 'Open' ? 'background:#27ae60;color:white;' : 'background:#95a5a6;color:white;'}">
+                ${appConfig.specialtyVotingStatus === 'Lock' ? '🔒 Voting LOCKED' : appConfig.specialtyVotingStatus === 'Open' ? '🔓 Voting OPEN' : '🚫 Voting CLOSED'}
               </span>
               <a href="/admin/preview-vote-results" class="action-btn" style="background:#3498db;">Preview Results</a>
-              ${appConfig.specialtyVotingLocked
-                ? `<a href="/admin/unlock-specialty-voting" class="action-btn" style="background:#27ae60;" onclick="return confirm('Unlock voting? Users will be able to vote again.')">Unlock Voting</a>`
-                : `<a href="/admin/lock-specialty-voting" class="action-btn" style="background:#e74c3c;" onclick="return confirm('Lock voting and publish results? Users will no longer be able to vote.')">Lock & Publish Results</a>`
-              }
+              ${appConfig.specialtyVotingStatus === 'Close' ? `
+                <a href="/admin/open-specialty-voting" class="action-btn" style="background:#27ae60;" onclick="return confirm('Open voting? Users will be able to vote.')">Open Voting</a>
+              ` : appConfig.specialtyVotingStatus === 'Open' ? `
+                <a href="/admin/close-specialty-voting" class="action-btn" style="background:#95a5a6;" onclick="return confirm('Close voting? Users will no longer be able to vote.')">Close Voting</a>
+                <a href="/admin/lock-specialty-voting" class="action-btn" style="background:#e74c3c;" onclick="return confirm('Lock voting and publish results? Users will no longer be able to vote.')">Lock & Publish Results</a>
+              ` : `
+                <a href="/admin/open-specialty-voting" class="action-btn" style="background:#27ae60;" onclick="return confirm('Open voting? Users will be able to vote again.')">Open Voting</a>
+              `}
             </div>
 
             <div style="overflow-x: auto;">
@@ -11632,21 +12062,19 @@ app.get('/admin/edit-vote-results/:voteId', requireAdmin, (req, res) => {
               <h1>🏎️ Admin Dashboard</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
 
             <div class="admin-nav">
-              <a href="/admin/app-config">App Config</a>
-              <a href="/admin/vehicle-config">Vehicle Config</a>
-              <a href="/admin/categories">Judge Config</a>
-              <a href="/admin/specialty-votes">Special Vote Config</a>
+              <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
               <a href="/admin/vehicles">Cars</a>
               <a href="/admin/judge-status">Judge Status</a>
               <a href="/admin/vote-status" class="active">Vote Status</a>
               <a href="/admin/reports">Reports</a>
-              <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             <h3 class="section-title">${vote.vote_name} - All Votes</h3>
@@ -11760,21 +12188,19 @@ app.get('/admin/preview-vote-results', requireAdmin, (req, res) => {
               <h1>🏎️ Admin Dashboard</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
 
             <div class="admin-nav">
-              <a href="/admin/app-config">App Config</a>
-              <a href="/admin/vehicle-config">Vehicle Config</a>
-              <a href="/admin/categories">Judge Config</a>
-              <a href="/admin/specialty-votes">Special Vote Config</a>
+              <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
               <a href="/admin/vehicles">Cars</a>
               <a href="/admin/judge-status">Judge Status</a>
               <a href="/admin/vote-status" class="active">Vote Status</a>
               <a href="/admin/reports">Reports</a>
-              <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             <h3 class="section-title">Preview Specialty Vote Winners</h3>
@@ -11784,7 +12210,7 @@ app.get('/admin/preview-vote-results', requireAdmin, (req, res) => {
 
             <div style="margin-top:20px;">
               <a href="/admin/vote-status" class="action-btn" style="background:#666;">Back to Vote Status</a>
-              ${!appConfig.specialtyVotingLocked
+              ${appConfig.specialtyVotingStatus !== 'Lock'
                 ? `<a href="/admin/lock-specialty-voting" class="action-btn" style="background:#e74c3c;" onclick="return confirm('Lock voting and publish these results?')">Lock & Publish Results</a>`
                 : ''
               }
@@ -11799,7 +12225,7 @@ app.get('/admin/preview-vote-results', requireAdmin, (req, res) => {
 
 // Lock specialty voting and publish results
 app.get('/admin/lock-specialty-voting', requireAdmin, (req, res) => {
-  appConfig.specialtyVotingLocked = true;
+  appConfig.specialtyVotingStatus = 'Lock';
   saveConfig();
 
   // Clear any existing published specialty results
@@ -11844,9 +12270,16 @@ app.get('/admin/lock-specialty-voting', requireAdmin, (req, res) => {
   });
 });
 
-// Unlock specialty voting
-app.get('/admin/unlock-specialty-voting', requireAdmin, (req, res) => {
-  appConfig.specialtyVotingLocked = false;
+// Open specialty voting
+app.get('/admin/open-specialty-voting', requireAdmin, (req, res) => {
+  appConfig.specialtyVotingStatus = 'Open';
+  saveConfig();
+  res.redirect('/admin/vote-status');
+});
+
+// Close specialty voting
+app.get('/admin/close-specialty-voting', requireAdmin, (req, res) => {
+  appConfig.specialtyVotingStatus = 'Close';
   saveConfig();
   res.redirect('/admin/vote-status');
 });
@@ -11876,21 +12309,19 @@ app.get('/admin/app-config', requireAdmin, (req, res) => {
           <h1>🏎️ Admin Dashboard</h1>
           <div class="user-info">
             <div class="user-avatar">${avatarContent}</div>
-            <a href="/logout" class="logout-btn">Sign Out</a>
+            <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
           </div>
         </div>
 
         <div class="admin-nav">
-          <a href="/admin/app-config" class="active">App Config</a>
-          <a href="/admin/vehicle-config">Vehicle Config</a>
-          <a href="/admin/categories">Judge Config</a>
-          <a href="/admin/specialty-votes">Special Vote Config</a>
+          <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
           <a href="/admin">Users</a>
           <a href="/admin/vehicles">Cars</a>
           <a href="/admin/judge-status">Judge Status</a>
           <a href="/admin/vote-status">Vote Status</a>
           <a href="/admin/reports">Reports</a>
-          <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
         </div>
 
         <h3 class="section-title">Application Configuration</h3>
@@ -12011,21 +12442,19 @@ app.get('/admin/reports', requireAdmin, (req, res) => {
                     <h1>🏎️ Admin Dashboard</h1>
                     <div class="user-info">
                       <div class="user-avatar">${avatarContent}</div>
-                      <a href="/logout" class="logout-btn">Sign Out</a>
+                      <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
                     </div>
                   </div>
 
                   <div class="admin-nav">
-                    <a href="/admin/app-config">App Config</a>
-                    <a href="/admin/vehicle-config">Vehicle Config</a>
-                    <a href="/admin/categories">Judge Config</a>
-                    <a href="/admin/specialty-votes">Special Vote Config</a>
+                    <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                     <a href="/admin">Users</a>
                     <a href="/admin/vehicles">Cars</a>
                     <a href="/admin/judge-status">Judge Status</a>
                     <a href="/admin/vote-status">Vote Status</a>
                     <a href="/admin/reports" class="active">Reports</a>
-                    <a href="/admin/profile">Profile</a>
+                    <a href="/user/vote">Vote Here!</a>
                   </div>
 
                   <h3 class="section-title">Reports</h3>
@@ -12073,21 +12502,19 @@ app.get('/admin/reports/view/:reportId', requireAdmin, (req, res) => {
             <h1>🏎️ Admin Dashboard</h1>
             <div class="user-info">
               <div class="user-avatar">${avatarContent}</div>
-              <a href="/logout" class="logout-btn">Sign Out</a>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
             </div>
           </div>
 
           <div class="admin-nav">
-            <a href="/admin/app-config">App Config</a>
-            <a href="/admin/vehicle-config">Vehicle Config</a>
-            <a href="/admin/categories">Judge Config</a>
-            <a href="/admin/specialty-votes">Special Vote Config</a>
+            <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
             <a href="/admin">Users</a>
             <a href="/admin/vehicles">Cars</a>
             <a href="/admin/judge-status">Judge Status</a>
             <a href="/admin/vote-status">Vote Status</a>
             <a href="/admin/reports" class="active">Reports</a>
-            <a href="/admin/profile">Profile</a>
+              <a href="/user/vote">Vote Here!</a>
           </div>
 
           <h3 class="section-title">${title}</h3>
@@ -12096,7 +12523,7 @@ app.get('/admin/reports/view/:reportId', requireAdmin, (req, res) => {
             <a href="/admin/reports" class="action-btn" style="background:#6c757d;">Back to Reports</a>
           </div>
 
-          <div class="table-wrapper">
+          <div class="table-wrapper report-table">
             <table class="user-table">
               <thead>
                 <tr>${headerHtml}</tr>
