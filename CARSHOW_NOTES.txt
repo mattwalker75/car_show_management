@@ -38,4 +38,47 @@ registrar
 user
   - Add vehicles to show and fill out vehicle information
 
+--------------------------------------
+
+DO TO - NEED TO REVIEW
+-----
+Admin function
+- Judge Config
+  - For each "Judging Categories", it would be good to show the total number of questions for each Category
+  - May want to move the "Actions" to the second line, and do not need the word "Actions" because it is self explanitory
+- Specialty Vote Config
+  - Under "Who Can Vote?", if you select "All Users" and then go to the "Voters" tab, it does not show anyone selected
+     - I would assume it would show everyone selected, but lets leave it as it is and see what happens
+     - I would assume it would not even have any users listed and just say "everyone" 
+  - May want to move the "Actions" to the second line, and do not need the word "Actions" because it is self explanitory
+  - When you have "Specific Users" selected and go in and add the users who can vote, when you click on "SAVE VOTER ASSIGNMENTS", some success or fail message should come up when the save is complete
+- Create a "Reports" tab
+  - This is where you can view and export reports ( reports are exported as CSV files that are downloaded locally )
+  - The following reports can be viewed and exported
+     - List of users and their contact information
+     - List of registered vehicles along with the user who they are associated with along with if they won places in any Special Votes or Judging
+     - List all the vehicles with their associated classes
+     - List of Specialty Votes
+     - List of the judging catagories, associated questions, and scoring
+
+User function
+- When "Register New Vehicle", the "Year" scale needs to match the rest on the screen.  If need be, just turn it into a window you type in instead of a scrolling number wheel.
+- Setup a "Dashboard" tab that points to the same content as the "My Vehicles" tab 
+
+Registrar function
+- Under the "Vehicles" tab when you want to register a vehicle there should be an option to have it pick a "Voter ID Number" for you if you don't want to manually pick one.
+- Under the "Vehicles", we need to view the Name and Email associated with the vehicle
+   - We should be able to apply viewing filters to make it easier to find someone's vehicle to register
+
+Judge function
+- When you are judging, instead of using a numeric scroll bar, it might be easier to have individual bubbles to select 
+
+Specialty voting
+- Need a way to "close" and "open" voting via the "admin" console
+   - We do not want people to go in and vote too early.
+   - We want to control when people can vote who are not judges
+- We may want to divide them out by catagories
+   - We may want to have a specialty vote only for motorcycles or only for a specific class
+
+
 
