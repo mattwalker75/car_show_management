@@ -305,6 +305,7 @@ module.exports = function (db, appConfig, upload) {
       const hashedPassword = hashPassword(password);
       db.run('UPDATE users SET password_hash = ? WHERE user_id = ? AND role NOT IN (?, ?)', [hashedPassword, userId, 'admin', 'registrar'], function(err) {
         if (err) {
+          console.error('Error resetting password:', err.message);
           res.send(`
             <!DOCTYPE html>
             <html>
@@ -319,7 +320,7 @@ module.exports = function (db, appConfig, upload) {
                   <div class="logo-icon">🏎️</div>
                   <h1>Car Show Manager</h1>
                 </div>
-                <div class="error-message">Error resetting password: ${err.message}</div>
+                <div class="error-message">Error resetting password. Please try again.</div>
                 <div class="links">
                   <a href="/registrar/users">Back to Users</a>
                 </div>
@@ -1005,6 +1006,7 @@ module.exports = function (db, appConfig, upload) {
     function updateVehicle() {
       db.run('UPDATE cars SET voter_id = ?, is_active = ? WHERE car_id = ?', [voter_id || null, is_active, carId], function(err) {
         if (err) {
+          console.error('Error updating vehicle:', err.message);
           res.send(`
             <!DOCTYPE html>
             <html>
@@ -1019,7 +1021,7 @@ module.exports = function (db, appConfig, upload) {
                   <div class="logo-icon">🏎️</div>
                   <h1>Car Show Manager</h1>
                 </div>
-                <div class="error-message">Error updating vehicle: ${err.message}</div>
+                <div class="error-message">Error updating vehicle. Please try again.</div>
                 <div class="links">
                   <a href="/registrar/vehicles">Back to Vehicles</a>
                 </div>

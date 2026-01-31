@@ -255,7 +255,8 @@ module.exports = function (db, appConfig, upload) {
 
       db.run('UPDATE users SET email = ? WHERE user_id = ?', [email, user.user_id], function (err) {
         if (err) {
-          res.send(errorPage(`Error updating email: ${err.message}`, `/${role}/profile`, 'Try Again'));
+          console.error('Error updating email:', err.message);
+          res.send(errorPage('Error updating email. Please try again.', `/${role}/profile`, 'Try Again'));
         } else {
           req.session.user.email = email;
           res.send(successPage('Email updated successfully!', `/${role}/profile`, 'Back to Profile'));
@@ -286,7 +287,8 @@ module.exports = function (db, appConfig, upload) {
         const hashedPassword = hashPassword(new_password);
         db.run('UPDATE users SET password_hash = ? WHERE user_id = ?', [hashedPassword, user.user_id], function (err) {
           if (err) {
-            res.send(errorPage(`Error updating password: ${err.message}`, `/${role}/profile`, 'Try Again'));
+            console.error('Error updating password:', err.message);
+            res.send(errorPage('Error updating password. Please try again.', `/${role}/profile`, 'Try Again'));
           } else {
             res.send(successPage('Password changed successfully!', `/${role}/profile`, 'Back to Profile'));
           }

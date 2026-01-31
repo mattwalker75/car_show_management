@@ -133,6 +133,7 @@ module.exports = function (db, appConfig, upload, port) {
       [username, name, email, hashedPassword, 'admin'],
       function(err) {
         if (err) {
+          console.error('Admin creation error:', err.message);
           res.send(`
             <!DOCTYPE html>
             <html>
@@ -147,7 +148,7 @@ module.exports = function (db, appConfig, upload, port) {
                   <div class="logo-icon">🏎️</div>
                   <h1>Car Show Manager</h1>
                 </div>
-                <div class="error-message">Error creating admin user: ${err.message}</div>
+                <div class="error-message">Error creating admin account. Please try again.</div>
                 <div class="links">
                   <a href="/">Try Again</a>
                 </div>
@@ -547,6 +548,7 @@ module.exports = function (db, appConfig, upload, port) {
       [username, name, email, hashedPassword, 'admin'],
       function(err) {
         if (err) {
+          console.error('Admin creation error:', err.message);
           res.send(`
             <!DOCTYPE html>
             <html>
@@ -561,7 +563,7 @@ module.exports = function (db, appConfig, upload, port) {
                   <div class="logo-icon">🏎️</div>
                   <h1>Car Show Manager</h1>
                 </div>
-                <div class="error-message">Error creating admin user: ${err.message}</div>
+                <div class="error-message">Error creating admin account. Please try again.</div>
                 <div class="links">
                   <a href="/admin/recover?token=${token}">Try Again</a>
                 </div>

@@ -85,4 +85,15 @@ async function handleVehiclePhotoUpload(file) {
   }
 }
 
-module.exports = { handleProfilePhotoUpload, handleVehiclePhotoUpload };
+/**
+ * Delete a vehicle image file from disk (if it exists).
+ * @param {string|null} imageUrl - The image URL path (e.g. /images/user_uploads/cars/abc.jpg)
+ */
+function deleteVehicleImage(imageUrl) {
+  if (imageUrl) {
+    const filePath = path.join(BASE_DIR, imageUrl);
+    fs.unlink(filePath, () => {});
+  }
+}
+
+module.exports = { handleProfilePhotoUpload, handleVehiclePhotoUpload, deleteVehicleImage };

@@ -6,10 +6,7 @@ module.exports = function (db, appConfig, upload) {
   const { requireAuth } = require('../middleware/auth');
   const { errorPage, successPage } = require('../views/layout');
   const { getAvatarContent } = require('../views/components');
-  const crypto = require('crypto');
-  const path = require('path');
-  const fs = require('fs');
-  const sharp = require('sharp');
+  const { handleVehiclePhotoUpload, deleteVehicleImage } = require('../helpers/imageUpload');
 
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
   const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script>';
@@ -541,45 +538,11 @@ module.exports = function (db, appConfig, upload) {
 
     // Process image if uploaded
     if (req.file) {
-      try {
-        const randomName = crypto.randomBytes(16).toString('hex');
-        const filename = `${randomName}.jpg`;
-        const filepath = path.join(__dirname, '..', 'images', 'user_uploads', 'cars', filename);
-        imageUrl = `/images/user_uploads/cars/${filename}`;
-
-        await sharp(req.file.buffer)
-          .rotate()
-          .resize(800, 600, {
-            fit: 'cover',
-            position: 'center'
-          })
-          .jpeg({ quality: 85 })
-          .toFile(filepath);
-      } catch (error) {
-        res.send(`
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>Registration Error</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-            ${styles}
-          </head>
-          <body>
-            <div class="container">
-              <div class="logo">
-                <div class="logo-icon">🏎️</div>
-                <h1>Car Show Manager</h1>
-              </div>
-              <div class="error-message">Error processing image: ${error.message}</div>
-              <div class="links">
-                <a href="/user/register-vehicle">Try Again</a>
-              </div>
-            </div>
-          </body>
-          </html>
-        `);
-        return;
+      const result = await handleVehiclePhotoUpload(req.file);
+      if (!result.success) {
+        return res.send(errorPage('Error processing image. Please try a different file.', '/user/register-vehicle', 'Try Again'));
       }
+      imageUrl = result.imageUrl;
     }
 
     // Insert vehicle into database - is_active=0 by default until registrar enables after payment
@@ -587,51 +550,10 @@ module.exports = function (db, appConfig, upload) {
       [year || null, make, model, vehicle_id, class_id, description || null, imageUrl, user.user_id],
       function(err) {
         if (err) {
-          res.send(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>Registration Error</title>
-              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-              ${styles}
-            </head>
-            <body>
-              <div class="container">
-                <div class="logo">
-                  <div class="logo-icon">🏎️</div>
-                  <h1>Car Show Manager</h1>
-                </div>
-                <div class="error-message">Error registering vehicle: ${err.message}</div>
-                <div class="links">
-                  <a href="/user/register-vehicle">Try Again</a>
-                </div>
-              </div>
-            </body>
-            </html>
-          `);
+          console.error('Vehicle registration error:', err.message);
+          res.send(errorPage('Error registering vehicle. Please try again.', '/user/register-vehicle', 'Try Again'));
         } else {
-          res.send(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>Vehicle Registered</title>
-              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-              ${styles}
-            </head>
-            <body>
-              <div class="container">
-                <div class="logo">
-                  <div class="logo-icon">🏎️</div>
-                  <h1>Car Show Manager</h1>
-                </div>
-                <div class="success-message">Your ${make} ${model} has been registered successfully!</div>
-                <div class="links">
-                  <a href="/user">Back to My Vehicles</a>
-                </div>
-              </div>
-            </body>
-            </html>
-          `);
+          res.send(successPage(`Your ${make} ${model} has been registered successfully!`, '/user', 'Back to My Vehicles'));
         }
       });
   });
@@ -921,51 +843,12 @@ module.exports = function (db, appConfig, upload) {
 
       // Process new image if uploaded
       if (req.file) {
-        try {
-          const randomName = crypto.randomBytes(16).toString('hex');
-          const filename = `${randomName}.jpg`;
-          const filepath = path.join(__dirname, '..', 'images', 'user_uploads', 'cars', filename);
-          imageUrl = `/images/user_uploads/cars/${filename}`;
-
-          await sharp(req.file.buffer)
-            .rotate()
-            .resize(800, 600, {
-              fit: 'cover',
-              position: 'center'
-            })
-            .jpeg({ quality: 85 })
-            .toFile(filepath);
-
-          // Delete old image if exists
-          if (car.image_url) {
-            const oldPath = path.join(__dirname, '..', car.image_url);
-            fs.unlink(oldPath, () => {});
-          }
-        } catch (error) {
-          res.send(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>Update Error</title>
-              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-              ${styles}
-            </head>
-            <body>
-              <div class="container">
-                <div class="logo">
-                  <div class="logo-icon">🏎️</div>
-                  <h1>Car Show Manager</h1>
-                </div>
-                <div class="error-message">Error processing image: ${error.message}</div>
-                <div class="links">
-                  <a href="/user/edit-vehicle/${carId}">Try Again</a>
-                </div>
-              </div>
-            </body>
-            </html>
-          `);
-          return;
+        const result = await handleVehiclePhotoUpload(req.file);
+        if (!result.success) {
+          return res.send(errorPage('Error processing image. Please try a different file.', `/user/edit-vehicle/${carId}`, 'Try Again'));
         }
+        deleteVehicleImage(car.image_url);
+        imageUrl = result.imageUrl;
       }
 
       // Update vehicle in database
@@ -973,51 +856,10 @@ module.exports = function (db, appConfig, upload) {
         [make, model, vehicle_id, class_id, description || null, imageUrl, carId, user.user_id],
         function(err) {
           if (err) {
-            res.send(`
-              <!DOCTYPE html>
-              <html>
-              <head>
-                <title>Update Error</title>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-                ${styles}
-              </head>
-              <body>
-                <div class="container">
-                  <div class="logo">
-                    <div class="logo-icon">🏎️</div>
-                    <h1>Car Show Manager</h1>
-                  </div>
-                  <div class="error-message">Error updating vehicle: ${err.message}</div>
-                  <div class="links">
-                    <a href="/user/edit-vehicle/${carId}">Try Again</a>
-                  </div>
-                </div>
-              </body>
-              </html>
-            `);
+            console.error('Vehicle update error:', err.message);
+            res.send(errorPage('Error updating vehicle. Please try again.', `/user/edit-vehicle/${carId}`, 'Try Again'));
           } else {
-            res.send(`
-              <!DOCTYPE html>
-              <html>
-              <head>
-                <title>Vehicle Updated</title>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-                ${styles}
-              </head>
-              <body>
-                <div class="container">
-                  <div class="logo">
-                    <div class="logo-icon">🏎️</div>
-                    <h1>Car Show Manager</h1>
-                  </div>
-                  <div class="success-message">Your ${make} ${model} has been updated successfully!</div>
-                  <div class="links">
-                    <a href="/user">Back to My Vehicles</a>
-                  </div>
-                </div>
-              </body>
-              </html>
-            `);
+            res.send(successPage(`Your ${make} ${model} has been updated successfully!`, '/user', 'Back to My Vehicles'));
           }
         });
     });
@@ -1038,57 +880,11 @@ module.exports = function (db, appConfig, upload) {
       // Delete the vehicle
       db.run('DELETE FROM cars WHERE car_id = ? AND user_id = ?', [carId, user.user_id], function(err) {
         if (err) {
-          res.send(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>Delete Error</title>
-              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-              ${styles}
-            </head>
-            <body>
-              <div class="container">
-                <div class="logo">
-                  <div class="logo-icon">🏎️</div>
-                  <h1>Car Show Manager</h1>
-                </div>
-                <div class="error-message">Error removing vehicle: ${err.message}</div>
-                <div class="links">
-                  <a href="/user">Back to My Vehicles</a>
-                </div>
-              </div>
-            </body>
-            </html>
-          `);
+          console.error('Vehicle deletion error:', err.message);
+          res.send(errorPage('Error removing vehicle. Please try again.', '/user', 'Back to My Vehicles'));
         } else {
-          // Delete the image file if exists
-          if (car.image_url) {
-            const imagePath = path.join(__dirname, '..', car.image_url);
-            fs.unlink(imagePath, () => {});
-          }
-
-          res.send(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-              <title>Vehicle Deleted</title>
-              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-              ${styles}
-            </head>
-            <body>
-              <div class="container">
-                <div class="logo">
-                  <div class="logo-icon">🏎️</div>
-                  <h1>Car Show Manager</h1>
-                </div>
-                <div class="success-message">Vehicle has been deleted.</div>
-                <div class="links">
-                  <a href="/user">Back to My Vehicles</a>
-                </div>
-              </div>
-            </body>
-            </html>
-          `);
+          deleteVehicleImage(car.image_url);
+          res.send(successPage('Vehicle has been deleted.', '/user', 'Back to My Vehicles'));
         }
       });
     });

@@ -5,6 +5,7 @@ const express = require('express');
 const https = require('https');
 const fs = require('fs');
 const cookieSession = require('cookie-session');
+const morgan = require('morgan');
 
 // Initialize database (creates tables on startup)
 const db = require('./db/database');
@@ -16,8 +17,9 @@ const app = express();
 const port = 3001;
 
 // ── Middleware ─────────────────────────────────────────────────────────
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(morgan('short'));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.json({ limit: '10kb' }));
 app.use(express.static('public'));
 app.use('/images', express.static('images'));
 

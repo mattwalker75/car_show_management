@@ -260,6 +260,7 @@ module.exports = function (db, appConfig, upload) {
       [username, name, email, phone, hashedPassword, role],
       function(err) {
         if (err) {
+          console.error('Error creating user:', err.message);
           res.send(`
             <!DOCTYPE html>
             <html>
@@ -274,7 +275,7 @@ module.exports = function (db, appConfig, upload) {
                   <div class="logo-icon">🏎️</div>
                   <h1>Car Show Manager</h1>
                 </div>
-                <div class="error-message">Error creating user: ${err.message}</div>
+                <div class="error-message">Error creating user. Please try again.</div>
                 <div class="links">
                   <a href="/admin/add-user">Try Again</a>
                 </div>
@@ -427,7 +428,8 @@ module.exports = function (db, appConfig, upload) {
         [username, name, email, phone, role, is_active, hashedPassword, userId],
         function(err) {
           if (err) {
-            res.send(`<div class="error-message">Error updating user: ${err.message}</div><a href="/admin">Back</a>`);
+            console.error('Error updating user (with password change):', err.message);
+            res.send(`<div class="error-message">Error updating user. Please try again.</div><a href="/admin">Back</a>`);
           } else {
             res.redirect('/admin');
           }
@@ -438,7 +440,8 @@ module.exports = function (db, appConfig, upload) {
         [username, name, email, phone, role, is_active, userId],
         function(err) {
           if (err) {
-            res.send(`<div class="error-message">Error updating user: ${err.message}</div><a href="/admin">Back</a>`);
+            console.error('Error updating user (without password change):', err.message);
+            res.send(`<div class="error-message">Error updating user. Please try again.</div><a href="/admin">Back</a>`);
           } else {
             res.redirect('/admin');
           }
@@ -981,6 +984,7 @@ module.exports = function (db, appConfig, upload) {
             fs.unlink(oldPath, () => {});
           }
         } catch (error) {
+          console.error('Error processing image:', error.message);
           res.send(`
             <!DOCTYPE html>
             <html>
@@ -995,7 +999,7 @@ module.exports = function (db, appConfig, upload) {
                   <div class="logo-icon">🏎️</div>
                   <h1>Car Show Manager</h1>
                 </div>
-                <div class="error-message">Error processing image: ${error.message}</div>
+                <div class="error-message">Error processing image. Please try a different file.</div>
                 <div class="links">
                   <a href="/admin/edit-vehicle/${carId}">Try Again</a>
                 </div>
@@ -1013,6 +1017,7 @@ module.exports = function (db, appConfig, upload) {
           [make, model, vehicle_id, class_id, voter_id || null, is_active, description || null, imageUrl, carId],
           function(err) {
             if (err) {
+              console.error('Error updating vehicle:', err.message);
               res.send(`
                 <!DOCTYPE html>
                 <html>
@@ -1027,7 +1032,7 @@ module.exports = function (db, appConfig, upload) {
                       <div class="logo-icon">🏎️</div>
                       <h1>Car Show Manager</h1>
                     </div>
-                    <div class="error-message">Error updating vehicle: ${err.message}</div>
+                    <div class="error-message">Error updating vehicle. Please try again.</div>
                     <div class="links">
                       <a href="/admin/edit-vehicle/${carId}">Try Again</a>
                     </div>
