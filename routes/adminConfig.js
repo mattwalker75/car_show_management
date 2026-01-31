@@ -1,0 +1,1905 @@
+// routes/adminConfig.js - Admin configuration routes: vehicle types, classes,
+// judge categories, judge questions, specialty votes config, and app config
+const express = require('express');
+const router = express.Router();
+
+module.exports = function (db, appConfig, upload, saveConfig) {
+  const { requireAdmin } = require('../middleware/auth');
+  const { errorPage, successPage } = require('../views/layout');
+  const { getAvatarContent, adminNav } = require('../views/components');
+
+  const styles = '<link rel="stylesheet" href="/css/styles.css">';
+  const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script>';
+
+  // ==========================================
+  // VEHICLE CONFIG & TYPES
+  // ==========================================
+
+  // Vehicle config hub page (combined vehicle types + classes)
+  router.get('/admin/vehicle-config', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    // Get vehicle types
+    db.all('SELECT * FROM vehicles ORDER BY vehicle_name', (err, vehicleTypes) => {
+      if (err) vehicleTypes = [];
+
+      // Get classes with vehicle names
+      db.all(`SELECT c.*, v.vehicle_name
+              FROM classes c
+              LEFT JOIN vehicles v ON c.vehicle_id = v.vehicle_id
+              ORDER BY v.vehicle_name, c.class_name`, (err, classes) => {
+        if (err) classes = [];
+
+        // Check which vehicle types have classes (for delete validation)
+        db.all('SELECT DISTINCT vehicle_id FROM classes', (err, usedVehicleIds) => {
+          const usedVehicleSet = new Set((usedVehicleIds || []).map(r => r.vehicle_id));
+
+          // Check which classes have cars
+          db.all('SELECT DISTINCT class_id FROM cars', (err, usedClassIds) => {
+            const usedClassSet = new Set((usedClassIds || []).map(r => r.class_id));
+
+            const vehicleRows = vehicleTypes.map(v => {
+              const hasClasses = usedVehicleSet.has(v.vehicle_id);
+              return `
+                <tr>
+                  <td>${v.vehicle_name}</td>
+                  <td><span class="status-badge ${v.is_active ? 'active' : 'inactive'}">${v.is_active ? 'Active' : 'Inactive'}</span></td>
+                  <td>
+                    <a href="/admin/edit-vehicle-type/${v.vehicle_id}" class="action-btn edit">Edit</a>
+                    ${!hasClasses ? `<a href="#" onclick="confirmDeleteVehicleType(${v.vehicle_id}, '${v.vehicle_name.replace(/'/g, "\\'")}'); return false;" class="action-btn" style="background:#e74c3c;">Delete</a>` : ''}
+                  </td>
+                </tr>
+              `;
+            }).join('');
+
+            const classRows = classes.map(c => {
+              const hasCars = usedClassSet.has(c.class_id);
+              return `
+                <tr>
+                  <td>${c.class_name}</td>
+                  <td>${c.vehicle_name || 'N/A'}</td>
+                  <td><span class="status-badge ${c.is_active ? 'active' : 'inactive'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
+                  <td>
+                    <a href="/admin/edit-class/${c.class_id}" class="action-btn edit">Edit</a>
+                    ${!hasCars ? `<a href="#" onclick="confirmDeleteClass(${c.class_id}, '${c.class_name.replace(/'/g, "\\'")}'); return false;" class="action-btn" style="background:#e74c3c;">Delete</a>` : ''}
+                  </td>
+                </tr>
+              `;
+            }).join('');
+
+            const vehicleOptionsHtml = vehicleTypes.filter(v => v.is_active).map(v =>
+              `<option value="${v.vehicle_id}">${v.vehicle_name}</option>`
+            ).join('');
+
+            res.send(`
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>Vehicle Config - Admin</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                ${styles}
+                ${adminStyles}
+              </head>
+              <body>
+                <div class="container dashboard-container">
+                  <div class="dashboard-header">
+                    <h1>🏎️ Admin Dashboard</h1>
+                    <div class="user-info">
+                      <div class="user-avatar">${avatarContent}</div>
+                      <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+                    </div>
+                  </div>
+
+                  <div class="admin-nav">
+                    <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+                    <a href="/admin">Users</a>
+                    <a href="/admin/vehicles">Cars</a>
+                    <a href="/admin/judge-status">Judge Status</a>
+                    <a href="/admin/vote-status">Vote Status</a>
+                    <a href="/admin/reports">Reports</a>
+                    <a href="/user/vote">Vote Here!</a>
+                  </div>
+
+                  <h3 class="section-title">Vehicle Types</h3>
+                  <p style="color:#666;margin-bottom:15px;">Define types like Car, Truck, Motorcycle, etc.</p>
+
+                  <form method="POST" action="/admin/add-vehicle-type" style="margin-bottom:20px;">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                      <input type="text" name="vehicle_name" required placeholder="New vehicle type name" style="flex:1;min-width:200px;">
+                      <button type="submit" style="white-space:nowrap;">Add Type</button>
+                    </div>
+                  </form>
+
+                  <div class="table-wrapper">
+                    <table class="user-table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${vehicleRows || '<tr><td colspan="3" style="text-align:center;color:#666;">No vehicle types defined yet.</td></tr>'}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <hr style="margin:30px 0;border:none;border-top:1px solid #ddd;">
+
+                  <h3 class="section-title">Vehicle Classes</h3>
+                  <p style="color:#666;margin-bottom:15px;">Define classes like Street Rod, Muscle Car, Custom, etc.</p>
+
+                  <form method="POST" action="/admin/add-class" style="margin-bottom:20px;">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                      <select name="vehicle_id" required style="min-width:150px;">
+                        <option value="">Select Type...</option>
+                        ${vehicleOptionsHtml}
+                      </select>
+                      <input type="text" name="class_name" required placeholder="New class name" style="flex:1;min-width:200px;">
+                      <button type="submit" style="white-space:nowrap;">Add Class</button>
+                    </div>
+                  </form>
+
+                  <div class="table-wrapper">
+                    <table class="user-table">
+                      <thead>
+                        <tr>
+                          <th>Class Name</th>
+                          <th>Vehicle Type</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${classRows || '<tr><td colspan="4" style="text-align:center;color:#666;">No classes defined yet.</td></tr>'}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <script>
+                  function confirmDeleteVehicleType(id, name) {
+                    if (confirm('Are you sure you want to delete the vehicle type "' + name + '"?\\n\\nThis action cannot be undone.')) {
+                      window.location.href = '/admin/delete-vehicle-type/' + id;
+                    }
+                  }
+
+                  function confirmDeleteClass(id, name) {
+                    if (confirm('Are you sure you want to delete the class "' + name + '"?\\n\\nThis action cannot be undone.')) {
+                      window.location.href = '/admin/delete-class/' + id;
+                    }
+                  }
+                </script>
+              </body>
+              </html>
+            `);
+          });
+        });
+      });
+    });
+  });
+
+  // Vehicle types management page (legacy - NOT USED, redirects to vehicle-config)
+  router.get('/admin/vehicle-types', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    db.all('SELECT * FROM vehicles ORDER BY vehicle_name', (err, vehicleTypes) => {
+      if (err) vehicleTypes = [];
+
+      const rows = vehicleTypes.map(v => `
+        <tr>
+          <td>${v.vehicle_name}</td>
+          <td><span class="status-badge ${v.is_active ? 'active' : 'inactive'}">${v.is_active ? 'Active' : 'Inactive'}</span></td>
+          <td>
+            <a href="/admin/edit-vehicle-type/${v.vehicle_id}" class="action-btn edit">Edit</a>
+          </td>
+        </tr>
+      `).join('');
+
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Vehicle Types - Admin</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          ${styles}
+          ${adminStyles}
+        </head>
+        <body>
+          <div class="container dashboard-container">
+            <div class="dashboard-header">
+              <h1>🏎️ Admin Dashboard</h1>
+              <div class="user-info">
+                <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+              </div>
+            </div>
+
+            <div class="admin-nav">
+              <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+              <a href="/admin">Users</a>
+              <a href="/admin/vehicles">Cars</a>
+              <a href="/admin/judge-status">Judge Status</a>
+              <a href="/admin/vote-status">Vote Status</a>
+              <a href="/admin/reports">Reports</a>
+                <a href="/user/vote">Vote Here!</a>
+            </div>
+
+            <h3 class="section-title">Vehicle Types</h3>
+            <p style="color:#666;margin-bottom:15px;">Define types like Car, Truck, Motorcycle, etc.</p>
+
+            <form method="POST" action="/admin/add-vehicle-type" style="margin-bottom:20px;">
+              <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <input type="text" name="vehicle_name" required placeholder="New vehicle type name" style="flex:1;min-width:200px;">
+                <button type="submit" style="white-space:nowrap;">Add Type</button>
+              </div>
+            </form>
+
+            <div class="table-wrapper">
+              <table class="user-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rows || '<tr><td colspan="3" style="text-align:center;color:#666;">No vehicle types defined yet.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </body>
+        </html>
+      `);
+    });
+  });
+
+  // Add vehicle type
+  router.post('/admin/add-vehicle-type', requireAdmin, (req, res) => {
+    const { vehicle_name } = req.body;
+    db.run('INSERT INTO vehicles (vehicle_name) VALUES (?)', [vehicle_name], (err) => {
+      res.redirect('/admin/vehicle-config');
+    });
+  });
+
+  // Delete vehicle type (only if no classes use it)
+  router.get('/admin/delete-vehicle-type/:id', requireAdmin, (req, res) => {
+    const vehicleId = req.params.id;
+
+    // Check if any classes use this vehicle type
+    db.get('SELECT COUNT(*) as count FROM classes WHERE vehicle_id = ?', [vehicleId], (err, row) => {
+      if (err || row.count > 0) {
+        // Has classes, cannot delete
+        res.redirect('/admin/vehicle-config');
+        return;
+      }
+
+      // Safe to delete
+      db.run('DELETE FROM vehicles WHERE vehicle_id = ?', [vehicleId], (err) => {
+        res.redirect('/admin/vehicle-config');
+      });
+    });
+  });
+
+  // Edit vehicle type page
+  router.get('/admin/edit-vehicle-type/:id', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const vehicleId = req.params.id;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    db.get('SELECT * FROM vehicles WHERE vehicle_id = ?', [vehicleId], (err, vehicle) => {
+      if (err || !vehicle) {
+        res.redirect('/admin/vehicle-config');
+        return;
+      }
+
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Edit Vehicle Type - Admin</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          ${styles}
+          ${adminStyles}
+        </head>
+        <body>
+          <div class="container dashboard-container">
+            <div class="dashboard-header">
+              <h1>🏎️ Admin Dashboard</h1>
+              <div class="user-info">
+                <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+              </div>
+            </div>
+
+            <div class="admin-nav">
+              <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+              <a href="/admin">Users</a>
+              <a href="/admin/vehicles">Cars</a>
+              <a href="/admin/judge-status">Judge Status</a>
+              <a href="/admin/vote-status">Vote Status</a>
+              <a href="/admin/reports">Reports</a>
+                <a href="/user/vote">Vote Here!</a>
+            </div>
+
+            <h3 class="section-title">Edit Vehicle Type</h3>
+
+            <form method="POST" action="/admin/edit-vehicle-type/${vehicle.vehicle_id}">
+              <div class="profile-card">
+                <div class="form-group">
+                  <label>Name</label>
+                  <input type="text" name="vehicle_name" required value="${vehicle.vehicle_name}">
+                </div>
+                <div class="form-group">
+                  <label>Status</label>
+                  <select name="is_active">
+                    <option value="1" ${vehicle.is_active ? 'selected' : ''}>Active</option>
+                    <option value="0" ${!vehicle.is_active ? 'selected' : ''}>Inactive</option>
+                  </select>
+                </div>
+                <button type="submit">Update Vehicle Type</button>
+              </div>
+            </form>
+
+            <div class="links" style="margin-top:20px;">
+              <a href="/admin/vehicle-config">Back to Vehicle Config</a>
+            </div>
+          </div>
+        </body>
+        </html>
+      `);
+    });
+  });
+
+  // Update vehicle type
+  router.post('/admin/edit-vehicle-type/:id', requireAdmin, (req, res) => {
+    const vehicleId = req.params.id;
+    const { vehicle_name, is_active } = req.body;
+    db.run('UPDATE vehicles SET vehicle_name = ?, is_active = ? WHERE vehicle_id = ?',
+      [vehicle_name, is_active, vehicleId], (err) => {
+      res.redirect('/admin/vehicle-config');
+    });
+  });
+
+  // ==========================================
+  // CLASSES
+  // ==========================================
+
+  // Classes management page (legacy - NOT USED, may redirect)
+  router.get('/admin/classes', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    db.all('SELECT vehicle_id, vehicle_name FROM vehicles WHERE is_active = 1 ORDER BY vehicle_name', (err, vehicleTypes) => {
+      if (err) vehicleTypes = [];
+
+      db.all(`SELECT c.*, v.vehicle_name
+              FROM classes c
+              LEFT JOIN vehicles v ON c.vehicle_id = v.vehicle_id
+              ORDER BY v.vehicle_name, c.class_name`, (err, classes) => {
+        if (err) classes = [];
+
+        const rows = classes.map(c => `
+          <tr>
+            <td>${c.class_name}</td>
+            <td>${c.vehicle_name || 'N/A'}</td>
+            <td><span class="status-badge ${c.is_active ? 'active' : 'inactive'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
+            <td>
+              <a href="/admin/edit-class/${c.class_id}" class="action-btn edit">Edit</a>
+            </td>
+          </tr>
+        `).join('');
+
+        const vehicleOptionsHtml = vehicleTypes.map(v =>
+          `<option value="${v.vehicle_id}">${v.vehicle_name}</option>`
+        ).join('');
+
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Classes - Admin</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            ${styles}
+            ${adminStyles}
+          </head>
+          <body>
+            <div class="container dashboard-container">
+              <div class="dashboard-header">
+                <h1>🏎️ Admin Dashboard</h1>
+                <div class="user-info">
+                  <div class="user-avatar">${avatarContent}</div>
+                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+                </div>
+              </div>
+
+              <div class="admin-nav">
+                <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+                <a href="/admin">Users</a>
+                <a href="/admin/vehicles">Cars</a>
+                <a href="/admin/judge-status">Judge Status</a>
+                <a href="/admin/vote-status">Vote Status</a>
+                <a href="/admin/reports">Reports</a>
+                <a href="/user/vote">Vote Here!</a>
+              </div>
+
+              <h3 class="section-title">Vehicle Classes</h3>
+              <p style="color:#666;margin-bottom:15px;">Define classes like Street Rod, Muscle Car, Custom, etc.</p>
+
+              <form method="POST" action="/admin/add-class" style="margin-bottom:20px;">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                  <select name="vehicle_id" required style="min-width:150px;">
+                    <option value="">Select Type...</option>
+                    ${vehicleOptionsHtml}
+                  </select>
+                  <input type="text" name="class_name" required placeholder="New class name" style="flex:1;min-width:200px;">
+                  <button type="submit" style="white-space:nowrap;">Add Class</button>
+                </div>
+              </form>
+
+              <div class="table-wrapper">
+                <table class="user-table">
+                  <thead>
+                    <tr>
+                      <th>Class Name</th>
+                      <th>Vehicle Type</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rows || '<tr><td colspan="4" style="text-align:center;color:#666;">No classes defined yet.</td></tr>'}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+      });
+    });
+  });
+
+  // Add class
+  router.post('/admin/add-class', requireAdmin, (req, res) => {
+    const { vehicle_id, class_name } = req.body;
+    db.run('INSERT INTO classes (vehicle_id, class_name) VALUES (?, ?)', [vehicle_id, class_name], (err) => {
+      res.redirect('/admin/vehicle-config');
+    });
+  });
+
+  // Delete class (only if no cars use it)
+  router.get('/admin/delete-class/:id', requireAdmin, (req, res) => {
+    const classId = req.params.id;
+
+    // Check if any cars use this class
+    db.get('SELECT COUNT(*) as count FROM cars WHERE class_id = ?', [classId], (err, row) => {
+      if (err || row.count > 0) {
+        // Has cars, cannot delete
+        res.redirect('/admin/vehicle-config');
+        return;
+      }
+
+      // Safe to delete
+      db.run('DELETE FROM classes WHERE class_id = ?', [classId], (err) => {
+        res.redirect('/admin/vehicle-config');
+      });
+    });
+  });
+
+  // Edit class page
+  router.get('/admin/edit-class/:id', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const classId = req.params.id;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    db.get('SELECT * FROM classes WHERE class_id = ?', [classId], (err, classItem) => {
+      if (err || !classItem) {
+        res.redirect('/admin/vehicle-config');
+        return;
+      }
+
+      db.all('SELECT vehicle_id, vehicle_name FROM vehicles WHERE is_active = 1 ORDER BY vehicle_name', (err, vehicleTypes) => {
+        if (err) vehicleTypes = [];
+
+        const vehicleOptionsHtml = vehicleTypes.map(v =>
+          `<option value="${v.vehicle_id}" ${classItem.vehicle_id == v.vehicle_id ? 'selected' : ''}>${v.vehicle_name}</option>`
+        ).join('');
+
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Edit Class - Admin</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            ${styles}
+            ${adminStyles}
+          </head>
+          <body>
+            <div class="container dashboard-container">
+              <div class="dashboard-header">
+                <h1>🏎️ Admin Dashboard</h1>
+                <div class="user-info">
+                  <div class="user-avatar">${avatarContent}</div>
+                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+                </div>
+              </div>
+
+              <div class="admin-nav">
+                <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+                <a href="/admin">Users</a>
+                <a href="/admin/vehicles">Cars</a>
+                <a href="/admin/judge-status">Judge Status</a>
+                <a href="/admin/vote-status">Vote Status</a>
+                <a href="/admin/reports">Reports</a>
+                <a href="/user/vote">Vote Here!</a>
+              </div>
+
+              <h3 class="section-title">Edit Class</h3>
+
+              <form method="POST" action="/admin/edit-class/${classItem.class_id}">
+                <div class="profile-card">
+                  <div class="form-group">
+                    <label>Vehicle Type</label>
+                    <select name="vehicle_id" required>
+                      ${vehicleOptionsHtml}
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Class Name</label>
+                    <input type="text" name="class_name" required value="${classItem.class_name}">
+                  </div>
+                  <div class="form-group">
+                    <label>Status</label>
+                    <select name="is_active">
+                      <option value="1" ${classItem.is_active ? 'selected' : ''}>Active</option>
+                      <option value="0" ${!classItem.is_active ? 'selected' : ''}>Inactive</option>
+                    </select>
+                  </div>
+                  <button type="submit">Update Class</button>
+                </div>
+              </form>
+
+              <div class="links" style="margin-top:20px;">
+                <a href="/admin/vehicle-config">Back to Vehicle Config</a>
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+      });
+    });
+  });
+
+  // Update class
+  router.post('/admin/edit-class/:id', requireAdmin, (req, res) => {
+    const classId = req.params.id;
+    const { vehicle_id, class_name, is_active } = req.body;
+    db.run('UPDATE classes SET vehicle_id = ?, class_name = ?, is_active = ? WHERE class_id = ?',
+      [vehicle_id, class_name, is_active, classId], (err) => {
+      res.redirect('/admin/vehicle-config');
+    });
+  });
+
+  // ==========================================
+  // JUDGE CATEGORIES
+  // ==========================================
+
+  // Judge categories management page
+  router.get('/admin/categories', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    db.all('SELECT vehicle_id, vehicle_name FROM vehicles WHERE is_active = 1 ORDER BY vehicle_name', (err, vehicleTypes) => {
+      if (err) vehicleTypes = [];
+
+      db.all(`SELECT jc.*, v.vehicle_name,
+                     (SELECT COUNT(*) FROM judge_questions jq WHERE jq.judge_catagory_id = jc.judge_catagory_id) as question_count
+              FROM judge_catagories jc
+              LEFT JOIN vehicles v ON jc.vehicle_id = v.vehicle_id
+              ORDER BY v.vehicle_name, jc.display_order, jc.catagory_name`, (err, categories) => {
+        if (err) categories = [];
+
+        const rows = categories.map(c => `
+          <tr style="border-bottom:none;">
+            <td style="border-bottom:none;">${c.catagory_name}</td>
+            <td style="border-bottom:none;">${c.vehicle_name || 'N/A'}</td>
+            <td style="border-bottom:none;">${c.display_order}</td>
+            <td style="border-bottom:none;">${c.question_count}</td>
+            <td style="border-bottom:none;"><span class="status-badge ${c.is_active ? 'active' : 'inactive'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
+          </tr>
+          <tr>
+            <td colspan="5" style="border-top:none;padding-top:0;text-align:center;">
+              <a href="/admin/edit-category/${c.judge_catagory_id}" class="action-btn edit">Edit</a>
+              <a href="/admin/category-questions/${c.judge_catagory_id}" class="action-btn" style="background:#3498db;">Questions</a>
+              <a href="#" onclick="confirmDeleteCategory(${c.judge_catagory_id}, '${c.catagory_name.replace(/'/g, "\\'")}'); return false;" class="action-btn" style="background:#e74c3c;">Delete</a>
+            </td>
+          </tr>
+        `).join('');
+
+        const vehicleOptionsHtml = vehicleTypes.map(v =>
+          `<option value="${v.vehicle_id}">${v.vehicle_name}</option>`
+        ).join('');
+
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Judging Categories - Admin</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            ${styles}
+            ${adminStyles}
+          </head>
+          <body>
+            <div class="container dashboard-container">
+              <div class="dashboard-header">
+                <h1>🏎️ Admin Dashboard</h1>
+                <div class="user-info">
+                  <div class="user-avatar">${avatarContent}</div>
+                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+                </div>
+              </div>
+
+              <div class="admin-nav">
+                <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+                <a href="/admin">Users</a>
+                <a href="/admin/vehicles">Cars</a>
+                <a href="/admin/judge-status">Judge Status</a>
+                <a href="/admin/vote-status">Vote Status</a>
+                <a href="/admin/reports">Reports</a>
+                <a href="/user/vote">Vote Here!</a>
+              </div>
+
+              <h3 class="section-title">Judging Categories</h3>
+              <p style="color:#666;margin-bottom:15px;">Define judging categories like Engine, Paint, Interior, etc.</p>
+
+              <form method="POST" action="/admin/add-category" style="margin-bottom:20px;">
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                  <select name="vehicle_id" required style="min-width:150px;">
+                    <option value="">Select Type...</option>
+                    ${vehicleOptionsHtml}
+                  </select>
+                  <input type="text" name="catagory_name" required placeholder="Category name" style="flex:1;min-width:150px;">
+                  <input type="number" name="display_order" value="0" placeholder="Order" style="width:80px;">
+                  <button type="submit" style="white-space:nowrap;">Add Category</button>
+                </div>
+              </form>
+
+              <div class="table-wrapper">
+                <table class="user-table">
+                  <thead>
+                    <tr>
+                      <th>Category Name</th>
+                      <th>Vehicle Type</th>
+                      <th>Order</th>
+                      <th>Questions</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rows || '<tr><td colspan="5" style="text-align:center;color:#666;">No categories defined yet.</td></tr>'}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <script>
+              function confirmDeleteCategory(id, name) {
+                if (confirm('Are you sure you want to delete the category "' + name + '"?\\n\\nThis will also delete ALL questions in this category.\\n\\nThis action cannot be undone.')) {
+                  window.location.href = '/admin/delete-category/' + id;
+                }
+              }
+            </script>
+          </body>
+          </html>
+        `);
+      });
+    });
+  });
+
+  // Add category
+  router.post('/admin/add-category', requireAdmin, (req, res) => {
+    const { vehicle_id, catagory_name, display_order } = req.body;
+    db.run('INSERT INTO judge_catagories (vehicle_id, catagory_name, display_order) VALUES (?, ?, ?)',
+      [vehicle_id, catagory_name, display_order || 0], (err) => {
+      res.redirect('/admin/categories');
+    });
+  });
+
+  // Delete category (also deletes all questions in this category)
+  router.get('/admin/delete-category/:id', requireAdmin, (req, res) => {
+    const categoryId = req.params.id;
+
+    // First delete all questions for this category
+    db.run('DELETE FROM judge_questions WHERE judge_catagory_id = ?', [categoryId], (err) => {
+      // Then delete the category itself
+      db.run('DELETE FROM judge_catagories WHERE judge_catagory_id = ?', [categoryId], (err) => {
+        res.redirect('/admin/categories');
+      });
+    });
+  });
+
+  // Edit category page
+  router.get('/admin/edit-category/:id', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const categoryId = req.params.id;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    db.get('SELECT * FROM judge_catagories WHERE judge_catagory_id = ?', [categoryId], (err, category) => {
+      if (err || !category) {
+        res.redirect('/admin/categories');
+        return;
+      }
+
+      db.all('SELECT vehicle_id, vehicle_name FROM vehicles WHERE is_active = 1 ORDER BY vehicle_name', (err, vehicleTypes) => {
+        if (err) vehicleTypes = [];
+
+        const vehicleOptionsHtml = vehicleTypes.map(v =>
+          `<option value="${v.vehicle_id}" ${category.vehicle_id == v.vehicle_id ? 'selected' : ''}>${v.vehicle_name}</option>`
+        ).join('');
+
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Edit Category - Admin</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            ${styles}
+            ${adminStyles}
+          </head>
+          <body>
+            <div class="container dashboard-container">
+              <div class="dashboard-header">
+                <h1>🏎️ Admin Dashboard</h1>
+                <div class="user-info">
+                  <div class="user-avatar">${avatarContent}</div>
+                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+                </div>
+              </div>
+
+              <div class="admin-nav">
+                <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+                <a href="/admin">Users</a>
+                <a href="/admin/vehicles">Cars</a>
+                <a href="/admin/judge-status">Judge Status</a>
+                <a href="/admin/vote-status">Vote Status</a>
+                <a href="/admin/reports">Reports</a>
+                <a href="/user/vote">Vote Here!</a>
+              </div>
+
+              <h3 class="section-title">Edit Category</h3>
+
+              <form method="POST" action="/admin/edit-category/${category.judge_catagory_id}">
+                <div class="profile-card">
+                  <div class="form-group">
+                    <label>Vehicle Type</label>
+                    <select name="vehicle_id" required>
+                      ${vehicleOptionsHtml}
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Category Name</label>
+                    <input type="text" name="catagory_name" required value="${category.catagory_name}">
+                  </div>
+                  <div class="form-group">
+                    <label>Display Order</label>
+                    <input type="number" name="display_order" value="${category.display_order}">
+                  </div>
+                  <div class="form-group">
+                    <label>Status</label>
+                    <select name="is_active">
+                      <option value="1" ${category.is_active ? 'selected' : ''}>Active</option>
+                      <option value="0" ${!category.is_active ? 'selected' : ''}>Inactive</option>
+                    </select>
+                  </div>
+                  <button type="submit">Update Category</button>
+                </div>
+              </form>
+
+              <div class="links" style="margin-top:20px;">
+                <a href="/admin/categories">Back to Judge Config</a>
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+      });
+    });
+  });
+
+  // Update category
+  router.post('/admin/edit-category/:id', requireAdmin, (req, res) => {
+    const categoryId = req.params.id;
+    const { vehicle_id, catagory_name, display_order, is_active } = req.body;
+    db.run('UPDATE judge_catagories SET vehicle_id = ?, catagory_name = ?, display_order = ?, is_active = ? WHERE judge_catagory_id = ?',
+      [vehicle_id, catagory_name, display_order || 0, is_active, categoryId], (err) => {
+      res.redirect('/admin/categories');
+    });
+  });
+
+  // ==========================================
+  // JUDGE QUESTIONS
+  // ==========================================
+
+  // Category questions page
+  router.get('/admin/category-questions/:id', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const categoryId = req.params.id;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    db.get(`SELECT jc.*, v.vehicle_name
+            FROM judge_catagories jc
+            LEFT JOIN vehicles v ON jc.vehicle_id = v.vehicle_id
+            WHERE jc.judge_catagory_id = ?`, [categoryId], (err, category) => {
+      if (err || !category) {
+        res.redirect('/admin/categories');
+        return;
+      }
+
+      db.all(`SELECT * FROM judge_questions WHERE judge_catagory_id = ? ORDER BY display_order, question`,
+        [categoryId], (err, questions) => {
+        if (err) questions = [];
+
+        const rows = questions.map(q => `
+          <tr>
+            <td>${q.question}</td>
+            <td>${q.min_score} - ${q.max_score}</td>
+            <td>${q.display_order}</td>
+            <td><span class="status-badge ${q.is_active ? 'active' : 'inactive'}">${q.is_active ? 'Active' : 'Inactive'}</span></td>
+            <td>
+              <a href="/admin/edit-question/${q.judge_question_id}" class="action-btn edit">Edit</a>
+              <a href="#" onclick="confirmDeleteQuestion(${q.judge_question_id}, '${q.question.replace(/'/g, "\\'")}', ${categoryId}); return false;" class="action-btn" style="background:#e74c3c;">Delete</a>
+            </td>
+          </tr>
+        `).join('');
+
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Questions: ${category.catagory_name} - Admin</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            ${styles}
+            ${adminStyles}
+          </head>
+          <body>
+            <div class="container dashboard-container">
+              <div class="dashboard-header">
+                <h1>🏎️ Admin Dashboard</h1>
+                <div class="user-info">
+                  <div class="user-avatar">${avatarContent}</div>
+                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+                </div>
+              </div>
+
+              <div class="admin-nav">
+                <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+                <a href="/admin">Users</a>
+                <a href="/admin/vehicles">Cars</a>
+                <a href="/admin/judge-status">Judge Status</a>
+                <a href="/admin/vote-status">Vote Status</a>
+                <a href="/admin/reports">Reports</a>
+                <a href="/user/vote">Vote Here!</a>
+              </div>
+
+              <h3 class="section-title">Questions: ${category.catagory_name}</h3>
+              <p style="color:#666;margin-bottom:15px;">Vehicle Type: ${category.vehicle_name}</p>
+
+              <form method="POST" action="/admin/add-question/${category.judge_catagory_id}" style="margin-bottom:20px;">
+                <div class="profile-card">
+                  <div class="form-group">
+                    <label>Question</label>
+                    <input type="text" name="question" required placeholder="e.g., Condition of paint finish">
+                  </div>
+                  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <div class="form-group" style="flex:1;min-width:100px;">
+                      <label>Min Score</label>
+                      <input type="number" name="min_score" value="0" required>
+                    </div>
+                    <div class="form-group" style="flex:1;min-width:100px;">
+                      <label>Max Score</label>
+                      <input type="number" name="max_score" value="10" required>
+                    </div>
+                    <div class="form-group" style="flex:1;min-width:100px;">
+                      <label>Order</label>
+                      <input type="number" name="display_order" value="0">
+                    </div>
+                  </div>
+                  <button type="submit">Add Question</button>
+                </div>
+              </form>
+
+              <div class="table-wrapper">
+                <table class="user-table">
+                  <thead>
+                    <tr>
+                      <th>Question</th>
+                      <th>Score Range</th>
+                      <th>Order</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${rows || '<tr><td colspan="5" style="text-align:center;color:#666;">No questions defined yet.</td></tr>'}
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="links" style="margin-top:20px;">
+                <a href="/admin/categories">Back to Judge Config</a>
+              </div>
+            </div>
+
+            <script>
+              function confirmDeleteQuestion(id, name, categoryId) {
+                if (confirm('Are you sure you want to delete this question?\\n\\n"' + name + '"\\n\\nThis action cannot be undone.')) {
+                  window.location.href = '/admin/delete-question/' + id + '?categoryId=' + categoryId;
+                }
+              }
+            </script>
+          </body>
+          </html>
+        `);
+      });
+    });
+  });
+
+  // Add question
+  router.post('/admin/add-question/:categoryId', requireAdmin, (req, res) => {
+    const categoryId = req.params.categoryId;
+    const { question, min_score, max_score, display_order } = req.body;
+
+    // Get the vehicle_id from the category
+    db.get('SELECT vehicle_id FROM judge_catagories WHERE judge_catagory_id = ?', [categoryId], (err, category) => {
+      if (err || !category) {
+        res.redirect('/admin/categories');
+        return;
+      }
+
+      db.run('INSERT INTO judge_questions (vehicle_id, judge_catagory_id, question, min_score, max_score, display_order) VALUES (?, ?, ?, ?, ?, ?)',
+        [category.vehicle_id, categoryId, question, min_score, max_score, display_order || 0], (err) => {
+        res.redirect(`/admin/category-questions/${categoryId}`);
+      });
+    });
+  });
+
+  // Delete question
+  router.get('/admin/delete-question/:id', requireAdmin, (req, res) => {
+    const questionId = req.params.id;
+    const categoryId = req.query.categoryId;
+
+    db.run('DELETE FROM judge_questions WHERE judge_question_id = ?', [questionId], (err) => {
+      res.redirect(`/admin/category-questions/${categoryId}`);
+    });
+  });
+
+  // Edit question page
+  router.get('/admin/edit-question/:id', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const questionId = req.params.id;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    db.get(`SELECT jq.*, jc.catagory_name
+            FROM judge_questions jq
+            LEFT JOIN judge_catagories jc ON jq.judge_catagory_id = jc.judge_catagory_id
+            WHERE jq.judge_question_id = ?`, [questionId], (err, question) => {
+      if (err || !question) {
+        res.redirect('/admin/categories');
+        return;
+      }
+
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Edit Question - Admin</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          ${styles}
+          ${adminStyles}
+        </head>
+        <body>
+          <div class="container dashboard-container">
+            <div class="dashboard-header">
+              <h1>🏎️ Admin Dashboard</h1>
+              <div class="user-info">
+                <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+              </div>
+            </div>
+
+            <div class="admin-nav">
+              <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+              <a href="/admin">Users</a>
+              <a href="/admin/vehicles">Cars</a>
+              <a href="/admin/judge-status">Judge Status</a>
+              <a href="/admin/vote-status">Vote Status</a>
+              <a href="/admin/reports">Reports</a>
+                <a href="/user/vote">Vote Here!</a>
+            </div>
+
+            <h3 class="section-title">Edit Question</h3>
+            <p style="color:#666;margin-bottom:15px;">Category: ${question.catagory_name}</p>
+
+            <form method="POST" action="/admin/edit-question/${question.judge_question_id}">
+              <input type="hidden" name="judge_catagory_id" value="${question.judge_catagory_id}">
+              <div class="profile-card">
+                <div class="form-group">
+                  <label>Question</label>
+                  <input type="text" name="question" required value="${question.question}">
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                  <div class="form-group" style="flex:1;min-width:100px;">
+                    <label>Min Score</label>
+                    <input type="number" name="min_score" value="${question.min_score}" required>
+                  </div>
+                  <div class="form-group" style="flex:1;min-width:100px;">
+                    <label>Max Score</label>
+                    <input type="number" name="max_score" value="${question.max_score}" required>
+                  </div>
+                  <div class="form-group" style="flex:1;min-width:100px;">
+                    <label>Order</label>
+                    <input type="number" name="display_order" value="${question.display_order}">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Status</label>
+                  <select name="is_active">
+                    <option value="1" ${question.is_active ? 'selected' : ''}>Active</option>
+                    <option value="0" ${!question.is_active ? 'selected' : ''}>Inactive</option>
+                  </select>
+                </div>
+                <button type="submit">Update Question</button>
+              </div>
+            </form>
+
+            <div class="links" style="margin-top:20px;">
+              <a href="/admin/category-questions/${question.judge_catagory_id}">Back to Questions</a>
+            </div>
+          </div>
+        </body>
+        </html>
+      `);
+    });
+  });
+
+  // Update question
+  router.post('/admin/edit-question/:id', requireAdmin, (req, res) => {
+    const questionId = req.params.id;
+    const { judge_catagory_id, question, min_score, max_score, display_order, is_active } = req.body;
+    db.run('UPDATE judge_questions SET question = ?, min_score = ?, max_score = ?, display_order = ?, is_active = ? WHERE judge_question_id = ?',
+      [question, min_score, max_score, display_order || 0, is_active, questionId], (err) => {
+      res.redirect(`/admin/category-questions/${judge_catagory_id}`);
+    });
+  });
+
+  // ==========================================
+  // SPECIALTY VOTES CONFIG
+  // ==========================================
+
+  // Specialty votes management page
+  router.get('/admin/specialty-votes', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    // Get vehicle types and classes for the form
+    db.all('SELECT vehicle_id, vehicle_name FROM vehicles WHERE is_active = 1 ORDER BY vehicle_name', (err, vehicleTypes) => {
+      if (err) vehicleTypes = [];
+      db.all('SELECT class_id, class_name, vehicle_id FROM classes WHERE is_active = 1 ORDER BY class_name', (err, classes) => {
+        if (err) classes = [];
+
+    const vehicleOptionsHtml = vehicleTypes.map(v =>
+      `<option value="${v.vehicle_id}">${v.vehicle_name}</option>`
+    ).join('');
+    const classesJson = JSON.stringify(classes);
+
+    // Get specialty votes with vote counts
+    db.all(`
+      SELECT sv.*,
+             (SELECT COUNT(*) FROM specialty_vote_results WHERE specialty_vote_id = sv.specialty_vote_id) as vote_count,
+             v.vehicle_name, cl.class_name
+      FROM specialty_votes sv
+      LEFT JOIN vehicles v ON sv.vehicle_id = v.vehicle_id
+      LEFT JOIN classes cl ON sv.class_id = cl.class_id
+      ORDER BY sv.vote_name
+    `, (err, specialtyVotes) => {
+      if (err) specialtyVotes = [];
+
+      const rows = specialtyVotes.map(sv => {
+        const filterLabel = sv.vehicle_name
+          ? (sv.class_name ? `${sv.vehicle_name} / ${sv.class_name}` : sv.vehicle_name)
+          : 'All Vehicles';
+        return `
+        <tr style="border-bottom:none;">
+          <td style="border-bottom:none;">${sv.vote_name}</td>
+          <td style="border-bottom:none;">${sv.description || '-'}</td>
+          <td style="border-bottom:none;">${sv.allow_all_users ? 'All Users' : 'Specific Users'}</td>
+          <td style="border-bottom:none;">${filterLabel}</td>
+          <td style="border-bottom:none;"><span style="background:#27ae60;color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">${sv.vote_count} votes</span></td>
+          <td style="border-bottom:none;"><span class="status-badge ${sv.is_active ? 'active' : 'inactive'}">${sv.is_active ? 'Active' : 'Inactive'}</span></td>
+        </tr>
+        <tr>
+          <td colspan="6" style="border-top:none;padding-top:0;text-align:center;">
+            <a href="/admin/specialty-vote-results/${sv.specialty_vote_id}" class="action-btn" style="background:#27ae60;">Results</a>
+            <a href="/admin/edit-specialty-vote/${sv.specialty_vote_id}" class="action-btn edit">Edit</a>
+            <a href="/admin/specialty-vote-voters/${sv.specialty_vote_id}" class="action-btn" style="background:#3498db;">Voters</a>
+            <a href="#" onclick="confirmDeleteSpecialtyVote(${sv.specialty_vote_id}, '${sv.vote_name.replace(/'/g, "\\'")}'); return false;" class="action-btn" style="background:#e74c3c;">Delete</a>
+          </td>
+        </tr>
+      `}).join('');
+
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Special Vote Config - Admin</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          ${styles}
+          ${adminStyles}
+        </head>
+        <body>
+          <div class="container dashboard-container">
+            <div class="dashboard-header">
+              <h1>🏎️ Admin Dashboard</h1>
+              <div class="user-info">
+                <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+              </div>
+            </div>
+
+            <div class="admin-nav">
+              <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+              <a href="/admin">Users</a>
+              <a href="/admin/vehicles">Cars</a>
+              <a href="/admin/judge-status">Judge Status</a>
+              <a href="/admin/vote-status">Vote Status</a>
+              <a href="/admin/reports">Reports</a>
+                <a href="/user/vote">Vote Here!</a>
+            </div>
+
+            <h3 class="section-title">Special Vote Config</h3>
+            <p style="color:#666;margin-bottom:15px;">Configure special voting categories like People's Choice, Best in Show, etc.</p>
+
+            <form method="POST" action="/admin/add-specialty-vote" style="margin-bottom:20px;">
+              <div class="profile-card">
+                <div class="form-group">
+                  <label>Vote Name</label>
+                  <input type="text" name="vote_name" required placeholder="e.g., People's Choice">
+                </div>
+                <div class="form-group">
+                  <label>Description (Optional)</label>
+                  <input type="text" name="description" placeholder="Brief description of this vote">
+                </div>
+                <div class="form-group">
+                  <label>Who Can Vote?</label>
+                  <select name="allow_all_users">
+                    <option value="0">Specific Users Only</option>
+                    <option value="1">All Users</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Limit to Vehicle Type (Optional)</label>
+                  <select name="vehicle_id" id="svVehicleType" onchange="updateSvClasses()">
+                    <option value="">All Vehicle Types</option>
+                    ${vehicleOptionsHtml}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Limit to Class (Optional)</label>
+                  <select name="class_id" id="svClassSelect">
+                    <option value="">All Classes</option>
+                  </select>
+                </div>
+                <button type="submit">Add Specialty Vote</button>
+              </div>
+            </form>
+
+            <div class="table-wrapper">
+              <table class="user-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Voters</th>
+                    <th>Applies To</th>
+                    <th>Votes</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rows || '<tr><td colspan="6" style="text-align:center;color:#666;">No specialty votes defined yet.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <script>
+            const allSvClasses = ${classesJson};
+
+            function updateSvClasses() {
+              const vehicleId = document.getElementById('svVehicleType').value;
+              const classSelect = document.getElementById('svClassSelect');
+              classSelect.innerHTML = '<option value="">All Classes</option>';
+              if (vehicleId) {
+                const filtered = allSvClasses.filter(c => c.vehicle_id == vehicleId);
+                filtered.forEach(c => {
+                  classSelect.innerHTML += '<option value="' + c.class_id + '">' + c.class_name + '</option>';
+                });
+              }
+            }
+
+            function confirmDeleteSpecialtyVote(id, name) {
+              if (confirm('Are you sure you want to delete the specialty vote "' + name + '"?\\n\\nThis will also remove all voter assignments.\\n\\nThis action cannot be undone.')) {
+                window.location.href = '/admin/delete-specialty-vote/' + id;
+              }
+            }
+          </script>
+        </body>
+        </html>
+      `);
+    });
+      }); // end classes query
+    }); // end vehicleTypes query
+  });
+
+  // Add specialty vote
+  router.post('/admin/add-specialty-vote', requireAdmin, (req, res) => {
+    const { vote_name, description, allow_all_users, vehicle_id, class_id } = req.body;
+    db.run('INSERT INTO specialty_votes (vote_name, description, allow_all_users, vehicle_id, class_id) VALUES (?, ?, ?, ?, ?)',
+      [vote_name, description || null, allow_all_users, vehicle_id || null, class_id || null], (err) => {
+      res.redirect('/admin/specialty-votes');
+    });
+  });
+
+  // Edit specialty vote page
+  router.get('/admin/edit-specialty-vote/:id', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const voteId = req.params.id;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    db.get('SELECT * FROM specialty_votes WHERE specialty_vote_id = ?', [voteId], (err, vote) => {
+      if (err || !vote) {
+        res.redirect('/admin/specialty-votes');
+        return;
+      }
+
+      db.all('SELECT vehicle_id, vehicle_name FROM vehicles WHERE is_active = 1 ORDER BY vehicle_name', (err, vehicleTypes) => {
+        if (err) vehicleTypes = [];
+        db.all('SELECT class_id, class_name, vehicle_id FROM classes WHERE is_active = 1 ORDER BY class_name', (err, classes) => {
+          if (err) classes = [];
+
+          const editVehicleOptions = vehicleTypes.map(v =>
+            `<option value="${v.vehicle_id}" ${vote.vehicle_id == v.vehicle_id ? 'selected' : ''}>${v.vehicle_name}</option>`
+          ).join('');
+
+          const editClassOptions = vote.vehicle_id
+            ? classes.filter(c => c.vehicle_id == vote.vehicle_id).map(c =>
+                `<option value="${c.class_id}" ${vote.class_id == c.class_id ? 'selected' : ''}>${c.class_name}</option>`
+              ).join('')
+            : '';
+
+          const editClassesJson = JSON.stringify(classes);
+
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Edit Specialty Vote - Admin</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          ${styles}
+          ${adminStyles}
+        </head>
+        <body>
+          <div class="container dashboard-container">
+            <div class="dashboard-header">
+              <h1>🏎️ Admin Dashboard</h1>
+              <div class="user-info">
+                <div class="user-avatar">${avatarContent}</div>
+                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+              </div>
+            </div>
+
+            <div class="admin-nav">
+              <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+              <a href="/admin">Users</a>
+              <a href="/admin/vehicles">Cars</a>
+              <a href="/admin/judge-status">Judge Status</a>
+              <a href="/admin/vote-status">Vote Status</a>
+              <a href="/admin/reports">Reports</a>
+                <a href="/user/vote">Vote Here!</a>
+            </div>
+
+            <h3 class="section-title">Edit Specialty Vote</h3>
+
+            <form method="POST" action="/admin/edit-specialty-vote/${vote.specialty_vote_id}">
+              <div class="profile-card">
+                <div class="form-group">
+                  <label>Vote Name</label>
+                  <input type="text" name="vote_name" required value="${vote.vote_name}">
+                </div>
+                <div class="form-group">
+                  <label>Description</label>
+                  <input type="text" name="description" value="${vote.description || ''}">
+                </div>
+                <div class="form-group">
+                  <label>Who Can Vote?</label>
+                  <select name="allow_all_users">
+                    <option value="0" ${!vote.allow_all_users ? 'selected' : ''}>Specific Users Only</option>
+                    <option value="1" ${vote.allow_all_users ? 'selected' : ''}>All Users</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Limit to Vehicle Type (Optional)</label>
+                  <select name="vehicle_id" id="editSvVehicleType" onchange="updateEditSvClasses()">
+                    <option value="">All Vehicle Types</option>
+                    ${editVehicleOptions}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Limit to Class (Optional)</label>
+                  <select name="class_id" id="editSvClassSelect">
+                    <option value="">All Classes</option>
+                    ${editClassOptions}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>Status</label>
+                  <select name="is_active">
+                    <option value="1" ${vote.is_active ? 'selected' : ''}>Active</option>
+                    <option value="0" ${!vote.is_active ? 'selected' : ''}>Inactive</option>
+                  </select>
+                </div>
+                <button type="submit">Update Specialty Vote</button>
+              </div>
+            </form>
+
+            <div class="links" style="margin-top:20px;">
+              <a href="/admin/specialty-votes">Back to Special Vote Config</a>
+            </div>
+          </div>
+
+          <script>
+            const editAllClasses = ${editClassesJson};
+            function updateEditSvClasses() {
+              const vehicleId = document.getElementById('editSvVehicleType').value;
+              const classSelect = document.getElementById('editSvClassSelect');
+              classSelect.innerHTML = '<option value="">All Classes</option>';
+              if (vehicleId) {
+                const filtered = editAllClasses.filter(c => c.vehicle_id == vehicleId);
+                filtered.forEach(c => {
+                  classSelect.innerHTML += '<option value="' + c.class_id + '">' + c.class_name + '</option>';
+                });
+              }
+            }
+          </script>
+        </body>
+        </html>
+      `);
+        }); // end classes
+      }); // end vehicleTypes
+    });
+  });
+
+  // Update specialty vote
+  router.post('/admin/edit-specialty-vote/:id', requireAdmin, (req, res) => {
+    const voteId = req.params.id;
+    const { vote_name, description, allow_all_users, is_active, vehicle_id, class_id } = req.body;
+    db.run('UPDATE specialty_votes SET vote_name = ?, description = ?, allow_all_users = ?, is_active = ?, vehicle_id = ?, class_id = ? WHERE specialty_vote_id = ?',
+      [vote_name, description || null, allow_all_users, is_active, vehicle_id || null, class_id || null, voteId], (err) => {
+      res.redirect('/admin/specialty-votes');
+    });
+  });
+
+  // Delete specialty vote
+  router.get('/admin/delete-specialty-vote/:id', requireAdmin, (req, res) => {
+    const voteId = req.params.id;
+
+    // First delete all vote results
+    db.run('DELETE FROM specialty_vote_results WHERE specialty_vote_id = ?', [voteId], (err) => {
+      // Then delete all voter assignments
+      db.run('DELETE FROM specialty_vote_voters WHERE specialty_vote_id = ?', [voteId], (err) => {
+        // Then delete the specialty vote
+        db.run('DELETE FROM specialty_votes WHERE specialty_vote_id = ?', [voteId], (err) => {
+          res.redirect('/admin/specialty-votes');
+        });
+      });
+    });
+  });
+
+  // View/edit specialty vote results
+  router.get('/admin/specialty-vote-results/:id', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const voteId = req.params.id;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    db.get('SELECT * FROM specialty_votes WHERE specialty_vote_id = ?', [voteId], (err, vote) => {
+      if (err || !vote) {
+        res.redirect('/admin/specialty-votes');
+        return;
+      }
+
+      // Get vote tallies grouped by car, ordered by vote count
+      db.all(`
+        SELECT c.car_id, c.year, c.make, c.model, c.voter_id, c.image_url,
+               u.name as owner_name,
+               cl.class_name, v.vehicle_name,
+               COUNT(svr.id) as vote_count
+        FROM specialty_vote_results svr
+        JOIN cars c ON svr.car_id = c.car_id
+        LEFT JOIN users u ON c.user_id = u.user_id
+        LEFT JOIN classes cl ON c.class_id = cl.class_id
+        LEFT JOIN vehicles v ON c.vehicle_id = v.vehicle_id
+        WHERE svr.specialty_vote_id = ?
+        GROUP BY c.car_id
+        ORDER BY vote_count DESC, c.voter_id
+      `, [voteId], (err, results) => {
+        if (err) results = [];
+
+        // Get total vote count
+        const totalVotes = results.reduce((sum, r) => sum + r.vote_count, 0);
+
+        // Determine winner(s) - vehicles with highest vote count
+        const maxVotes = results.length > 0 ? results[0].vote_count : 0;
+        const winners = results.filter(r => r.vote_count === maxVotes && maxVotes > 0);
+
+        const resultRows = results.map((r, index) => {
+          const isWinner = r.vote_count === maxVotes && maxVotes > 0;
+          const percentage = totalVotes > 0 ? Math.round((r.vote_count / totalVotes) * 100) : 0;
+          return `
+            <tr style="${isWinner ? 'background:#d4edda;' : ''}">
+              <td style="font-weight:700;font-size:18px;">${index + 1}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  ${r.image_url ? `<img src="${r.image_url}" style="width:60px;height:45px;object-fit:cover;border-radius:6px;">` : ''}
+                  <div>
+                    <div style="font-weight:600;">
+                      ${r.voter_id ? `<span style="background:#2c3e50;color:white;padding:2px 6px;border-radius:4px;font-size:11px;margin-right:6px;">#${r.voter_id}</span>` : ''}
+                      ${r.year || ''} ${r.make} ${r.model}
+                    </div>
+                    <div style="font-size:12px;color:#666;">${r.owner_name || 'Unknown'}</div>
+                  </div>
+                </div>
+              </td>
+              <td>${r.vehicle_name || '-'}</td>
+              <td>${r.class_name || '-'}</td>
+              <td style="font-weight:700;font-size:16px;">${r.vote_count}</td>
+              <td>
+                <div style="background:#e1e1e1;border-radius:10px;height:20px;overflow:hidden;">
+                  <div style="background:${isWinner ? '#27ae60' : '#3498db'};height:100%;width:${percentage}%;"></div>
+                </div>
+                <span style="font-size:12px;color:#666;">${percentage}%</span>
+              </td>
+              <td>${isWinner ? '<span style="background:#27ae60;color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">WINNER</span>' : ''}</td>
+            </tr>
+          `;
+        }).join('');
+
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Results: ${vote.vote_name} - Admin</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            ${styles}
+            ${adminStyles}
+            <style>
+              .results-header {
+                background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+                color: white;
+                padding: 20px;
+                border-radius: 12px;
+                margin-bottom: 20px;
+                text-align: center;
+              }
+              .results-header h2 {
+                color: white;
+                margin-bottom: 5px;
+              }
+              .stats-row {
+                display: flex;
+                gap: 15px;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+              }
+              .stat-card {
+                flex: 1;
+                min-width: 120px;
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 12px;
+                text-align: center;
+                border: 1px solid #e1e1e1;
+              }
+              .stat-card .number {
+                font-size: 28px;
+                font-weight: 700;
+                color: #1a1a2e;
+              }
+              .stat-card .label {
+                font-size: 12px;
+                color: #666;
+                margin-top: 5px;
+              }
+              .winner-card {
+                background: linear-gradient(135deg, #f39c12 0%, #f1c40f 100%);
+                color: #1a1a2e;
+                padding: 20px;
+                border-radius: 12px;
+                margin-bottom: 20px;
+                text-align: center;
+              }
+              .winner-card h3 {
+                margin-bottom: 10px;
+              }
+              .winner-card .trophy {
+                font-size: 48px;
+                margin-bottom: 10px;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container dashboard-container">
+              <div class="dashboard-header">
+                <h1>🏎️ Admin Dashboard</h1>
+                <div class="user-info">
+                  <div class="user-avatar">${avatarContent}</div>
+                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+                </div>
+              </div>
+
+              <div class="admin-nav">
+                <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+                <a href="/admin">Users</a>
+                <a href="/admin/vehicles">Cars</a>
+                <a href="/admin/judge-status">Judge Status</a>
+                <a href="/admin/vote-status">Vote Status</a>
+                <a href="/admin/reports">Reports</a>
+                <a href="/user/vote">Vote Here!</a>
+              </div>
+
+              <div class="results-header">
+                <h2>Results: ${vote.vote_name}</h2>
+                ${vote.description ? `<p>${vote.description}</p>` : ''}
+              </div>
+
+              <div class="stats-row">
+                <div class="stat-card">
+                  <div class="number">${totalVotes}</div>
+                  <div class="label">Total Votes</div>
+                </div>
+                <div class="stat-card">
+                  <div class="number">${results.length}</div>
+                  <div class="label">Vehicles Voted For</div>
+                </div>
+              </div>
+
+              ${winners.length > 0 ? `
+                <div class="winner-card">
+                  <div class="trophy">🏆</div>
+                  <h3>${winners.length > 1 ? 'TIE - Winners' : 'Winner'}</h3>
+                  ${winners.map(w => `
+                    <div style="font-size:18px;font-weight:600;">
+                      ${w.voter_id ? `#${w.voter_id} - ` : ''}${w.year || ''} ${w.make} ${w.model}
+                    </div>
+                    <div style="font-size:14px;">Owner: ${w.owner_name || 'Unknown'} | ${w.vote_count} votes</div>
+                  `).join('<hr style="margin:10px 0;border:none;border-top:1px solid rgba(0,0,0,0.1);">')}
+                </div>
+              ` : '<p style="text-align:center;color:#666;padding:20px;">No votes have been cast yet.</p>'}
+
+              ${results.length > 0 ? `
+                <h3 class="section-title">Full Results</h3>
+                <div class="table-wrapper">
+                  <table class="user-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Vehicle</th>
+                        <th>Type</th>
+                        <th>Class</th>
+                        <th>Votes</th>
+                        <th>%</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${resultRows}
+                    </tbody>
+                  </table>
+                </div>
+              ` : ''}
+
+              <div class="links" style="margin-top:20px;">
+                <a href="/admin/specialty-votes">Back to Special Vote Config</a>
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+      });
+    });
+  });
+
+  // Manage voters for a specialty vote
+  router.get('/admin/specialty-vote-voters/:id', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const voteId = req.params.id;
+    const saved = req.query.saved;
+    const error = req.query.error;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    db.get('SELECT * FROM specialty_votes WHERE specialty_vote_id = ?', [voteId], (err, vote) => {
+      if (err || !vote) {
+        res.redirect('/admin/specialty-votes');
+        return;
+      }
+
+      // Get all users
+      db.all('SELECT user_id, username, name, role FROM users WHERE is_active = 1 ORDER BY name', (err, allUsers) => {
+        if (err) allUsers = [];
+
+        // Get currently assigned voters
+        db.all('SELECT user_id FROM specialty_vote_voters WHERE specialty_vote_id = ?', [voteId], (err, assignedVoters) => {
+          const assignedIds = new Set((assignedVoters || []).map(v => v.user_id));
+
+          const userCheckboxes = allUsers.map(u => `
+            <label style="display:flex;align-items:center;gap:8px;padding:8px;background:#f8f9fa;border-radius:8px;margin-bottom:8px;cursor:pointer;">
+              <input type="checkbox" name="user_ids" value="${u.user_id}" ${assignedIds.has(u.user_id) ? 'checked' : ''} style="width:18px;height:18px;">
+              <span><strong>${u.name}</strong> (${u.username}) - ${u.role}</span>
+            </label>
+          `).join('');
+
+          res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <title>Voters: ${vote.vote_name} - Admin</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+              ${styles}
+              ${adminStyles}
+            </head>
+            <body>
+              <div class="container dashboard-container">
+                <div class="dashboard-header">
+                  <h1>🏎️ Admin Dashboard</h1>
+                  <div class="user-info">
+                    <div class="user-avatar">${avatarContent}</div>
+                    <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+                  </div>
+                </div>
+
+                <div class="admin-nav">
+                  <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+                  <a href="/admin">Users</a>
+                  <a href="/admin/vehicles">Cars</a>
+                  <a href="/admin/judge-status">Judge Status</a>
+                  <a href="/admin/vote-status">Vote Status</a>
+                  <a href="/admin/reports">Reports</a>
+                  <a href="/user/vote">Vote Here!</a>
+                </div>
+
+                <h3 class="section-title">Voters: ${vote.vote_name}</h3>
+                ${saved ? '<div class="success-message" style="margin-bottom:15px;">Voter assignments saved successfully!</div>' : ''}
+                ${error ? '<div style="background:#f8d7da;color:#721c24;padding:12px;border-radius:8px;margin-bottom:15px;font-weight:600;">Failed to save voter assignments. Please try again.</div>' : ''}
+                ${vote.allow_all_users
+                  ? `<div class="profile-card">
+                      <div style="background:#d4edda;color:#155724;padding:16px;border-radius:8px;text-align:center;">
+                        <strong>All Users</strong><br>
+                        <span style="font-size:14px;">This vote is configured to allow all users to participate. No individual voter assignments are needed.</span>
+                      </div>
+                    </div>`
+                  : `<form method="POST" action="/admin/update-specialty-vote-voters/${vote.specialty_vote_id}" id="voterForm">
+                  <div class="profile-card">
+                    <p style="color:#666;margin-bottom:15px;">Select which users can participate in this vote.</p>
+                    <div style="display:flex;gap:10px;margin-bottom:15px;">
+                      <button type="button" onclick="selectAll()" style="flex:1;">Select All</button>
+                      <button type="button" onclick="selectNone()" style="flex:1;background:#6c757d;">Select None</button>
+                    </div>
+
+                    <div style="max-height:400px;overflow-y:auto;">
+                      ${userCheckboxes || '<p style="color:#666;">No users found.</p>'}
+                    </div>
+
+                    <button type="submit" style="margin-top:15px;">Save Voter Assignments</button>
+                    <div id="saveMessage" style="display:none;margin-top:10px;padding:10px;border-radius:8px;text-align:center;font-weight:600;"></div>
+                  </div>
+                </form>`
+                }
+
+                <div class="links" style="margin-top:20px;">
+                  <a href="/admin/specialty-votes">Back to Special Vote Config</a>
+                </div>
+              </div>
+
+              <script>
+                function selectAll() {
+                  document.querySelectorAll('input[name="user_ids"]').forEach(cb => cb.checked = true);
+                }
+                function selectNone() {
+                  document.querySelectorAll('input[name="user_ids"]').forEach(cb => cb.checked = false);
+                }
+              </script>
+            </body>
+            </html>
+          `);
+        });
+      });
+    });
+  });
+
+  // Update voter assignments for a specialty vote
+  router.post('/admin/update-specialty-vote-voters/:id', requireAdmin, (req, res) => {
+    const voteId = req.params.id;
+    let userIds = req.body.user_ids || [];
+
+    // Ensure userIds is an array
+    if (!Array.isArray(userIds)) {
+      userIds = userIds ? [userIds] : [];
+    }
+
+    // First delete all existing assignments
+    db.run('DELETE FROM specialty_vote_voters WHERE specialty_vote_id = ?', [voteId], (err) => {
+      if (err) {
+        res.redirect(`/admin/specialty-vote-voters/${voteId}?error=1`);
+        return;
+      }
+
+      if (userIds.length === 0) {
+        res.redirect(`/admin/specialty-vote-voters/${voteId}?saved=1`);
+        return;
+      }
+
+      // Insert new assignments
+      const placeholders = userIds.map(() => '(?, ?)').join(', ');
+      const values = [];
+      userIds.forEach(userId => {
+        values.push(voteId, userId);
+      });
+
+      db.run(`INSERT INTO specialty_vote_voters (specialty_vote_id, user_id) VALUES ${placeholders}`, values, (err) => {
+        if (err) {
+          res.redirect(`/admin/specialty-vote-voters/${voteId}?error=1`);
+        } else {
+          res.redirect(`/admin/specialty-vote-voters/${voteId}?saved=1`);
+        }
+      });
+    });
+  });
+
+  // ==========================================
+  // APP CONFIG
+  // ==========================================
+
+  // App config page
+  router.get('/admin/app-config', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    const saved = req.query.saved === '1';
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>App Config - Admin</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        ${styles}
+        ${adminStyles}
+      </head>
+      <body>
+        <div class="container dashboard-container">
+          <div class="dashboard-header">
+            <h1>🏎️ Admin Dashboard</h1>
+            <div class="user-info">
+              <div class="user-avatar">${avatarContent}</div>
+              <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+            </div>
+          </div>
+
+          <div class="admin-nav">
+            <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+            <a href="/admin">Users</a>
+            <a href="/admin/vehicles">Cars</a>
+            <a href="/admin/judge-status">Judge Status</a>
+            <a href="/admin/vote-status">Vote Status</a>
+            <a href="/admin/reports">Reports</a>
+                <a href="/user/vote">Vote Here!</a>
+          </div>
+
+          <h3 class="section-title">Application Configuration</h3>
+
+          ${saved ? '<div class="success-message" style="max-width: 600px; margin-bottom: 20px;">Configuration saved successfully!</div>' : ''}
+
+          <form method="POST" action="/admin/app-config" style="max-width: 600px;">
+            <div class="form-group">
+              <label>Application Title</label>
+              <input type="text" name="appTitle" value="${appConfig.appTitle || ''}" required placeholder="Enter application title">
+              <small style="color: #666; display: block; margin-top: 5px;">This appears on the login page</small>
+            </div>
+            <div class="form-group">
+              <label>Login Subtitle</label>
+              <input type="text" name="appSubtitle" value="${appConfig.appSubtitle || ''}" placeholder="Enter subtitle (optional)">
+              <small style="color: #666; display: block; margin-top: 5px;">Appears below the title on the login page</small>
+            </div>
+            <button type="submit" style="background: #27ae60; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px;">Save Configuration</button>
+          </form>
+        </div>
+      </body>
+      </html>
+    `);
+  });
+
+  // Save app config
+  router.post('/admin/app-config', requireAdmin, (req, res) => {
+    const { appTitle, appSubtitle } = req.body;
+
+    appConfig.appTitle = appTitle || 'Car Show Manager';
+    appConfig.appSubtitle = appSubtitle || '';
+
+    saveConfig();
+
+    res.redirect('/admin/app-config?saved=1');
+  });
+
+  return router;
+};
