@@ -144,6 +144,9 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                     </tbody>
                   </table>
                 </div>
+                <div class="links" style="margin-top:20px;">
+                  <a href="/admin/dashboard">&larr; Back to Dashboard</a>
+                </div>
               </div>
             </body>
             </html>
@@ -633,6 +636,9 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   </tbody>
                 </table>
               </div>
+              <div class="links" style="margin-top:20px;">
+                <a href="/admin/dashboard">&larr; Back to Dashboard</a>
+              </div>
             </div>
           </body>
           </html>
@@ -1020,6 +1026,9 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                     <p style="color:#666;margin-bottom:15px;">View and export reports as CSV files.</p>
 
                     ${reportCards}
+                    <div class="links" style="margin-top:20px;">
+                      <a href="/admin/dashboard">&larr; Back to Dashboard</a>
+                    </div>
                   </div>
                 </body>
                 </html>

@@ -112,7 +112,13 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   <form method="POST" action="/admin/add-vehicle-type" style="margin-bottom:20px;">
                     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
                       <input type="text" name="vehicle_name" required placeholder="New vehicle type name" style="flex:1;min-width:200px;">
-                      <input type="number" name="registration_price" step="0.01" min="0" value="${appConfig.defaultRegistrationPrice || 25.00}" placeholder="Price" style="width:100px;">
+                      <div style="display:flex;flex-direction:column;gap:2px;">
+                        <label style="font-size:12px;margin-bottom:0;">Registration Price</label>
+                        <div style="display:flex;align-items:center;gap:4px;">
+                          <span style="font-weight:600;font-size:16px;">$</span>
+                          <input type="text" name="registration_price" value="${parseFloat(appConfig.defaultRegistrationPrice || 25).toFixed(2)}" placeholder="25.00" style="width:100px;" oninput="validatePriceInput(this)" onblur="formatPriceBlur(this)">
+                        </div>
+                      </div>
                       <button type="submit" style="white-space:nowrap;">Add Type</button>
                     </div>
                   </form>
@@ -164,18 +170,38 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                       </tbody>
                     </table>
                   </div>
+                  <div class="links" style="margin-top:20px;">
+                    <a href="/admin/dashboard">&larr; Back to Dashboard</a>
+                  </div>
                 </div>
 
                 <script>
                   function confirmDeleteVehicleType(id, name) {
                     if (confirm('Are you sure you want to delete the vehicle type "' + name + '"?\\n\\nThis action cannot be undone.')) {
-                      window.location.href = '/delete-vehicle-type/' + id;
+                      window.location.href = '/admin/delete-vehicle-type/' + id;
                     }
                   }
 
                   function confirmDeleteClass(id, name) {
                     if (confirm('Are you sure you want to delete the class "' + name + '"?\\n\\nThis action cannot be undone.')) {
                       window.location.href = '/admin/delete-class/' + id;
+                    }
+                  }
+
+                  function validatePriceInput(el) {
+                    var val = el.value.replace(/[^0-9.]/g, '');
+                    var parts = val.split('.');
+                    if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+                    if (parts.length === 2 && parts[1].length > 2) val = parts[0] + '.' + parts[1].substring(0, 2);
+                    el.value = val;
+                  }
+
+                  function formatPriceBlur(el) {
+                    var num = parseFloat(el.value);
+                    if (!isNaN(num) && num >= 0) {
+                      el.value = num.toFixed(2);
+                    } else if (el.value === '') {
+                      el.value = '0.00';
                     }
                   }
                 </script>
@@ -273,8 +299,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // Add vehicle type
   router.post('/add-vehicle-type', requireAdmin, (req, res) => {
     const { vehicle_name, registration_price } = req.body;
+    if (registration_price && !/^\d+(\.\d{1,2})?$/.test(registration_price.trim())) {
+      return res.send(errorPage('Invalid price. Enter a number like 25 or 25.00.', '/admin/vehicle-config', 'Try Again'));
+    }
     const price = parseFloat(registration_price) || parseFloat(appConfig.defaultRegistrationPrice) || 25.00;
-    db.run('INSERT INTO vehicles (vehicle_name, registration_price) VALUES (?, ?)', [vehicle_name, price], (err) => {
+    db.run('INSERT INTO vehicles (vehicle_name, registration_price) VALUES (?, ?)', [vehicle_name, Math.round(price * 100) / 100], (err) => {
       res.redirect('/admin/vehicle-config');
     });
   });
@@ -352,8 +381,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   <input type="text" name="vehicle_name" required value="${vehicle.vehicle_name}">
                 </div>
                 <div class="form-group">
-                  <label>Registration Price ($)</label>
-                  <input type="number" name="registration_price" step="0.01" min="0" value="${vehicle.registration_price || 0}" required>
+                  <label>Registration Price</label>
+                  <div style="display:flex;align-items:center;gap:4px;">
+                    <span style="font-weight:600;font-size:16px;">$</span>
+                    <input type="text" name="registration_price" value="${parseFloat(vehicle.registration_price || 0).toFixed(2)}" required style="flex:1;" oninput="validatePriceInput(this)" onblur="formatPriceBlur(this)">
+                  </div>
                 </div>
                 <div class="form-group">
                   <label>Status</label>
@@ -370,6 +402,23 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               <a href="/admin/vehicle-config">Back to Vehicle Config</a>
             </div>
           </div>
+          <script>
+            function validatePriceInput(el) {
+              var val = el.value.replace(/[^0-9.]/g, '');
+              var parts = val.split('.');
+              if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+              if (parts.length === 2 && parts[1].length > 2) val = parts[0] + '.' + parts[1].substring(0, 2);
+              el.value = val;
+            }
+            function formatPriceBlur(el) {
+              var num = parseFloat(el.value);
+              if (!isNaN(num) && num >= 0) {
+                el.value = num.toFixed(2);
+              } else if (el.value === '') {
+                el.value = '0.00';
+              }
+            }
+          </script>
         </body>
         </html>
       `);
@@ -380,7 +429,10 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   router.post('/edit-vehicle-type/:id', requireAdmin, (req, res) => {
     const vehicleId = req.params.id;
     const { vehicle_name, is_active, registration_price } = req.body;
-    const price = parseFloat(registration_price) || 0;
+    if (!/^\d+(\.\d{1,2})?$/.test((registration_price || '').trim())) {
+      return res.send(errorPage('Invalid price. Enter a number like 25 or 25.00.', '/admin/edit-vehicle-type/' + vehicleId, 'Try Again'));
+    }
+    const price = Math.round((parseFloat(registration_price) || 0) * 100) / 100;
     db.run('UPDATE vehicles SET vehicle_name = ?, is_active = ?, registration_price = ? WHERE vehicle_id = ?',
       [vehicle_name, is_active, price, vehicleId], (err) => {
       res.redirect('/admin/vehicle-config');
@@ -719,6 +771,9 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   </tbody>
                 </table>
               </div>
+              <div class="links" style="margin-top:20px;">
+                <a href="/admin/dashboard">&larr; Back to Dashboard</a>
+              </div>
             </div>
 
             <script>
@@ -940,15 +995,15 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     <div class="form-group" style="flex:1;min-width:100px;">
                       <label>Min Score</label>
-                      <input type="number" name="min_score" value="0" required>
+                      <input type="text" name="min_score" value="0" required style="width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
                     </div>
                     <div class="form-group" style="flex:1;min-width:100px;">
                       <label>Max Score</label>
-                      <input type="number" name="max_score" value="10" required>
+                      <input type="text" name="max_score" value="10" required style="width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
                     </div>
                     <div class="form-group" style="flex:1;min-width:100px;">
                       <label>Order</label>
-                      <input type="number" name="display_order" value="0">
+                      <input type="text" name="display_order" value="0" style="width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
                     </div>
                   </div>
                   <button type="submit">Add Question</button>
@@ -996,6 +1051,10 @@ module.exports = function (db, appConfig, upload, saveConfig) {
     const categoryId = req.params.categoryId;
     const { question, min_score, max_score, display_order } = req.body;
 
+    if (!/^\d+$/.test((min_score || '').trim()) || !/^\d+$/.test((max_score || '').trim())) {
+      return res.send(errorPage('Min Score and Max Score must be whole numbers.', '/admin/category-questions/' + categoryId, 'Try Again'));
+    }
+
     // Get the vehicle_id from the category
     db.get('SELECT vehicle_id FROM judge_catagories WHERE judge_catagory_id = ?', [categoryId], (err, category) => {
       if (err || !category) {
@@ -1004,7 +1063,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
       }
 
       db.run('INSERT INTO judge_questions (vehicle_id, judge_catagory_id, question, min_score, max_score, display_order) VALUES (?, ?, ?, ?, ?, ?)',
-        [category.vehicle_id, categoryId, question, min_score, max_score, display_order || 0], (err) => {
+        [category.vehicle_id, categoryId, question, parseInt(min_score) || 0, parseInt(max_score) || 10, parseInt(display_order) || 0], (err) => {
         res.redirect(`/admin/category-questions/${categoryId}`);
       });
     });
@@ -1081,15 +1140,15 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
                   <div class="form-group" style="flex:1;min-width:100px;">
                     <label>Min Score</label>
-                    <input type="number" name="min_score" value="${question.min_score}" required>
+                    <input type="text" name="min_score" value="${question.min_score}" required style="width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
                   </div>
                   <div class="form-group" style="flex:1;min-width:100px;">
                     <label>Max Score</label>
-                    <input type="number" name="max_score" value="${question.max_score}" required>
+                    <input type="text" name="max_score" value="${question.max_score}" required style="width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
                   </div>
                   <div class="form-group" style="flex:1;min-width:100px;">
                     <label>Order</label>
-                    <input type="number" name="display_order" value="${question.display_order}">
+                    <input type="text" name="display_order" value="${question.display_order}" style="width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
                   </div>
                 </div>
                 <div class="form-group">
@@ -1117,8 +1176,13 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   router.post('/edit-question/:id', requireAdmin, (req, res) => {
     const questionId = req.params.id;
     const { judge_catagory_id, question, min_score, max_score, display_order, is_active } = req.body;
+
+    if (!/^\d+$/.test((min_score || '').trim()) || !/^\d+$/.test((max_score || '').trim())) {
+      return res.send(errorPage('Min Score and Max Score must be whole numbers.', '/admin/edit-question/' + questionId, 'Try Again'));
+    }
+
     db.run('UPDATE judge_questions SET question = ?, min_score = ?, max_score = ?, display_order = ?, is_active = ? WHERE judge_question_id = ?',
-      [question, min_score, max_score, display_order || 0, is_active, questionId], (err) => {
+      [question, parseInt(min_score) || 0, parseInt(max_score) || 10, parseInt(display_order) || 0, is_active, questionId], (err) => {
       res.redirect(`/admin/category-questions/${judge_catagory_id}`);
     });
   });
@@ -1264,6 +1328,9 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   ${rows || '<tr><td colspan="6" style="text-align:center;color:#666;">No specialty votes defined yet.</td></tr>'}
                 </tbody>
               </table>
+            </div>
+            <div class="links" style="margin-top:20px;">
+              <a href="/admin/dashboard">&larr; Back to Dashboard</a>
             </div>
           </div>
 
@@ -1906,13 +1973,36 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               <small style="color: #666; display: block; margin-top: 5px;">Appears below the title on the login page</small>
             </div>
             <div class="form-group">
-              <label>Default Registration Price ($)</label>
-              <input type="number" name="defaultRegistrationPrice" step="0.01" min="0" value="${appConfig.defaultRegistrationPrice || 25.00}" required>
+              <label>Default Registration Price</label>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <span style="font-weight:600;font-size:16px;">$</span>
+                <input type="text" name="defaultRegistrationPrice" value="${parseFloat(appConfig.defaultRegistrationPrice || 25).toFixed(2)}" required style="flex:1;" oninput="validatePriceInput(this)" onblur="formatPriceBlur(this)">
+              </div>
               <small style="color: #666; display: block; margin-top: 5px;">Default price when creating new vehicle types</small>
             </div>
             <button type="submit" style="background: #27ae60; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px;">Save Configuration</button>
           </form>
+          <div class="links" style="margin-top:20px;">
+            <a href="/admin/dashboard">&larr; Back to Dashboard</a>
+          </div>
         </div>
+        <script>
+          function validatePriceInput(el) {
+            var val = el.value.replace(/[^0-9.]/g, '');
+            var parts = val.split('.');
+            if (parts.length > 2) val = parts[0] + '.' + parts.slice(1).join('');
+            if (parts.length === 2 && parts[1].length > 2) val = parts[0] + '.' + parts[1].substring(0, 2);
+            el.value = val;
+          }
+          function formatPriceBlur(el) {
+            var num = parseFloat(el.value);
+            if (!isNaN(num) && num >= 0) {
+              el.value = num.toFixed(2);
+            } else if (el.value === '') {
+              el.value = '0.00';
+            }
+          }
+        </script>
       </body>
       </html>
     `);
@@ -1922,9 +2012,13 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   router.post('/app-config', requireAdmin, (req, res) => {
     const { appTitle, appSubtitle, defaultRegistrationPrice } = req.body;
 
+    if (!/^\d+(\.\d{1,2})?$/.test((defaultRegistrationPrice || '').trim())) {
+      return res.send(errorPage('Invalid price. Enter a number like 25 or 25.00.', '/admin/app-config', 'Try Again'));
+    }
+
     appConfig.appTitle = appTitle || 'Car Show Manager';
     appConfig.appSubtitle = appSubtitle || '';
-    appConfig.defaultRegistrationPrice = parseFloat(defaultRegistrationPrice) || 25.00;
+    appConfig.defaultRegistrationPrice = Math.round((parseFloat(defaultRegistrationPrice) || 25.00) * 100) / 100;
 
     saveConfig();
 

@@ -226,6 +226,9 @@ module.exports = function (db, appConfig, upload) {
             <div style="margin-top:20px;text-align:center;">
               <a href="/admin/add-user" class="action-btn edit" style="display:inline-block;padding:12px 24px;font-size:16px;">Add User</a>
             </div>
+            <div class="links" style="margin-top:20px;">
+              <a href="/admin/dashboard">&larr; Back to Dashboard</a>
+            </div>
           </div>
         </body>
         </html>
@@ -311,6 +314,9 @@ module.exports = function (db, appConfig, upload) {
             </div>
             <button type="submit">Create User</button>
           </form>
+          <div class="links" style="margin-top:20px;">
+            <a href="/admin">&larr; Back to Users</a>
+          </div>
         </div>
       </body>
       </html>
@@ -476,6 +482,9 @@ module.exports = function (db, appConfig, upload) {
               </div>
               <button type="submit">Update User</button>
             </form>
+            <div class="links" style="margin-top:20px;">
+              <a href="/admin">&larr; Back to Users</a>
+            </div>
           </div>
         </body>
         </html>
@@ -787,6 +796,9 @@ module.exports = function (db, appConfig, upload) {
             <p style="color:#856404;font-size:13px;margin-bottom:15px;">These vehicles are waiting to be activated by the registrar.</p>
 
             ${inactiveCars.length > 0 ? inactiveVehicleCards : '<p style="color: #666; text-align: center; padding: 20px;">No inactive vehicles.</p>'}
+            <div class="links" style="margin-top:20px;">
+              <a href="/admin/dashboard">&larr; Back to Dashboard</a>
+            </div>
           </div>
         </body>
         </html>

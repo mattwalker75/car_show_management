@@ -1,7 +1,7 @@
 {
   "appTitle": "Testing Car Show",
   "appSubtitle": "Sign in to your account",
-  "judgeVotingStatus": "Open",
-  "specialtyVotingStatus": "Open",
-  "defaultRegistrationPrice": 25.00
+  "judgeVotingStatus": "Close",
+  "specialtyVotingStatus": "Close",
+  "defaultRegistrationPrice": 25
 }
