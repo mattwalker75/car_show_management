@@ -96,4 +96,50 @@ function deleteVehicleImage(imageUrl) {
   }
 }
 
-module.exports = { handleProfilePhotoUpload, handleVehiclePhotoUpload, deleteVehicleImage };
+/**
+ * Process and save a login background image upload.
+ * Resizes to max 1920x1080, converts to JPEG, deletes old background if present.
+ * @param {Object} file - The multer file object (req.file)
+ * @param {string|null} oldImageUrl - The previous background image URL to delete
+ * @returns {Object} { success: boolean, imageUrl?: string, error?: string }
+ */
+async function handleBackgroundImageUpload(file, oldImageUrl) {
+  try {
+    const randomName = crypto.randomBytes(16).toString('hex');
+    const filename = `${randomName}.jpg`;
+    const filepath = path.join(BASE_DIR, 'images', 'app_config', filename);
+    const imageUrl = `/images/app_config/${filename}`;
+
+    await sharp(file.buffer)
+      .rotate()
+      .resize(1920, 1080, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({ quality: 85 })
+      .toFile(filepath);
+
+    // Delete old background image if one exists
+    if (oldImageUrl) {
+      const oldPath = path.join(BASE_DIR, oldImageUrl);
+      fs.unlink(oldPath, () => {});
+    }
+
+    return { success: true, imageUrl };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Delete a background image file from disk.
+ * @param {string|null} imageUrl - The image URL path (e.g. /images/app_config/abc.jpg)
+ */
+function deleteBackgroundImage(imageUrl) {
+  if (imageUrl) {
+    const filePath = path.join(BASE_DIR, imageUrl);
+    fs.unlink(filePath, () => {});
+  }
+}
+
+module.exports = { handleProfilePhotoUpload, handleVehiclePhotoUpload, deleteVehicleImage, handleBackgroundImageUpload, deleteBackgroundImage };

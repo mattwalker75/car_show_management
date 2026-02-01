@@ -17,6 +17,49 @@ module.exports = function (db, appConfig, upload, port) {
   const { errorPage, successPage, formPage } = require('../views/layout');
   const styles = `<link rel="stylesheet" href="/css/styles.css">`;
 
+  // Generate dynamic login background styles from config
+  function getLoginBackgroundStyles() {
+    const bg = appConfig.loginBackground || {};
+    const useImage = bg.useImage && bg.imageUrl;
+    const bgColor = bg.backgroundColor || '#1a1a2e';
+    const cardOpacity = bg.cardOpacity ?? 0.98;
+    const useTint = bg.useTint;
+    const tintColor = bg.tintColor || '#1a1a2e';
+    const tintOpacity = bg.tintOpacity ?? 0.5;
+
+    let bodyBg;
+    if (useImage) {
+      bodyBg = `background: url('${bg.imageUrl}') center/cover no-repeat fixed; background-color: #1a1a2e;`;
+    } else {
+      bodyBg = `background: ${bgColor};`;
+    }
+
+    let tintStyles = '';
+    if (useImage && useTint) {
+      tintStyles = `
+        body::before {
+          content: '';
+          position: fixed;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          background: ${tintColor};
+          opacity: ${tintOpacity};
+          z-index: 0;
+          pointer-events: none;
+        }
+        body > .container { position: relative; z-index: 1; }
+      `;
+    }
+
+    return `
+      <style>
+        body { ${bodyBg} }
+        .container:not(.dashboard-container) { background: rgba(255, 255, 255, ${cardOpacity}); }
+        ${tintStyles}
+      </style>
+    `;
+  }
+
   // ============================================================
   // Initial Setup Check - GET /
   // ============================================================
@@ -710,6 +753,7 @@ module.exports = function (db, appConfig, upload, port) {
         <title>${appConfig.appTitle} - Login</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         ${styles}
+        ${getLoginBackgroundStyles()}
       </head>
       <body>
         <div class="container">
@@ -751,6 +795,7 @@ module.exports = function (db, appConfig, upload, port) {
         <title>${appConfig.appTitle} - Login</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         ${styles}
+        ${getLoginBackgroundStyles()}
       </head>
       <body>
         <div class="container">
@@ -793,18 +838,188 @@ module.exports = function (db, appConfig, upload, port) {
       if (verifyPassword(password, user.password_hash)) {
         // Successful login
         req.session = { user: user };
-        // Redirect based on role
-        if (user.role === 'admin') {
-          res.redirect('/admin/dashboard');
-        } else if (user.role === 'judge') {
-          res.redirect('/judge');
-        } else if (user.role === 'registrar') {
-          res.redirect('/registrar');
-        } else if (user.role === 'vendor') {
-          res.redirect('/vendor');
-        } else {
-          res.redirect('/user');
+        // Determine redirect based on role
+        let redirectUrl = '/user';
+        if (user.role === 'admin') redirectUrl = '/admin/dashboard';
+        else if (user.role === 'judge') redirectUrl = '/judge';
+        else if (user.role === 'registrar') redirectUrl = '/registrar';
+        else if (user.role === 'vendor') redirectUrl = '/vendor';
+
+        // If animated login is disabled, do a traditional redirect
+        if (!appConfig.animatedLogin) {
+          return res.redirect(redirectUrl);
         }
+
+        // Compute dynamic background for animated transition
+        const loginBg = appConfig.loginBackground || {};
+        const useBgImage = loginBg.useImage && loginBg.imageUrl;
+        const doorBackground = useBgImage
+          ? `url('${loginBg.imageUrl}') no-repeat`
+          : (loginBg.backgroundColor || 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)');
+        const welcomeBackground = 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)';
+        const animTintStyles = loginBg.useImage && loginBg.useTint ? `
+              .door-left::after, .door-right::after {
+                content: '';
+                position: absolute;
+                top: 0; left: 0; width: 100%; height: 100%;
+                background: ${loginBg.tintColor || '#1a1a2e'};
+                opacity: ${loginBg.tintOpacity || 0.5};
+                pointer-events: none;
+              }
+        ` : '';
+        const cardOpacityVal = loginBg.cardOpacity ?? 0.98;
+
+        // Send animated transition page
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>${appConfig.appTitle} - Welcome</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            ${styles}
+            ${getLoginBackgroundStyles()}
+            <style>
+              body {
+                overflow: hidden;
+                position: fixed;
+                width: 100%;
+                height: 100%;
+              }
+              .door-left, .door-right {
+                position: fixed;
+                top: 0;
+                width: 50%;
+                height: 100%;
+                z-index: 1;
+                background: ${doorBackground};
+                ${useBgImage ? 'background-size: 100vw 100vh;' : ''}
+              }
+              ${animTintStyles}
+              .door-left {
+                left: 0;
+                transform-origin: left center;
+                ${useBgImage ? 'background-position: left center;' : ''}
+              }
+              .door-right {
+                right: 0;
+                transform-origin: right center;
+                ${useBgImage ? 'background-position: right center;' : ''}
+              }
+              .door-left.open {
+                animation: doorOpenLeft 0.8s ease-in-out 0.4s forwards;
+              }
+              .door-right.open {
+                animation: doorOpenRight 0.8s ease-in-out 0.4s forwards;
+              }
+              @keyframes doorOpenLeft {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-100%); }
+              }
+              @keyframes doorOpenRight {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(100%); }
+              }
+              .container {
+                position: relative;
+                z-index: 2;
+              }
+              .container.fly-up {
+                animation: flyUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+              }
+              @keyframes flyUp {
+                0% { transform: translateY(0); opacity: 1; }
+                100% { transform: translateY(-120vh); opacity: 0; }
+              }
+              .welcome-reveal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 0;
+                background: ${welcomeBackground};
+              }
+              .welcome-content {
+                text-align: center;
+                color: white;
+                transform: scale(0.8);
+                opacity: 0;
+              }
+              .welcome-reveal.show .welcome-content {
+                animation: scaleIn 0.5s ease-out 1.0s forwards;
+              }
+              @keyframes scaleIn {
+                0% { transform: scale(0.8); opacity: 0; }
+                100% { transform: scale(1); opacity: 1; }
+              }
+              .welcome-icon {
+                font-size: 72px;
+                margin-bottom: 16px;
+              }
+              .welcome-text {
+                font-size: 28px;
+                font-weight: 700;
+                margin-bottom: 8px;
+              }
+              .welcome-sub {
+                font-size: 16px;
+                opacity: 0.7;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="door-left" id="doorLeft"></div>
+            <div class="door-right" id="doorRight"></div>
+
+            <div class="welcome-reveal" id="welcomeReveal">
+              <div class="welcome-content">
+                <div class="welcome-icon">🏎️</div>
+                <div class="welcome-text">Welcome, ${user.name}!</div>
+                <div class="welcome-sub">Loading your dashboard...</div>
+              </div>
+            </div>
+
+            <div class="container" id="loginCard">
+              <div class="logo">
+                <div class="logo-icon">🏎️</div>
+                <h1>${appConfig.appTitle}</h1>
+                ${appConfig.appSubtitle ? `<p class="subtitle">${appConfig.appSubtitle}</p>` : ''}
+              </div>
+              <form>
+                <div class="form-group">
+                  <label>Username</label>
+                  <input type="text" value="${username}" disabled>
+                </div>
+                <div class="form-group">
+                  <label>Password</label>
+                  <input type="password" value="********" disabled>
+                </div>
+                <button type="button" disabled style="opacity:0.7;">Signing in...</button>
+              </form>
+              <div class="links">
+                <a href="/register" style="pointer-events:none;opacity:0.5;">Create an Account</a>
+              </div>
+            </div>
+
+            <script>
+              setTimeout(function() {
+                document.getElementById('loginCard').classList.add('fly-up');
+                setTimeout(function() {
+                  document.getElementById('doorLeft').classList.add('open');
+                  document.getElementById('doorRight').classList.add('open');
+                  document.getElementById('welcomeReveal').classList.add('show');
+                  setTimeout(function() {
+                    window.location.href = '${redirectUrl}';
+                  }, 2800);
+                }, 300);
+              }, 400);
+            </script>
+          </body>
+          </html>
+        `);
       } else {
         res.send(renderLoginError('Invalid username or password'));
       }
@@ -819,15 +1034,16 @@ module.exports = function (db, appConfig, upload, port) {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Register - Car Show</title>
+        <title>${appConfig.appTitle} - Register</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         ${styles}
+        ${getLoginBackgroundStyles()}
       </head>
       <body>
         <div class="container">
           <div class="logo">
             <div class="logo-icon">🏎️</div>
-            <h1>Car Show Manager</h1>
+            <h1>${appConfig.appTitle}</h1>
             <p class="subtitle">Create your account</p>
           </div>
           <form method="POST" action="/register">
@@ -876,15 +1092,16 @@ module.exports = function (db, appConfig, upload, port) {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Register - Car Show</title>
+        <title>${appConfig.appTitle} - Register</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         ${styles}
+        ${getLoginBackgroundStyles()}
       </head>
       <body>
         <div class="container">
           <div class="logo">
             <div class="logo-icon">🏎️</div>
-            <h1>Car Show Manager</h1>
+            <h1>${appConfig.appTitle}</h1>
             <p class="subtitle">Create your account</p>
           </div>
           <div class="error-message">${message}</div>
@@ -941,18 +1158,19 @@ module.exports = function (db, appConfig, upload, port) {
             <!DOCTYPE html>
             <html>
             <head>
-              <title>Registration Success - Car Show</title>
+              <title>${appConfig.appTitle} - Registration Success</title>
               <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
               ${styles}
+              ${getLoginBackgroundStyles()}
             </head>
             <body>
               <div class="container">
                 <div class="logo">
                   <div class="logo-icon">🏎️</div>
-                  <h1>Car Show Manager</h1>
+                  <h1>${appConfig.appTitle}</h1>
                 </div>
                 <div class="success-message">Account created successfully!</div>
-                <p style="text-align: center; color: #666; margin-bottom: 20px;">Welcome to Car Show Manager. You can now sign in.</p>
+                <p style="text-align: center; color: #666; margin-bottom: 20px;">Welcome to ${appConfig.appTitle}. You can now sign in.</p>
                 <div class="links">
                   <a href="/login">Proceed to Sign In</a>
                 </div>
