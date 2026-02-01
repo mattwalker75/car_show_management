@@ -439,7 +439,7 @@ module.exports = function (db, appConfig, upload) {
                 <div class="profile-card">
                   <div class="form-group">
                     <label>Year (Optional)</label>
-                    <input type="text" name="year" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="e.g., 1969" style="font-size:16px;">
+                    <input type="text" name="year" inputmode="numeric" maxlength="4" placeholder="e.g., 1969" style="font-size:16px;width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                   </div>
                   <div class="form-group">
                     <label>Make *</label>
@@ -540,6 +540,10 @@ module.exports = function (db, appConfig, upload) {
     const user = req.session.user;
     const { year, make, model, vehicle_id, class_id, description } = req.body;
 
+    if (year && !/^\d{4}$/.test(year.trim())) {
+      return res.send(errorPage('Year must be a 4-digit number.', '/user/register-vehicle', 'Try Again'));
+    }
+
     let imageUrl = null;
 
     // Process image if uploaded
@@ -553,7 +557,7 @@ module.exports = function (db, appConfig, upload) {
 
     // Insert vehicle into database - is_active=0 by default until registrar enables after payment
     db.run('INSERT INTO cars (year, make, model, vehicle_id, class_id, description, image_url, user_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)',
-      [year || null, make, model, vehicle_id, class_id, description || null, imageUrl, user.user_id],
+      [year ? year.trim() : null, make, model, vehicle_id, class_id, description || null, imageUrl, user.user_id],
       function(err) {
         if (err) {
           console.error('Vehicle registration error:', err.message);
@@ -734,7 +738,7 @@ module.exports = function (db, appConfig, upload) {
                   <div class="profile-card">
                     <div class="form-group">
                       <label>Year (Optional)</label>
-                      <input type="text" name="year" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="e.g., 1969" value="${car.year || ''}" style="font-size:16px;">
+                      <input type="text" name="year" inputmode="numeric" maxlength="4" placeholder="e.g., 1969" value="${car.year || ''}" style="font-size:16px;width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                     </div>
                     <div class="form-group">
                       <label>Make *</label>
@@ -847,6 +851,10 @@ module.exports = function (db, appConfig, upload) {
     const carId = req.params.id;
     const { year, make, model, vehicle_id, class_id, description } = req.body;
 
+    if (year && !/^\d{4}$/.test(year.trim())) {
+      return res.send(errorPage('Year must be a 4-digit number.', `/user/edit-vehicle/${carId}`, 'Try Again'));
+    }
+
     // First verify the car belongs to this user (include pending vehicles)
     db.get('SELECT car_id, image_url FROM cars WHERE car_id = ? AND user_id = ?', [carId, user.user_id], async (err, car) => {
       if (err || !car) {
@@ -868,7 +876,7 @@ module.exports = function (db, appConfig, upload) {
 
       // Update vehicle in database
       db.run('UPDATE cars SET year = ?, make = ?, model = ?, vehicle_id = ?, class_id = ?, description = ?, image_url = ? WHERE car_id = ? AND user_id = ?',
-        [year || null, make, model, vehicle_id, class_id, description || null, imageUrl, carId, user.user_id],
+        [year ? year.trim() : null, make, model, vehicle_id, class_id, description || null, imageUrl, carId, user.user_id],
         function(err) {
           if (err) {
             console.error('Vehicle update error:', err.message);

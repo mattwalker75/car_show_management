@@ -129,14 +129,14 @@ module.exports = function (db, appConfig, upload) {
       }
 
       const userRows = users.map(u => `
-        <tr style="border-bottom:none;">
+        <tr class="user-row" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}" style="border-bottom:none;">
           <td style="border-bottom:none;">${u.username}</td>
           <td style="border-bottom:none;">${u.name}</td>
           <td style="border-bottom:none;">${u.email}</td>
           <td style="border-bottom:none;"><span class="role-badge ${u.role}">${u.role}</span></td>
           <td style="border-bottom:none;"><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
         </tr>
-        <tr>
+        <tr class="user-row-actions" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}">
           <td colspan="5" style="border-top:none;padding-top:0;text-align:center;">
             <a href="/admin/edit-user/${u.id}" class="action-btn edit">Edit</a>
             ${u.id !== user.user_id ? `<a href="/admin/delete-user/${u.id}" class="action-btn delete" onclick="return confirm('Are you sure you want to delete this user?')">Delete</a>` : ''}
@@ -146,7 +146,7 @@ module.exports = function (db, appConfig, upload) {
 
       // Mobile card view for small screens
       const userCards = users.map(u => `
-        <div class="user-card">
+        <div class="user-card" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}">
           <div class="user-card-header">
             <div>
               <div class="user-card-name">${u.name}</div>
@@ -199,6 +199,11 @@ module.exports = function (db, appConfig, upload) {
 
             <h3 class="section-title">All Users</h3>
 
+            <div style="margin-bottom:16px;">
+              <input type="text" id="userSearch" placeholder="Search by name, login ID, email, or phone..." oninput="filterUsers()" style="width:100%;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#e94560'" onblur="this.style.borderColor='#e1e1e1'">
+            </div>
+            <div id="noResults" style="display:none;text-align:center;color:#666;padding:20px;font-size:14px;">No users match your search.</div>
+
             <!-- Mobile card view -->
             <div class="user-cards">
               ${userCards}
@@ -230,6 +235,29 @@ module.exports = function (db, appConfig, upload) {
               <a href="/admin/dashboard">&larr; Back to Dashboard</a>
             </div>
           </div>
+          <script>
+            function filterUsers() {
+              var query = document.getElementById('userSearch').value.toLowerCase().trim();
+              var cards = document.querySelectorAll('.user-card');
+              var rows = document.querySelectorAll('.user-row');
+              var actionRows = document.querySelectorAll('.user-row-actions');
+              var visibleCount = 0;
+
+              cards.forEach(function(card) {
+                var match = !query || card.dataset.username.indexOf(query) !== -1 || card.dataset.name.indexOf(query) !== -1 || card.dataset.email.indexOf(query) !== -1 || card.dataset.phone.indexOf(query) !== -1;
+                card.style.display = match ? '' : 'none';
+                if (match) visibleCount++;
+              });
+
+              rows.forEach(function(row, i) {
+                var match = !query || row.dataset.username.indexOf(query) !== -1 || row.dataset.name.indexOf(query) !== -1 || row.dataset.email.indexOf(query) !== -1 || row.dataset.phone.indexOf(query) !== -1;
+                row.style.display = match ? '' : 'none';
+                if (actionRows[i]) actionRows[i].style.display = match ? '' : 'none';
+              });
+
+              document.getElementById('noResults').style.display = (query && visibleCount === 0) ? '' : 'none';
+            }
+          </script>
         </body>
         </html>
       `);
@@ -976,7 +1004,7 @@ module.exports = function (db, appConfig, upload) {
                   <div class="profile-card">
                     <div class="form-group">
                       <label>Year (Optional)</label>
-                      <input type="text" name="year" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="e.g., 1969" value="${car.year || ''}" style="font-size:16px;">
+                      <input type="text" name="year" inputmode="numeric" maxlength="4" placeholder="e.g., 1969" value="${car.year || ''}" style="font-size:16px;width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                     </div>
                     <div class="form-group">
                       <label>Make *</label>
@@ -1002,7 +1030,7 @@ module.exports = function (db, appConfig, upload) {
                     </div>
                     <div class="form-group">
                       <label>Voter ID</label>
-                      <input type="text" name="voter_id" value="${car.voter_id || ''}" placeholder="Assigned voter number">
+                      <input type="text" name="voter_id" value="${car.voter_id || ''}" placeholder="Assigned voter number" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                     </div>
                     <div class="form-group">
                       <label>Status</label>

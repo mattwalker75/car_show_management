@@ -1025,7 +1025,7 @@ module.exports = function (db, appConfig, upload) {
                 <div class="form-group">
                   <label>Voter ID Number</label>
                   <div style="display:flex;gap:8px;align-items:center;">
-                    <input type="text" name="voter_id" id="voterIdInput" value="${car.voter_id || ''}" placeholder="Assign a voter number" style="flex:1;">
+                    <input type="text" name="voter_id" id="voterIdInput" value="${car.voter_id || ''}" placeholder="Assign a voter number" inputmode="numeric" style="flex:1;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                     <button type="button" onclick="document.getElementById('voterIdInput').value='${nextVoterId}'" style="white-space:nowrap;background:#3498db;color:#000;padding:10px 16px;">Auto-Assign (#${nextVoterId})</button>
                   </div>
                 </div>

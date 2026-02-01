@@ -750,7 +750,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                     ${vehicleOptionsHtml}
                   </select>
                   <input type="text" name="catagory_name" required placeholder="Category name" style="flex:1;min-width:150px;">
-                  <input type="number" name="display_order" value="0" placeholder="Order" style="width:80px;">
+                  <input type="text" name="display_order" value="0" placeholder="Order" style="width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
                   <button type="submit" style="white-space:nowrap;">Add Category</button>
                 </div>
               </form>
@@ -880,7 +880,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   </div>
                   <div class="form-group">
                     <label>Display Order</label>
-                    <input type="number" name="display_order" value="${category.display_order}">
+                    <input type="text" name="display_order" value="${category.display_order}" style="width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
                   </div>
                   <div class="form-group">
                     <label>Status</label>
@@ -995,11 +995,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   <div style="display:flex;gap:10px;flex-wrap:wrap;">
                     <div class="form-group" style="flex:1;min-width:100px;">
                       <label>Min Score</label>
-                      <input type="text" name="min_score" value="0" required style="width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
+                      <input type="text" name="min_score" value="${appConfig.defaultMinScore ?? 0}" required style="width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
                     </div>
                     <div class="form-group" style="flex:1;min-width:100px;">
                       <label>Max Score</label>
-                      <input type="text" name="max_score" value="10" required style="width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
+                      <input type="text" name="max_score" value="${appConfig.defaultMaxScore ?? 10}" required style="width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
                     </div>
                     <div class="form-group" style="flex:1;min-width:100px;">
                       <label>Order</label>
@@ -1980,6 +1980,20 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
               <small style="color: #666; display: block; margin-top: 5px;">Default price when creating new vehicle types</small>
             </div>
+            <div style="margin-top:10px;margin-bottom:10px;border-top:1px solid #e1e1e1;padding-top:15px;">
+              <label style="font-weight:600;margin-bottom:8px;display:block;">Default Judging Points</label>
+              <small style="color: #666; display: block; margin-bottom: 10px;">Default min and max score values when adding new judging questions</small>
+              <div style="display:flex;gap:15px;flex-wrap:wrap;">
+                <div class="form-group" style="flex:0;min-width:80px;">
+                  <label>Min Score</label>
+                  <input type="text" name="defaultMinScore" value="${appConfig.defaultMinScore ?? 0}" required maxlength="2" style="width:60px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
+                </div>
+                <div class="form-group" style="flex:0;min-width:80px;">
+                  <label>Max Score</label>
+                  <input type="text" name="defaultMaxScore" value="${appConfig.defaultMaxScore ?? 10}" required maxlength="2" style="width:60px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
+                </div>
+              </div>
+            </div>
             <button type="submit" style="background: #27ae60; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px;">Save Configuration</button>
           </form>
           <div class="links" style="margin-top:20px;">
@@ -2010,15 +2024,21 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // Save app config
   router.post('/app-config', requireAdmin, (req, res) => {
-    const { appTitle, appSubtitle, defaultRegistrationPrice } = req.body;
+    const { appTitle, appSubtitle, defaultRegistrationPrice, defaultMinScore, defaultMaxScore } = req.body;
 
     if (!/^\d+(\.\d{1,2})?$/.test((defaultRegistrationPrice || '').trim())) {
       return res.send(errorPage('Invalid price. Enter a number like 25 or 25.00.', '/admin/app-config', 'Try Again'));
     }
 
+    if (!/^\d+$/.test((defaultMinScore || '').trim()) || !/^\d+$/.test((defaultMaxScore || '').trim())) {
+      return res.send(errorPage('Default Min Score and Max Score must be whole numbers.', '/admin/app-config', 'Try Again'));
+    }
+
     appConfig.appTitle = appTitle || 'Car Show Manager';
     appConfig.appSubtitle = appSubtitle || '';
     appConfig.defaultRegistrationPrice = Math.round((parseFloat(defaultRegistrationPrice) || 25.00) * 100) / 100;
+    appConfig.defaultMinScore = parseInt(defaultMinScore) || 0;
+    appConfig.defaultMaxScore = parseInt(defaultMaxScore) || 10;
 
     saveConfig();
 

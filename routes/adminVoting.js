@@ -216,9 +216,9 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 return `
                   <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:#f8f9fa;border-radius:4px;margin-bottom:5px;">
                     <span style="flex:1;font-size:13px;">${q.question} (${q.min_score}-${q.max_score})</span>
-                    <input type="number" name="score_${judge.user_id}_${q.judge_question_id}"
-                           value="${currentScore}" min="${q.min_score}" max="${q.max_score}"
-                           style="width:60px;padding:5px;border:1px solid #ddd;border-radius:4px;">
+                    <input type="text" name="score_${judge.user_id}_${q.judge_question_id}"
+                           value="${currentScore}" inputmode="numeric"
+                           style="width:60px;padding:5px;border:1px solid #ddd;border-radius:4px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
                   </div>
                 `;
               }).join('');

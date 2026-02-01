@@ -3,5 +3,7 @@
   "appSubtitle": "Sign in to your account",
   "judgeVotingStatus": "Close",
   "specialtyVotingStatus": "Close",
-  "defaultRegistrationPrice": 25
+  "defaultRegistrationPrice": 25,
+  "defaultMinScore": 0,
+  "defaultMaxScore": 5
 }

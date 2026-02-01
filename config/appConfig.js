@@ -14,7 +14,9 @@ let appConfig = {
   appSubtitle: 'Sign in to your account',
   judgeVotingStatus: 'Close',
   specialtyVotingStatus: 'Close',
-  defaultRegistrationPrice: 25.00
+  defaultRegistrationPrice: 25.00,
+  defaultMinScore: 0,
+  defaultMaxScore: 10
 };
 
 // Load config from disk (called at startup and when config may have changed)
