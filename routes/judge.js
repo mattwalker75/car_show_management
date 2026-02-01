@@ -72,7 +72,7 @@ module.exports = function (db, appConfig, upload) {
                   <a href="/judge" class="active">Dashboard</a>
                   <a href="/judge/judge-vehicles">Judge Vehicles</a>
                   <a href="/judge/vehicles">Vehicles</a>
-                  <a href="/judge/users">View Users</a>
+                  <a href="/judge/users">Users</a>
                   <a href="/judge/results">Results</a>
                   <a href="/user/vote">Vote Here!</a>
                 </div>
@@ -115,7 +115,7 @@ module.exports = function (db, appConfig, upload) {
   });
 
   // ============================================================
-  // View Users List
+  // Users List
   // ============================================================
   router.get('/users', requireJudge, (req, res) => {
     const user = req.session.user;
@@ -131,14 +131,16 @@ module.exports = function (db, appConfig, upload) {
       }
 
       const userRows = users.map(u => `
+        <tr style="border-bottom:none;">
+          <td style="border-bottom:none;">${u.username}</td>
+          <td style="border-bottom:none;">${u.name}</td>
+          <td style="border-bottom:none;">${u.email}</td>
+          <td style="border-bottom:none;">${u.phone || '-'}</td>
+          <td style="border-bottom:none;"><span class="role-badge ${u.role}">${u.role}</span></td>
+          <td style="border-bottom:none;"><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+        </tr>
         <tr>
-          <td>${u.username}</td>
-          <td>${u.name}</td>
-          <td>${u.email}</td>
-          <td>${u.phone || '-'}</td>
-          <td><span class="role-badge ${u.role}">${u.role}</span></td>
-          <td><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
-          <td>
+          <td colspan="6" style="border-top:none;padding-top:0;text-align:center;">
             <a href="/judge/reset-password/${u.id}" class="action-btn edit">Reset Password</a>
           </td>
         </tr>
@@ -171,7 +173,7 @@ module.exports = function (db, appConfig, upload) {
         <!DOCTYPE html>
         <html>
         <head>
-          <title>View Users - Judge Dashboard</title>
+          <title>Users - Judge Dashboard</title>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
@@ -191,7 +193,9 @@ module.exports = function (db, appConfig, upload) {
               <a href="/judge">Dashboard</a>
               <a href="/judge/judge-vehicles">Judge Vehicles</a>
               <a href="/judge/vehicles">Vehicles</a>
-              <a href="/judge/users" class="active">View Users</a>
+              <a href="/judge/users" class="active">Users</a>
+              <a href="/judge/results">Results</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             <h3 class="section-title">Users & Judges</h3>
@@ -213,7 +217,6 @@ module.exports = function (db, appConfig, upload) {
                     <th>Phone</th>
                     <th>Role</th>
                     <th>Status</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -222,6 +225,10 @@ module.exports = function (db, appConfig, upload) {
               </table>
             </div>
             <div class="scroll-hint"></div>
+
+            <div class="links" style="margin-top:20px;">
+              <a href="/judge">&larr; Back to Dashboard</a>
+            </div>
           </div>
         </body>
         </html>
@@ -271,7 +278,7 @@ module.exports = function (db, appConfig, upload) {
               <a href="/judge">Dashboard</a>
               <a href="/judge/judge-vehicles">Judge Vehicles</a>
               <a href="/judge/vehicles">Vehicles</a>
-              <a href="/judge/users">View Users</a>
+              <a href="/judge/users">Users</a>
               <a href="/judge/results">Results</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
@@ -431,7 +438,7 @@ module.exports = function (db, appConfig, upload) {
               <a href="/judge">Dashboard</a>
               <a href="/judge/judge-vehicles" class="active">Judge Vehicles</a>
               <a href="/judge/vehicles">Vehicles</a>
-              <a href="/judge/users">View Users</a>
+              <a href="/judge/users">Users</a>
               <a href="/judge/results">Results</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
@@ -543,7 +550,7 @@ module.exports = function (db, appConfig, upload) {
               .vehicle-image img {
                 width: 100%;
                 height: 100%;
-                object-fit: cover;
+                object-fit: contain;
               }
               .vehicle-placeholder {
                 width: 100%;
@@ -630,7 +637,7 @@ module.exports = function (db, appConfig, upload) {
                 <a href="/judge">Dashboard</a>
                 <a href="/judge/judge-vehicles" class="active">Judge Vehicles</a>
                 <a href="/judge/vehicles">Vehicles</a>
-                <a href="/judge/users">View Users</a>
+                <a href="/judge/users">Users</a>
                 <a href="/judge/results">Results</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
@@ -771,7 +778,7 @@ module.exports = function (db, appConfig, upload) {
                   .car-header-image img {
                     width: 100%;
                     height: 100%;
-                    object-fit: cover;
+                    object-fit: contain;
                   }
                   .car-header-info h2 {
                     margin: 0 0 8px 0;
@@ -893,7 +900,7 @@ module.exports = function (db, appConfig, upload) {
                     <a href="/judge">Dashboard</a>
                     <a href="/judge/judge-vehicles" class="active">Judge Vehicles</a>
                     <a href="/judge/vehicles">Vehicles</a>
-                    <a href="/judge/users">View Users</a>
+                    <a href="/judge/users">Users</a>
                     <a href="/judge/results">Results</a>
                     <a href="/user/vote">Vote Here!</a>
                   </div>
@@ -1052,7 +1059,7 @@ module.exports = function (db, appConfig, upload) {
               <a href="/judge">Dashboard</a>
               <a href="/judge/judge-vehicles">Judge Vehicles</a>
               <a href="/judge/vehicles">Vehicles</a>
-              <a href="/judge/users">View Users</a>
+              <a href="/judge/users">Users</a>
               <a href="/judge/results" class="active">Results</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
@@ -1179,7 +1186,7 @@ module.exports = function (db, appConfig, upload) {
                 <a href="/judge">Dashboard</a>
                 <a href="/judge/judge-vehicles">Judge Vehicles</a>
                 <a href="/judge/vehicles">Vehicles</a>
-                <a href="/judge/users">View Users</a>
+                <a href="/judge/users">Users</a>
                 <a href="/judge/results" class="active">Results</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
@@ -1303,7 +1310,7 @@ module.exports = function (db, appConfig, upload) {
             .vehicle-image img {
               width: 100%;
               height: 100%;
-              object-fit: cover;
+              object-fit: contain;
             }
             .vehicle-placeholder {
               width: 100%;
@@ -1398,7 +1405,7 @@ module.exports = function (db, appConfig, upload) {
               <a href="/judge">Dashboard</a>
               <a href="/judge/judge-vehicles">Judge Vehicles</a>
               <a href="/judge/vehicles" class="active">Vehicles</a>
-              <a href="/judge/users">View Users</a>
+              <a href="/judge/users">Users</a>
               <a href="/judge/results">Results</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
@@ -1411,6 +1418,10 @@ module.exports = function (db, appConfig, upload) {
             <p style="color:#856404;font-size:13px;margin-bottom:15px;">These vehicles are waiting to be activated by the registrar. You cannot judge them until they are activated.</p>
 
             ${inactiveCars.length > 0 ? inactiveVehicleCards : '<p style="color: #666; text-align: center; padding: 20px;">No inactive vehicles.</p>'}
+
+            <div class="links" style="margin-top:20px;">
+              <a href="/judge">&larr; Back to Dashboard</a>
+            </div>
           </div>
         </body>
         </html>
@@ -1468,7 +1479,7 @@ module.exports = function (db, appConfig, upload) {
             .vehicle-preview-image img {
               width: 100%;
               height: 100%;
-              object-fit: cover;
+              object-fit: contain;
             }
             .vehicle-preview-placeholder {
               width: 100%;
@@ -1545,7 +1556,7 @@ module.exports = function (db, appConfig, upload) {
               <a href="/judge">Dashboard</a>
               <a href="/judge/judge-vehicles">Judge Vehicles</a>
               <a href="/judge/vehicles">Vehicles</a>
-              <a href="/judge/users">View Users</a>
+              <a href="/judge/users">Users</a>
               <a href="/judge/results">Results</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
@@ -1651,7 +1662,7 @@ module.exports = function (db, appConfig, upload) {
               .vehicle-preview-image img {
                 width: 100%;
                 height: 100%;
-                object-fit: cover;
+                object-fit: contain;
               }
               .vehicle-preview-placeholder {
                 width: 100%;
@@ -1690,7 +1701,7 @@ module.exports = function (db, appConfig, upload) {
                 <a href="/judge">Dashboard</a>
                 <a href="/judge/judge-vehicles">Judge Vehicles</a>
                 <a href="/judge/vehicles">Vehicles</a>
-                <a href="/judge/users">View Users</a>
+                <a href="/judge/users">Users</a>
                 <a href="/judge/results">Results</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
@@ -1725,6 +1736,10 @@ module.exports = function (db, appConfig, upload) {
                   <button type="submit">Update Class</button>
                 </div>
               </form>
+
+              <div class="links" style="margin-top:20px;">
+                <a href="/judge/vehicles">&larr; Back to Vehicles</a>
+              </div>
             </div>
           </body>
           </html>

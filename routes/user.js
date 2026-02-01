@@ -5,7 +5,7 @@ const router = express.Router();
 module.exports = function (db, appConfig, upload) {
   const { requireAuth } = require('../middleware/auth');
   const { errorPage, successPage } = require('../views/layout');
-  const { getAvatarContent } = require('../views/components');
+  const { getAvatarContent, getNav, dashboardHeader } = require('../views/components');
   const { handleVehiclePhotoUpload, deleteVehicleImage } = require('../helpers/imageUpload');
 
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
@@ -19,7 +19,7 @@ module.exports = function (db, appConfig, upload) {
       : initials;
 
     // Get user's registered vehicles (both active and pending) with class names
-    db.all(`SELECT c.car_id, c.make, c.model, c.description, c.image_url, c.is_active,
+    db.all(`SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.is_active,
             cl.class_name, v.vehicle_name
             FROM cars c
             LEFT JOIN classes cl ON c.class_id = cl.class_id
@@ -31,14 +31,14 @@ module.exports = function (db, appConfig, upload) {
 
       const vehicleCards = cars.length > 0 ? cars.map(car => `
         <div class="vehicle-card ${car.is_active ? '' : 'pending'}">
-          <div class="vehicle-image" ${car.image_url ? `onclick="openImageModal('${car.image_url}', '${car.make} ${car.model}')"` : ''}>
+          <div class="vehicle-image" ${car.image_url ? `onclick="openImageModal('${car.image_url}', '${car.year ? car.year + ' ' : ''}${car.make} ${car.model}')"` : ''}>
             ${car.image_url
-              ? `<img src="${car.image_url}" alt="${car.make} ${car.model}">`
+              ? `<img src="${car.image_url}" alt="${car.year ? car.year + ' ' : ''}${car.make} ${car.model}">`
               : `<div class="vehicle-placeholder">🚗</div>`
             }
           </div>
           <div class="vehicle-info">
-            <div class="vehicle-title">${car.make} ${car.model}</div>
+            <div class="vehicle-title">${car.year ? car.year + ' ' : ''}${car.make} ${car.model}</div>
             <div class="vehicle-class">
               ${car.vehicle_name ? `<span class="type-badge">${car.vehicle_name}</span>` : ''}
               ${car.class_name ? `<span class="class-badge">${car.class_name}</span>` : ''}
@@ -84,7 +84,7 @@ module.exports = function (db, appConfig, upload) {
             .vehicle-image img {
               width: 100%;
               height: 100%;
-              object-fit: cover;
+              object-fit: contain;
             }
             .vehicle-placeholder {
               width: 100%;
@@ -271,6 +271,7 @@ module.exports = function (db, appConfig, upload) {
 
             <div class="admin-nav">
               <a href="/user" class="active">Dashboard</a>
+              <a href="/user/vehicles">Vehicles</a>
               <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -425,6 +426,7 @@ module.exports = function (db, appConfig, upload) {
 
               <div class="admin-nav">
                 <a href="/user">Dashboard</a>
+                <a href="/user/vehicles">Vehicles</a>
                 <a href="/user/vote">Vote Here!</a>
                 <a href="/user/profile">My Profile</a>
               </div>
@@ -479,6 +481,10 @@ module.exports = function (db, appConfig, upload) {
                   <button type="submit">Register Vehicle</button>
                 </div>
               </form>
+
+              <div class="links" style="margin-top:20px;">
+                <a href="/user">&larr; Back to Dashboard</a>
+              </div>
               <script>
                 const allClasses = ${classesJson};
 
@@ -568,7 +574,7 @@ module.exports = function (db, appConfig, upload) {
       : initials;
 
     // Get the vehicle with its current vehicle_id and class_id
-    db.get('SELECT car_id, make, model, vehicle_id, class_id, description, image_url FROM cars WHERE car_id = ? AND user_id = ?', [carId, user.user_id], (err, car) => {
+    db.get('SELECT car_id, year, make, model, vehicle_id, class_id, description, image_url FROM cars WHERE car_id = ? AND user_id = ?', [carId, user.user_id], (err, car) => {
       if (err || !car) {
         res.redirect('/user');
         return;
@@ -717,14 +723,19 @@ module.exports = function (db, appConfig, upload) {
 
                 <div class="admin-nav">
                   <a href="/user">Dashboard</a>
+                  <a href="/user/vehicles">Vehicles</a>
                   <a href="/user/vote">Vote Here!</a>
                   <a href="/user/profile">My Profile</a>
                 </div>
 
-                <h3 class="section-title">Edit Vehicle: ${car.make} ${car.model}</h3>
+                <h3 class="section-title">Edit Vehicle: ${car.year ? car.year + ' ' : ''}${car.make} ${car.model}</h3>
 
                 <form method="POST" action="/user/edit-vehicle/${car.car_id}" enctype="multipart/form-data">
                   <div class="profile-card">
+                    <div class="form-group">
+                      <label>Year (Optional)</label>
+                      <input type="text" name="year" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="e.g., 1969" value="${car.year || ''}" style="font-size:16px;">
+                    </div>
                     <div class="form-group">
                       <label>Make *</label>
                       <input type="text" name="make" required value="${car.make}">
@@ -774,6 +785,10 @@ module.exports = function (db, appConfig, upload) {
                 <form method="POST" action="/user/delete-vehicle/${car.car_id}" onsubmit="return confirm('Are you sure you want to remove this vehicle from the show?');">
                   <button type="submit" class="delete-btn">Remove Vehicle</button>
                 </form>
+
+                <div class="links" style="margin-top:20px;">
+                  <a href="/user">&larr; Back to Dashboard</a>
+                </div>
 
                 <script>
                   const allClasses = ${classesJson};
@@ -830,7 +845,7 @@ module.exports = function (db, appConfig, upload) {
   router.post('/edit-vehicle/:id', requireAuth, upload.single('vehicle_photo'), async (req, res) => {
     const user = req.session.user;
     const carId = req.params.id;
-    const { make, model, vehicle_id, class_id, description } = req.body;
+    const { year, make, model, vehicle_id, class_id, description } = req.body;
 
     // First verify the car belongs to this user (include pending vehicles)
     db.get('SELECT car_id, image_url FROM cars WHERE car_id = ? AND user_id = ?', [carId, user.user_id], async (err, car) => {
@@ -852,8 +867,8 @@ module.exports = function (db, appConfig, upload) {
       }
 
       // Update vehicle in database
-      db.run('UPDATE cars SET make = ?, model = ?, vehicle_id = ?, class_id = ?, description = ?, image_url = ? WHERE car_id = ? AND user_id = ?',
-        [make, model, vehicle_id, class_id, description || null, imageUrl, carId, user.user_id],
+      db.run('UPDATE cars SET year = ?, make = ?, model = ?, vehicle_id = ?, class_id = ?, description = ?, image_url = ? WHERE car_id = ? AND user_id = ?',
+        [year || null, make, model, vehicle_id, class_id, description || null, imageUrl, carId, user.user_id],
         function(err) {
           if (err) {
             console.error('Vehicle update error:', err.message);
@@ -887,6 +902,442 @@ module.exports = function (db, appConfig, upload) {
           res.send(successPage('Vehicle has been deleted.', '/user', 'Back to My Vehicles'));
         }
       });
+    });
+  });
+
+  // ==========================================
+  // USER VEHICLES BROWSING ROUTES
+  // ==========================================
+
+  // Vehicles list - all active/registered vehicles
+  router.get('/vehicles', requireAuth, (req, res) => {
+    const user = req.session.user;
+    const avatarContent = getAvatarContent(user);
+
+    db.all(`SELECT c.car_id, c.year, c.make, c.model, c.image_url,
+            u.username as owner_username
+            FROM cars c
+            LEFT JOIN users u ON c.user_id = u.user_id
+            WHERE c.is_active = 1
+            ORDER BY c.voter_id, c.make, c.model`, (err, cars) => {
+      if (err) cars = [];
+
+      const vehicleCards = cars.length > 0 ? cars.map(car => `
+        <a href="/user/view-vehicle/${car.car_id}" class="vehicle-browse-card">
+          <div class="vehicle-browse-image" ${car.image_url ? `onclick="openImageModal('${car.image_url}', '${car.year ? car.year + ' ' : ''}${car.make} ${car.model}'); event.preventDefault(); event.stopPropagation();"` : ''}>
+            ${car.image_url
+              ? `<img src="${car.image_url}" alt="${car.year ? car.year + ' ' : ''}${car.make} ${car.model}">`
+              : `<div class="vehicle-placeholder">🚗</div>`
+            }
+          </div>
+          <div class="vehicle-browse-info">
+            <div class="vehicle-browse-title">${car.year ? car.year + ' ' : ''}${car.make} ${car.model}</div>
+            <div class="vehicle-browse-owner">Owner: @${car.owner_username || 'N/A'}</div>
+          </div>
+        </a>
+      `).join('') : '<p style="color: #666; text-align: center; padding: 20px;">No registered vehicles yet.</p>';
+
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Vehicles - Car Show Manager</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          ${styles}
+          ${adminStyles}
+          <style>
+            .vehicle-browse-card {
+              background: #f8f9fa;
+              border-radius: 12px;
+              padding: 12px;
+              margin-bottom: 12px;
+              border: 1px solid #e1e1e1;
+              display: flex;
+              flex-direction: row;
+              gap: 12px;
+              align-items: center;
+              text-decoration: none;
+              color: inherit;
+              transition: all 0.2s ease;
+            }
+            .vehicle-browse-card:active {
+              background: #eef;
+            }
+            .vehicle-browse-image {
+              width: 100px;
+              height: 75px;
+              border-radius: 8px;
+              overflow: hidden;
+              background: #e1e1e1;
+              flex-shrink: 0;
+              cursor: pointer;
+            }
+            .vehicle-browse-image img {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+            }
+            .vehicle-placeholder {
+              width: 100%;
+              height: 100%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 32px;
+              background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            }
+            .vehicle-browse-info {
+              flex: 1;
+              min-width: 0;
+            }
+            .vehicle-browse-title {
+              font-size: 16px;
+              font-weight: 700;
+              color: #1a1a2e;
+            }
+            .vehicle-browse-owner {
+              font-size: 13px;
+              color: #888;
+              margin-top: 4px;
+            }
+            /* Fullscreen image modal */
+            .image-modal {
+              display: none;
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0, 0, 0, 0.95);
+              z-index: 10000;
+              justify-content: center;
+              align-items: center;
+              padding: 20px;
+            }
+            .image-modal.active {
+              display: flex;
+            }
+            .image-modal img {
+              max-width: 100%;
+              max-height: 100%;
+              object-fit: contain;
+              border-radius: 8px;
+            }
+            .image-modal-close {
+              position: absolute;
+              top: 20px;
+              right: 20px;
+              background: rgba(255, 255, 255, 0.2);
+              color: white;
+              border: none;
+              width: 44px;
+              height: 44px;
+              border-radius: 50%;
+              font-size: 24px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            .image-modal-close:hover {
+              background: rgba(255, 255, 255, 0.3);
+            }
+            @media (min-width: 768px) {
+              .vehicle-browse-card {
+                padding: 16px;
+              }
+              .vehicle-browse-card:hover {
+                border-color: #e94560;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+              }
+              .vehicle-browse-image {
+                width: 200px;
+                height: 120px;
+              }
+              .vehicle-browse-title {
+                font-size: 18px;
+              }
+              .vehicle-placeholder {
+                font-size: 48px;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container dashboard-container">
+            ${dashboardHeader('user', user, 'Car Show Manager')}
+
+            ${getNav('user', 'vehicles')}
+
+            <h3 class="section-title">Registered Vehicles (${cars.length})</h3>
+
+            ${vehicleCards}
+          </div>
+
+          <!-- Fullscreen Image Modal -->
+          <div class="image-modal" id="imageModal" onclick="closeImageModal()">
+            <button class="image-modal-close" onclick="closeImageModal()">&times;</button>
+            <img id="modalImage" src="" alt="">
+          </div>
+
+          <script>
+            function openImageModal(src, alt) {
+              const modal = document.getElementById('imageModal');
+              const img = document.getElementById('modalImage');
+              img.src = src;
+              img.alt = alt;
+              modal.classList.add('active');
+              document.body.style.overflow = 'hidden';
+            }
+
+            function closeImageModal() {
+              const modal = document.getElementById('imageModal');
+              modal.classList.remove('active');
+              document.body.style.overflow = '';
+            }
+
+            document.addEventListener('keydown', function(e) {
+              if (e.key === 'Escape') {
+                closeImageModal();
+              }
+            });
+          </script>
+        </body>
+        </html>
+      `);
+    });
+  });
+
+  // View vehicle detail - public vehicle info (no personal data)
+  router.get('/view-vehicle/:id', requireAuth, (req, res) => {
+    const user = req.session.user;
+    const carId = req.params.id;
+    const avatarContent = getAvatarContent(user);
+
+    db.get(`SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.voter_id,
+            u.username as owner_username,
+            cl.class_name, v.vehicle_name
+            FROM cars c
+            LEFT JOIN users u ON c.user_id = u.user_id
+            LEFT JOIN classes cl ON c.class_id = cl.class_id
+            LEFT JOIN vehicles v ON c.vehicle_id = v.vehicle_id
+            WHERE c.car_id = ? AND c.is_active = 1`, [carId], (err, car) => {
+      if (err || !car) {
+        res.redirect('/user/vehicles');
+        return;
+      }
+
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Vehicle Details - Car Show Manager</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          ${styles}
+          ${adminStyles}
+          <style>
+            .vehicle-detail-image {
+              width: 100%;
+              max-width: 400px;
+              height: 250px;
+              border-radius: 12px;
+              overflow: hidden;
+              background: #e1e1e1;
+              margin-bottom: 20px;
+              cursor: pointer;
+            }
+            .vehicle-detail-image img {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+            }
+            .vehicle-detail-placeholder {
+              width: 100%;
+              max-width: 400px;
+              height: 250px;
+              background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+              border-radius: 12px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 64px;
+              margin-bottom: 20px;
+            }
+            .detail-card {
+              background: white;
+              border-radius: 12px;
+              padding: 20px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+              margin-bottom: 20px;
+            }
+            .detail-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 10px 0;
+              border-bottom: 1px solid #f0f0f0;
+            }
+            .detail-row:last-child {
+              border-bottom: none;
+            }
+            .detail-label {
+              font-weight: 600;
+              color: #555;
+            }
+            .detail-value {
+              color: #333;
+              text-align: right;
+              max-width: 60%;
+            }
+            .description-section {
+              background: #f8f9fa;
+              padding: 16px;
+              border-radius: 12px;
+              margin-bottom: 20px;
+            }
+            .description-section h4 {
+              color: #1a1a2e;
+              margin-bottom: 8px;
+            }
+            .description-section p {
+              color: #666;
+              font-size: 14px;
+              line-height: 1.5;
+            }
+            /* Fullscreen image modal */
+            .image-modal {
+              display: none;
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0, 0, 0, 0.95);
+              z-index: 10000;
+              justify-content: center;
+              align-items: center;
+              padding: 20px;
+            }
+            .image-modal.active {
+              display: flex;
+            }
+            .image-modal img {
+              max-width: 100%;
+              max-height: 100%;
+              object-fit: contain;
+              border-radius: 8px;
+            }
+            .image-modal-close {
+              position: absolute;
+              top: 20px;
+              right: 20px;
+              background: rgba(255, 255, 255, 0.2);
+              color: white;
+              border: none;
+              width: 44px;
+              height: 44px;
+              border-radius: 50%;
+              font-size: 24px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            .image-modal-close:hover {
+              background: rgba(255, 255, 255, 0.3);
+            }
+            @media (min-width: 768px) {
+              .vehicle-detail-image {
+                height: 350px;
+              }
+              .vehicle-detail-placeholder {
+                height: 350px;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container dashboard-container">
+            ${dashboardHeader('user', user, 'Car Show Manager')}
+
+            ${getNav('user', 'vehicles')}
+
+            <h3 class="section-title">${car.year ? car.year + ' ' : ''}${car.make} ${car.model}</h3>
+
+            ${car.image_url
+              ? `<div class="vehicle-detail-image" onclick="openImageModal('${car.image_url}', '${car.year ? car.year + ' ' : ''}${car.make} ${car.model}')"><img src="${car.image_url}" alt="${car.year ? car.year + ' ' : ''}${car.make} ${car.model}"></div>`
+              : `<div class="vehicle-detail-placeholder">🚗</div>`
+            }
+
+            <div class="detail-card">
+              <div class="detail-row">
+                <span class="detail-label">Year</span>
+                <span class="detail-value">${car.year || 'N/A'}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Make</span>
+                <span class="detail-value">${car.make}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Model</span>
+                <span class="detail-value">${car.model}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Class</span>
+                <span class="detail-value">${car.class_name || 'N/A'}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Registration Number</span>
+                <span class="detail-value">${car.voter_id ? '#' + car.voter_id : 'Not assigned'}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Owner</span>
+                <span class="detail-value">@${car.owner_username || 'N/A'}</span>
+              </div>
+            </div>
+
+            ${car.description ? `
+              <div class="description-section">
+                <h4>Description</h4>
+                <p>${car.description}</p>
+              </div>
+            ` : ''}
+
+            <div class="links" style="margin-top:20px;">
+              <a href="/user/vehicles">&larr; Back to Vehicles</a>
+            </div>
+          </div>
+
+          <!-- Fullscreen Image Modal -->
+          <div class="image-modal" id="imageModal" onclick="closeImageModal()">
+            <button class="image-modal-close" onclick="closeImageModal()">&times;</button>
+            <img id="modalImage" src="" alt="">
+          </div>
+
+          <script>
+            function openImageModal(src, alt) {
+              const modal = document.getElementById('imageModal');
+              const img = document.getElementById('modalImage');
+              img.src = src;
+              img.alt = alt;
+              modal.classList.add('active');
+              document.body.style.overflow = 'hidden';
+            }
+
+            function closeImageModal() {
+              const modal = document.getElementById('imageModal');
+              modal.classList.remove('active');
+              document.body.style.overflow = '';
+            }
+
+            document.addEventListener('keydown', function(e) {
+              if (e.key === 'Escape') {
+                closeImageModal();
+              }
+            });
+          </script>
+        </body>
+        </html>
+      `);
     });
   });
 
@@ -979,24 +1430,14 @@ module.exports = function (db, appConfig, upload) {
           </head>
           <body>
             <div class="container dashboard-container">
-              <div class="dashboard-header">
-                <h1>🏎️ Car Show Manager</h1>
-                <div class="user-info">
-                  <div class="user-avatar">${avatarContent}</div>
-                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
-                  <a href="/logout" class="logout-btn">Sign Out</a>
-                </div>
-              </div>
+              ${dashboardHeader(user.role, user, user.role === 'admin' ? 'Admin Dashboard' : user.role === 'judge' ? 'Judge Dashboard' : user.role === 'registrar' ? 'Registrar' : 'Car Show Manager')}
 
               <div class="welcome-card">
                 <h2>Vote Here!</h2>
                 <p>Participate in specialty voting for the car show.</p>
               </div>
 
-              <div class="admin-nav">
-                <a href="/user">Dashboard</a>
-                <a href="/user/vote" class="active">Vote Here!</a>
-              </div>
+              ${getNav(user.role, 'vote')}
 
               ${appConfig.specialtyVotingStatus === 'Lock' ? `
                 <div class="no-votes-message">
@@ -1199,7 +1640,7 @@ module.exports = function (db, appConfig, upload) {
                 .vehicle-vote-image img {
                   width: 100%;
                   height: 100%;
-                  object-fit: cover;
+                  object-fit: contain;
                   cursor: zoom-in;
                 }
                 .vehicle-placeholder {
@@ -1367,14 +1808,9 @@ module.exports = function (db, appConfig, upload) {
             </head>
             <body>
               <div class="container dashboard-container">
-                <div class="dashboard-header">
-                  <h1>🏎️ Car Show Manager</h1>
-                  <div class="user-info">
-                    <div class="user-avatar">${avatarContent}</div>
-                    <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
-                  <a href="/logout" class="logout-btn">Sign Out</a>
-                  </div>
-                </div>
+                ${dashboardHeader(user.role, user, user.role === 'admin' ? 'Admin Dashboard' : user.role === 'judge' ? 'Judge Dashboard' : user.role === 'registrar' ? 'Registrar' : 'Car Show Manager')}
+
+                ${getNav(user.role, 'vote')}
 
                 <div class="vote-header">
                   <h2>${vote.vote_name}</h2>

@@ -75,6 +75,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
     // Add vehicle_id and class_id columns to specialty_votes if they don't exist
     db.run(`ALTER TABLE specialty_votes ADD COLUMN vehicle_id INTEGER REFERENCES vehicles(vehicle_id)`, (err) => {});
     db.run(`ALTER TABLE specialty_votes ADD COLUMN class_id INTEGER REFERENCES classes(class_id)`, (err) => {});
+
+    // Add registration_price column to vehicles if it doesn't exist
+    db.run(`ALTER TABLE vehicles ADD COLUMN registration_price REAL DEFAULT 25.00`, (err) => {});
   }
 });
 

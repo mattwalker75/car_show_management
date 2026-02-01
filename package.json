@@ -1,7 +1,7 @@
 {
   "name": "carshow_management_app",
   "version": "1.0.0",
-  "description": "",
+  "description": "Car Show Management App - Vehicle registration, judging, and voting system",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
@@ -11,6 +11,16 @@
   "author": "",
   "license": "ISC",
   "type": "commonjs",
+  "_dependencies_info": {
+    "bcrypt": "Password hashing and verification for user authentication",
+    "cookie-session": "Session management via signed cookies (login state)",
+    "express": "Web server framework for routing and HTTP handling",
+    "morgan": "HTTP request logging middleware for debugging",
+    "multer": "File upload handling for profile photos and vehicle images",
+    "sharp": "Image resizing and optimization for uploaded photos",
+    "socket.io": "WebSocket library for real-time notifications, live status updates, and future chat",
+    "sqlite3": "Embedded SQL database for storing users, vehicles, scores, and votes"
+  },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cookie-session": "^2.1.1",
@@ -18,6 +28,7 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "sharp": "^0.34.5",
+    "socket.io": "^4.8.3",
     "sqlite3": "^5.1.7"
   }
 }

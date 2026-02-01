@@ -6,10 +6,10 @@ const express = require('express');
 const router = express.Router();
 
 module.exports = function (db, appConfig, upload) {
-  const { requireAuth, requireAdmin, requireJudge, requireRegistrar, hashPassword, verifyPassword } = require('../middleware/auth');
+  const { requireAuth, requireAdmin, requireJudge, requireRegistrar, requireVendor, hashPassword, verifyPassword } = require('../middleware/auth');
   const { handleProfilePhotoUpload } = require('../helpers/imageUpload');
   const { errorPage, successPage } = require('../views/layout');
-  const { getAvatarContent, adminNav, judgeNav, registrarNav, userNav } = require('../views/components');
+  const { getAvatarContent, adminNav, judgeNav, registrarNav, vendorNav, userNav } = require('../views/components');
 
   // Role-specific configuration: middleware, titles, nav, redirect paths
   const roleConfig = {
@@ -17,7 +17,7 @@ module.exports = function (db, appConfig, upload) {
       middleware: requireAdmin,
       heading: 'Admin Dashboard',
       title: 'My Profile - Admin Dashboard',
-      redirect: '/admin',
+      redirect: '/admin/dashboard',
       getNav: (activeTab) => adminNav(activeTab)
     },
     judge: {
@@ -33,6 +33,13 @@ module.exports = function (db, appConfig, upload) {
       title: 'My Profile - Registrar Dashboard',
       redirect: '/registrar',
       getNav: (activeTab) => registrarNav(activeTab)
+    },
+    vendor: {
+      middleware: requireVendor,
+      heading: 'Vendor Dashboard',
+      title: 'My Profile - Vendor',
+      redirect: '/vendor',
+      getNav: (activeTab) => vendorNav(activeTab)
     },
     user: {
       middleware: requireAuth,
@@ -218,6 +225,10 @@ module.exports = function (db, appConfig, upload) {
                   </div>
                   <button type="submit">Change Password</button>
                 </form>
+              </div>
+
+              <div class="links" style="margin-top:20px;">
+                <a href="${config.redirect}">← Back to Dashboard</a>
               </div>
             </div>
           </body>

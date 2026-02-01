@@ -16,7 +16,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // ==========================================
 
   // Vehicle config hub page (combined vehicle types + classes)
-  router.get('/admin/vehicle-config', requireAdmin, (req, res) => {
+  router.get('/vehicle-config', requireAdmin, (req, res) => {
     const user = req.session.user;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     const avatarContent = user.image_url
@@ -47,6 +47,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               return `
                 <tr>
                   <td>${v.vehicle_name}</td>
+                  <td>$${(v.registration_price || 0).toFixed(2)}</td>
                   <td><span class="status-badge ${v.is_active ? 'active' : 'inactive'}">${v.is_active ? 'Active' : 'Inactive'}</span></td>
                   <td>
                     <a href="/admin/edit-vehicle-type/${v.vehicle_id}" class="action-btn edit">Edit</a>
@@ -96,11 +97,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   </div>
 
                   <div class="admin-nav">
+                    <a href="/admin/dashboard">Dashboard</a>
                     <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                     <a href="/admin">Users</a>
-                    <a href="/admin/vehicles">Cars</a>
-                    <a href="/admin/judge-status">Judge Status</a>
-                    <a href="/admin/vote-status">Vote Status</a>
+                    <a href="/admin/vehicles">Vehicles</a>
+                    <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                     <a href="/admin/reports">Reports</a>
                     <a href="/user/vote">Vote Here!</a>
                   </div>
@@ -109,8 +110,9 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   <p style="color:#666;margin-bottom:15px;">Define types like Car, Truck, Motorcycle, etc.</p>
 
                   <form method="POST" action="/admin/add-vehicle-type" style="margin-bottom:20px;">
-                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
                       <input type="text" name="vehicle_name" required placeholder="New vehicle type name" style="flex:1;min-width:200px;">
+                      <input type="number" name="registration_price" step="0.01" min="0" value="${appConfig.defaultRegistrationPrice || 25.00}" placeholder="Price" style="width:100px;">
                       <button type="submit" style="white-space:nowrap;">Add Type</button>
                     </div>
                   </form>
@@ -120,12 +122,13 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                       <thead>
                         <tr>
                           <th>Name</th>
+                          <th>Price</th>
                           <th>Status</th>
                           <th>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        ${vehicleRows || '<tr><td colspan="3" style="text-align:center;color:#666;">No vehicle types defined yet.</td></tr>'}
+                        ${vehicleRows || '<tr><td colspan="4" style="text-align:center;color:#666;">No vehicle types defined yet.</td></tr>'}
                       </tbody>
                     </table>
                   </div>
@@ -166,7 +169,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <script>
                   function confirmDeleteVehicleType(id, name) {
                     if (confirm('Are you sure you want to delete the vehicle type "' + name + '"?\\n\\nThis action cannot be undone.')) {
-                      window.location.href = '/admin/delete-vehicle-type/' + id;
+                      window.location.href = '/delete-vehicle-type/' + id;
                     }
                   }
 
@@ -186,7 +189,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Vehicle types management page (legacy - NOT USED, redirects to vehicle-config)
-  router.get('/admin/vehicle-types', requireAdmin, (req, res) => {
+  router.get('/vehicle-types', requireAdmin, (req, res) => {
     const user = req.session.user;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     const avatarContent = user.image_url
@@ -227,11 +230,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             </div>
 
             <div class="admin-nav">
+              <a href="/admin/dashboard">Dashboard</a>
               <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
-              <a href="/admin/vehicles">Cars</a>
-              <a href="/admin/judge-status">Judge Status</a>
-              <a href="/admin/vote-status">Vote Status</a>
+              <a href="/admin/vehicles">Vehicles</a>
+              <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
@@ -268,15 +271,16 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Add vehicle type
-  router.post('/admin/add-vehicle-type', requireAdmin, (req, res) => {
-    const { vehicle_name } = req.body;
-    db.run('INSERT INTO vehicles (vehicle_name) VALUES (?)', [vehicle_name], (err) => {
+  router.post('/add-vehicle-type', requireAdmin, (req, res) => {
+    const { vehicle_name, registration_price } = req.body;
+    const price = parseFloat(registration_price) || parseFloat(appConfig.defaultRegistrationPrice) || 25.00;
+    db.run('INSERT INTO vehicles (vehicle_name, registration_price) VALUES (?, ?)', [vehicle_name, price], (err) => {
       res.redirect('/admin/vehicle-config');
     });
   });
 
   // Delete vehicle type (only if no classes use it)
-  router.get('/admin/delete-vehicle-type/:id', requireAdmin, (req, res) => {
+  router.get('/delete-vehicle-type/:id', requireAdmin, (req, res) => {
     const vehicleId = req.params.id;
 
     // Check if any classes use this vehicle type
@@ -295,7 +299,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Edit vehicle type page
-  router.get('/admin/edit-vehicle-type/:id', requireAdmin, (req, res) => {
+  router.get('/edit-vehicle-type/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const vehicleId = req.params.id;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -330,11 +334,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             </div>
 
             <div class="admin-nav">
+              <a href="/admin/dashboard">Dashboard</a>
               <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
-              <a href="/admin/vehicles">Cars</a>
-              <a href="/admin/judge-status">Judge Status</a>
-              <a href="/admin/vote-status">Vote Status</a>
+              <a href="/admin/vehicles">Vehicles</a>
+              <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
@@ -346,6 +350,10 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <div class="form-group">
                   <label>Name</label>
                   <input type="text" name="vehicle_name" required value="${vehicle.vehicle_name}">
+                </div>
+                <div class="form-group">
+                  <label>Registration Price ($)</label>
+                  <input type="number" name="registration_price" step="0.01" min="0" value="${vehicle.registration_price || 0}" required>
                 </div>
                 <div class="form-group">
                   <label>Status</label>
@@ -369,11 +377,12 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Update vehicle type
-  router.post('/admin/edit-vehicle-type/:id', requireAdmin, (req, res) => {
+  router.post('/edit-vehicle-type/:id', requireAdmin, (req, res) => {
     const vehicleId = req.params.id;
-    const { vehicle_name, is_active } = req.body;
-    db.run('UPDATE vehicles SET vehicle_name = ?, is_active = ? WHERE vehicle_id = ?',
-      [vehicle_name, is_active, vehicleId], (err) => {
+    const { vehicle_name, is_active, registration_price } = req.body;
+    const price = parseFloat(registration_price) || 0;
+    db.run('UPDATE vehicles SET vehicle_name = ?, is_active = ?, registration_price = ? WHERE vehicle_id = ?',
+      [vehicle_name, is_active, price, vehicleId], (err) => {
       res.redirect('/admin/vehicle-config');
     });
   });
@@ -383,7 +392,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // ==========================================
 
   // Classes management page (legacy - NOT USED, may redirect)
-  router.get('/admin/classes', requireAdmin, (req, res) => {
+  router.get('/classes', requireAdmin, (req, res) => {
     const user = req.session.user;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     const avatarContent = user.image_url
@@ -435,11 +444,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
 
               <div class="admin-nav">
+                <a href="/admin/dashboard">Dashboard</a>
                 <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                 <a href="/admin">Users</a>
-                <a href="/admin/vehicles">Cars</a>
-                <a href="/admin/judge-status">Judge Status</a>
-                <a href="/admin/vote-status">Vote Status</a>
+                <a href="/admin/vehicles">Vehicles</a>
+                <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
@@ -482,7 +491,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Add class
-  router.post('/admin/add-class', requireAdmin, (req, res) => {
+  router.post('/add-class', requireAdmin, (req, res) => {
     const { vehicle_id, class_name } = req.body;
     db.run('INSERT INTO classes (vehicle_id, class_name) VALUES (?, ?)', [vehicle_id, class_name], (err) => {
       res.redirect('/admin/vehicle-config');
@@ -490,7 +499,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Delete class (only if no cars use it)
-  router.get('/admin/delete-class/:id', requireAdmin, (req, res) => {
+  router.get('/delete-class/:id', requireAdmin, (req, res) => {
     const classId = req.params.id;
 
     // Check if any cars use this class
@@ -509,7 +518,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Edit class page
-  router.get('/admin/edit-class/:id', requireAdmin, (req, res) => {
+  router.get('/edit-class/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const classId = req.params.id;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -551,11 +560,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
 
               <div class="admin-nav">
+                <a href="/admin/dashboard">Dashboard</a>
                 <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                 <a href="/admin">Users</a>
-                <a href="/admin/vehicles">Cars</a>
-                <a href="/admin/judge-status">Judge Status</a>
-                <a href="/admin/vote-status">Vote Status</a>
+                <a href="/admin/vehicles">Vehicles</a>
+                <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
@@ -597,7 +606,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Update class
-  router.post('/admin/edit-class/:id', requireAdmin, (req, res) => {
+  router.post('/edit-class/:id', requireAdmin, (req, res) => {
     const classId = req.params.id;
     const { vehicle_id, class_name, is_active } = req.body;
     db.run('UPDATE classes SET vehicle_id = ?, class_name = ?, is_active = ? WHERE class_id = ?',
@@ -611,7 +620,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // ==========================================
 
   // Judge categories management page
-  router.get('/admin/categories', requireAdmin, (req, res) => {
+  router.get('/categories', requireAdmin, (req, res) => {
     const user = req.session.user;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     const avatarContent = user.image_url
@@ -670,11 +679,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
 
               <div class="admin-nav">
+                <a href="/admin/dashboard">Dashboard</a>
                 <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                 <a href="/admin">Users</a>
-                <a href="/admin/vehicles">Cars</a>
-                <a href="/admin/judge-status">Judge Status</a>
-                <a href="/admin/vote-status">Vote Status</a>
+                <a href="/admin/vehicles">Vehicles</a>
+                <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
@@ -727,7 +736,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Add category
-  router.post('/admin/add-category', requireAdmin, (req, res) => {
+  router.post('/add-category', requireAdmin, (req, res) => {
     const { vehicle_id, catagory_name, display_order } = req.body;
     db.run('INSERT INTO judge_catagories (vehicle_id, catagory_name, display_order) VALUES (?, ?, ?)',
       [vehicle_id, catagory_name, display_order || 0], (err) => {
@@ -736,7 +745,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Delete category (also deletes all questions in this category)
-  router.get('/admin/delete-category/:id', requireAdmin, (req, res) => {
+  router.get('/delete-category/:id', requireAdmin, (req, res) => {
     const categoryId = req.params.id;
 
     // First delete all questions for this category
@@ -749,7 +758,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Edit category page
-  router.get('/admin/edit-category/:id', requireAdmin, (req, res) => {
+  router.get('/edit-category/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const categoryId = req.params.id;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -791,11 +800,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
 
               <div class="admin-nav">
+                <a href="/admin/dashboard">Dashboard</a>
                 <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                 <a href="/admin">Users</a>
-                <a href="/admin/vehicles">Cars</a>
-                <a href="/admin/judge-status">Judge Status</a>
-                <a href="/admin/vote-status">Vote Status</a>
+                <a href="/admin/vehicles">Vehicles</a>
+                <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
@@ -841,7 +850,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Update category
-  router.post('/admin/edit-category/:id', requireAdmin, (req, res) => {
+  router.post('/edit-category/:id', requireAdmin, (req, res) => {
     const categoryId = req.params.id;
     const { vehicle_id, catagory_name, display_order, is_active } = req.body;
     db.run('UPDATE judge_catagories SET vehicle_id = ?, catagory_name = ?, display_order = ?, is_active = ? WHERE judge_catagory_id = ?',
@@ -855,7 +864,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // ==========================================
 
   // Category questions page
-  router.get('/admin/category-questions/:id', requireAdmin, (req, res) => {
+  router.get('/category-questions/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const categoryId = req.params.id;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -910,11 +919,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
 
               <div class="admin-nav">
+                <a href="/admin/dashboard">Dashboard</a>
                 <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                 <a href="/admin">Users</a>
-                <a href="/admin/vehicles">Cars</a>
-                <a href="/admin/judge-status">Judge Status</a>
-                <a href="/admin/vote-status">Vote Status</a>
+                <a href="/admin/vehicles">Vehicles</a>
+                <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
@@ -983,7 +992,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Add question
-  router.post('/admin/add-question/:categoryId', requireAdmin, (req, res) => {
+  router.post('/add-question/:categoryId', requireAdmin, (req, res) => {
     const categoryId = req.params.categoryId;
     const { question, min_score, max_score, display_order } = req.body;
 
@@ -1002,7 +1011,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Delete question
-  router.get('/admin/delete-question/:id', requireAdmin, (req, res) => {
+  router.get('/delete-question/:id', requireAdmin, (req, res) => {
     const questionId = req.params.id;
     const categoryId = req.query.categoryId;
 
@@ -1012,7 +1021,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Edit question page
-  router.get('/admin/edit-question/:id', requireAdmin, (req, res) => {
+  router.get('/edit-question/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const questionId = req.params.id;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -1050,11 +1059,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             </div>
 
             <div class="admin-nav">
+              <a href="/admin/dashboard">Dashboard</a>
               <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
-              <a href="/admin/vehicles">Cars</a>
-              <a href="/admin/judge-status">Judge Status</a>
-              <a href="/admin/vote-status">Vote Status</a>
+              <a href="/admin/vehicles">Vehicles</a>
+              <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
@@ -1105,7 +1114,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Update question
-  router.post('/admin/edit-question/:id', requireAdmin, (req, res) => {
+  router.post('/edit-question/:id', requireAdmin, (req, res) => {
     const questionId = req.params.id;
     const { judge_catagory_id, question, min_score, max_score, display_order, is_active } = req.body;
     db.run('UPDATE judge_questions SET question = ?, min_score = ?, max_score = ?, display_order = ?, is_active = ? WHERE judge_question_id = ?',
@@ -1119,7 +1128,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // ==========================================
 
   // Specialty votes management page
-  router.get('/admin/specialty-votes', requireAdmin, (req, res) => {
+  router.get('/specialty-votes', requireAdmin, (req, res) => {
     const user = req.session.user;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     const avatarContent = user.image_url
@@ -1193,11 +1202,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             </div>
 
             <div class="admin-nav">
+              <a href="/admin/dashboard">Dashboard</a>
               <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
-              <a href="/admin/vehicles">Cars</a>
-              <a href="/admin/judge-status">Judge Status</a>
-              <a href="/admin/vote-status">Vote Status</a>
+              <a href="/admin/vehicles">Vehicles</a>
+              <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
@@ -1288,7 +1297,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Add specialty vote
-  router.post('/admin/add-specialty-vote', requireAdmin, (req, res) => {
+  router.post('/add-specialty-vote', requireAdmin, (req, res) => {
     const { vote_name, description, allow_all_users, vehicle_id, class_id } = req.body;
     db.run('INSERT INTO specialty_votes (vote_name, description, allow_all_users, vehicle_id, class_id) VALUES (?, ?, ?, ?, ?)',
       [vote_name, description || null, allow_all_users, vehicle_id || null, class_id || null], (err) => {
@@ -1297,7 +1306,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Edit specialty vote page
-  router.get('/admin/edit-specialty-vote/:id', requireAdmin, (req, res) => {
+  router.get('/edit-specialty-vote/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const voteId = req.params.id;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -1349,11 +1358,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             </div>
 
             <div class="admin-nav">
+              <a href="/admin/dashboard">Dashboard</a>
               <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
-              <a href="/admin/vehicles">Cars</a>
-              <a href="/admin/judge-status">Judge Status</a>
-              <a href="/admin/vote-status">Vote Status</a>
+              <a href="/admin/vehicles">Vehicles</a>
+              <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
@@ -1430,7 +1439,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Update specialty vote
-  router.post('/admin/edit-specialty-vote/:id', requireAdmin, (req, res) => {
+  router.post('/edit-specialty-vote/:id', requireAdmin, (req, res) => {
     const voteId = req.params.id;
     const { vote_name, description, allow_all_users, is_active, vehicle_id, class_id } = req.body;
     db.run('UPDATE specialty_votes SET vote_name = ?, description = ?, allow_all_users = ?, is_active = ?, vehicle_id = ?, class_id = ? WHERE specialty_vote_id = ?',
@@ -1440,7 +1449,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Delete specialty vote
-  router.get('/admin/delete-specialty-vote/:id', requireAdmin, (req, res) => {
+  router.get('/delete-specialty-vote/:id', requireAdmin, (req, res) => {
     const voteId = req.params.id;
 
     // First delete all vote results
@@ -1456,7 +1465,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // View/edit specialty vote results
-  router.get('/admin/specialty-vote-results/:id', requireAdmin, (req, res) => {
+  router.get('/specialty-vote-results/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const voteId = req.params.id;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -1601,11 +1610,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
 
               <div class="admin-nav">
+                <a href="/admin/dashboard">Dashboard</a>
                 <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                 <a href="/admin">Users</a>
-                <a href="/admin/vehicles">Cars</a>
-                <a href="/admin/judge-status">Judge Status</a>
-                <a href="/admin/vote-status">Vote Status</a>
+                <a href="/admin/vehicles">Vehicles</a>
+                <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
@@ -1673,7 +1682,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Manage voters for a specialty vote
-  router.get('/admin/specialty-vote-voters/:id', requireAdmin, (req, res) => {
+  router.get('/specialty-vote-voters/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const voteId = req.params.id;
     const saved = req.query.saved;
@@ -1698,7 +1707,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           const assignedIds = new Set((assignedVoters || []).map(v => v.user_id));
 
           const userCheckboxes = allUsers.map(u => `
-            <label style="display:flex;align-items:center;gap:8px;padding:8px;background:#f8f9fa;border-radius:8px;margin-bottom:8px;cursor:pointer;">
+            <label class="voter-item" data-search="${u.name.toLowerCase()} ${u.username.toLowerCase()} ${u.user_id} ${u.role.toLowerCase()}" style="display:flex;align-items:center;gap:8px;padding:8px;background:#f8f9fa;border-radius:8px;margin-bottom:8px;cursor:pointer;">
               <input type="checkbox" name="user_ids" value="${u.user_id}" ${assignedIds.has(u.user_id) ? 'checked' : ''} style="width:18px;height:18px;">
               <span><strong>${u.name}</strong> (${u.username}) - ${u.role}</span>
             </label>
@@ -1725,11 +1734,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 </div>
 
                 <div class="admin-nav">
+                  <a href="/admin/dashboard">Dashboard</a>
                   <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                   <a href="/admin">Users</a>
-                  <a href="/admin/vehicles">Cars</a>
-                  <a href="/admin/judge-status">Judge Status</a>
-                  <a href="/admin/vote-status">Vote Status</a>
+                  <a href="/admin/vehicles">Vehicles</a>
+                  <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                   <a href="/admin/reports">Reports</a>
                   <a href="/user/vote">Vote Here!</a>
                 </div>
@@ -1752,7 +1761,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                       <button type="button" onclick="selectNone()" style="flex:1;background:#6c757d;">Select None</button>
                     </div>
 
-                    <div style="max-height:400px;overflow-y:auto;">
+                    <div class="form-group" style="margin-bottom:15px;">
+                      <input type="text" id="voterSearch" placeholder="Search by name, email, or user ID..." oninput="filterVoters()" style="width:100%;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+                    </div>
+
+                    <div id="voterList" style="max-height:400px;overflow-y:auto;">
                       ${userCheckboxes || '<p style="color:#666;">No users found.</p>'}
                     </div>
 
@@ -1769,10 +1782,21 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
               <script>
                 function selectAll() {
-                  document.querySelectorAll('input[name="user_ids"]').forEach(cb => cb.checked = true);
+                  document.querySelectorAll('.voter-item').forEach(el => {
+                    if (el.style.display !== 'none') el.querySelector('input').checked = true;
+                  });
                 }
                 function selectNone() {
-                  document.querySelectorAll('input[name="user_ids"]').forEach(cb => cb.checked = false);
+                  document.querySelectorAll('.voter-item').forEach(el => {
+                    if (el.style.display !== 'none') el.querySelector('input').checked = false;
+                  });
+                }
+                function filterVoters() {
+                  const query = document.getElementById('voterSearch').value.toLowerCase().trim();
+                  document.querySelectorAll('.voter-item').forEach(el => {
+                    const text = el.getAttribute('data-search');
+                    el.style.display = !query || text.includes(query) ? 'flex' : 'none';
+                  });
                 }
               </script>
             </body>
@@ -1784,7 +1808,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Update voter assignments for a specialty vote
-  router.post('/admin/update-specialty-vote-voters/:id', requireAdmin, (req, res) => {
+  router.post('/update-specialty-vote-voters/:id', requireAdmin, (req, res) => {
     const voteId = req.params.id;
     let userIds = req.body.user_ids || [];
 
@@ -1827,7 +1851,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // ==========================================
 
   // App config page
-  router.get('/admin/app-config', requireAdmin, (req, res) => {
+  router.get('/app-config', requireAdmin, (req, res) => {
     const user = req.session.user;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     const avatarContent = user.image_url
@@ -1857,11 +1881,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           </div>
 
           <div class="admin-nav">
+            <a href="/admin/dashboard">Dashboard</a>
             <a href="#" class="active" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
             <a href="/admin">Users</a>
-            <a href="/admin/vehicles">Cars</a>
-            <a href="/admin/judge-status">Judge Status</a>
-            <a href="/admin/vote-status">Vote Status</a>
+            <a href="/admin/vehicles">Vehicles</a>
+            <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
             <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
           </div>
@@ -1881,6 +1905,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               <input type="text" name="appSubtitle" value="${appConfig.appSubtitle || ''}" placeholder="Enter subtitle (optional)">
               <small style="color: #666; display: block; margin-top: 5px;">Appears below the title on the login page</small>
             </div>
+            <div class="form-group">
+              <label>Default Registration Price ($)</label>
+              <input type="number" name="defaultRegistrationPrice" step="0.01" min="0" value="${appConfig.defaultRegistrationPrice || 25.00}" required>
+              <small style="color: #666; display: block; margin-top: 5px;">Default price when creating new vehicle types</small>
+            </div>
             <button type="submit" style="background: #27ae60; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px;">Save Configuration</button>
           </form>
         </div>
@@ -1890,11 +1919,12 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   });
 
   // Save app config
-  router.post('/admin/app-config', requireAdmin, (req, res) => {
-    const { appTitle, appSubtitle } = req.body;
+  router.post('/app-config', requireAdmin, (req, res) => {
+    const { appTitle, appSubtitle, defaultRegistrationPrice } = req.body;
 
     appConfig.appTitle = appTitle || 'Car Show Manager';
     appConfig.appSubtitle = appSubtitle || '';
+    appConfig.defaultRegistrationPrice = parseFloat(defaultRegistrationPrice) || 25.00;
 
     saveConfig();
 

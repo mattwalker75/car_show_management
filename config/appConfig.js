@@ -13,7 +13,8 @@ let appConfig = {
   appTitle: 'Car Show Manager',
   appSubtitle: 'Sign in to your account',
   judgeVotingStatus: 'Close',
-  specialtyVotingStatus: 'Close'
+  specialtyVotingStatus: 'Close',
+  defaultRegistrationPrice: 25.00
 };
 
 // Load config from disk (called at startup and when config may have changed)

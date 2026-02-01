@@ -57,7 +57,7 @@ module.exports = function (db, appConfig, upload) {
             <div class="admin-nav">
               <a href="/registrar" class="active">Dashboard</a>
               <a href="/registrar/vehicles">Vehicles</a>
-              <a href="/registrar/users">View Users</a>
+              <a href="/registrar/users">Users</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -99,14 +99,16 @@ module.exports = function (db, appConfig, upload) {
       }
 
       const userRows = users.map(u => `
+        <tr style="border-bottom:none;">
+          <td style="border-bottom:none;">${u.username}</td>
+          <td style="border-bottom:none;">${u.name}</td>
+          <td style="border-bottom:none;">${u.email}</td>
+          <td style="border-bottom:none;">${u.phone || '-'}</td>
+          <td style="border-bottom:none;"><span class="role-badge ${u.role}">${u.role}</span></td>
+          <td style="border-bottom:none;"><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+        </tr>
         <tr>
-          <td>${u.username}</td>
-          <td>${u.name}</td>
-          <td>${u.email}</td>
-          <td>${u.phone || '-'}</td>
-          <td><span class="role-badge ${u.role}">${u.role}</span></td>
-          <td><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
-          <td>
+          <td colspan="6" style="border-top:none;padding-top:0;text-align:center;">
             <a href="/registrar/reset-password/${u.id}" class="action-btn edit">Reset Password</a>
           </td>
         </tr>
@@ -139,7 +141,7 @@ module.exports = function (db, appConfig, upload) {
         <!DOCTYPE html>
         <html>
         <head>
-          <title>View Users - Registrar Dashboard</title>
+          <title>Users - Registrar Dashboard</title>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
@@ -158,7 +160,7 @@ module.exports = function (db, appConfig, upload) {
             <div class="admin-nav">
               <a href="/registrar">Dashboard</a>
               <a href="/registrar/vehicles">Vehicles</a>
-              <a href="/registrar/users" class="active">View Users</a>
+              <a href="/registrar/users" class="active">Users</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -181,7 +183,6 @@ module.exports = function (db, appConfig, upload) {
                     <th>Phone</th>
                     <th>Role</th>
                     <th>Status</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -190,6 +191,10 @@ module.exports = function (db, appConfig, upload) {
               </table>
             </div>
             <div class="scroll-hint"></div>
+
+            <div class="links" style="margin-top:20px;">
+              <a href="/registrar">&larr; Back to Dashboard</a>
+            </div>
           </div>
         </body>
         </html>
@@ -236,7 +241,7 @@ module.exports = function (db, appConfig, upload) {
             <div class="admin-nav">
               <a href="/registrar">Dashboard</a>
               <a href="/registrar/vehicles">Vehicles</a>
-              <a href="/registrar/users">View Users</a>
+              <a href="/registrar/users">Users</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -365,9 +370,9 @@ module.exports = function (db, appConfig, upload) {
       : initials;
 
     // Get all vehicles with owner info and class names
-    db.all(`SELECT c.car_id, c.make, c.model, c.description, c.image_url, c.voter_id, c.is_active,
+    db.all(`SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.voter_id, c.is_active,
             u.name as owner_name, u.username as owner_username, u.email as owner_email,
-            cl.class_name, v.vehicle_name
+            cl.class_name, v.vehicle_name, v.registration_price
             FROM cars c
             LEFT JOIN users u ON c.user_id = u.user_id
             LEFT JOIN classes cl ON c.class_id = cl.class_id
@@ -380,29 +385,35 @@ module.exports = function (db, appConfig, upload) {
       const pendingCount = cars.filter(c => !c.is_active).length;
       const activeCount = cars.filter(c => c.is_active).length;
 
-      const vehicleCards = cars.map(car => `
-        <div class="vehicle-card ${car.is_active ? '' : 'pending'}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-status="${car.is_active ? 'active' : 'pending'}" data-voterid="${car.voter_id || ''}">
+      const vehicleCards = cars.map(car => {
+        const price = car.registration_price || 0;
+        return `
+        <div class="vehicle-card ${car.is_active ? '' : 'pending'}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-status="${car.is_active ? 'active' : 'pending'}" data-voterid="${car.voter_id || ''}" data-price="${price.toFixed(2)}">
+          <div class="vehicle-select">
+            <input type="checkbox" class="vehicle-checkbox" data-price="${price.toFixed(2)}" data-carid="${car.car_id}" onchange="updateSelectionTotal()">
+          </div>
           <a href="/registrar/view-vehicle/${car.car_id}" class="vehicle-image" style="cursor:pointer;display:block;text-decoration:none;">
             ${car.image_url
-              ? `<img src="${car.image_url}" alt="${car.make} ${car.model}">`
+              ? `<img src="${car.image_url}" alt="${car.year ? car.year + ' ' : ''}${car.make} ${car.model}">`
               : `<div class="vehicle-placeholder">🚗</div>`
             }
           </a>
           <div class="vehicle-info">
-            <div class="vehicle-title">${car.make} ${car.model}</div>
+            <div class="vehicle-title">${car.year ? car.year + ' ' : ''}${car.make} ${car.model}</div>
             <div class="vehicle-meta">${car.owner_name || 'Unknown'} &mdash; ${car.owner_email || 'N/A'}</div>
             <div class="vehicle-class">
               ${car.vehicle_name ? `<span class="type-badge">${car.vehicle_name}</span>` : ''}
               ${car.class_name ? `<span class="class-badge">${car.class_name}</span>` : ''}
               <span class="status-badge ${car.is_active ? 'active' : 'pending'}">${car.is_active ? 'Active' : 'Pending Payment'}</span>
               ${car.voter_id ? `<span class="voter-badge">#${car.voter_id}</span>` : ''}
+              <span class="price-badge">$${price.toFixed(2)}</span>
             </div>
           </div>
           <div class="vehicle-actions">
             <a href="/registrar/edit-vehicle/${car.car_id}" class="action-btn edit">${car.is_active ? 'Edit' : 'Activate'}</a>
           </div>
         </div>
-      `).join('');
+      `}).join('');
 
       res.send(`
         <!DOCTYPE html>
@@ -437,7 +448,7 @@ module.exports = function (db, appConfig, upload) {
             .vehicle-image img {
               width: 100%;
               height: 100%;
-              object-fit: cover;
+              object-fit: contain;
             }
             .vehicle-placeholder {
               width: 100%;
@@ -511,6 +522,29 @@ module.exports = function (db, appConfig, upload) {
               display: flex;
               gap: 8px;
             }
+            .vehicle-select {
+              display: flex;
+              align-items: center;
+              padding: 0 4px;
+            }
+            .vehicle-checkbox {
+              width: 20px;
+              height: 20px;
+              cursor: pointer;
+              accent-color: #3498db;
+            }
+            .vehicle-card.selected {
+              border-color: #3498db !important;
+              background: #eaf6ff !important;
+            }
+            .price-badge {
+              background: #27ae60;
+              color: white;
+              padding: 3px 10px;
+              border-radius: 20px;
+              font-size: 11px;
+              font-weight: 600;
+            }
             .summary-cards {
               display: grid;
               grid-template-columns: 1fr 1fr;
@@ -549,6 +583,9 @@ module.exports = function (db, appConfig, upload) {
               .vehicle-actions {
                 flex-shrink: 0;
               }
+              .vehicle-select {
+                flex-shrink: 0;
+              }
             }
           </style>
         </head>
@@ -566,7 +603,7 @@ module.exports = function (db, appConfig, upload) {
             <div class="admin-nav">
               <a href="/registrar">Dashboard</a>
               <a href="/registrar/vehicles" class="active">Vehicles</a>
-              <a href="/registrar/users">View Users</a>
+              <a href="/registrar/users">Users</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -596,6 +633,23 @@ module.exports = function (db, appConfig, upload) {
             <div id="vehicleList">
               ${cars.length > 0 ? vehicleCards : '<p style="color: #666; text-align: center; padding: 20px;">No vehicles registered yet.</p>'}
             </div>
+
+            <div id="selectionBar" style="display:none;position:sticky;bottom:0;left:0;right:0;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);color:white;padding:16px 20px;border-radius:12px;margin-top:16px;box-shadow:0 -4px 20px rgba(0,0,0,0.15);z-index:100;">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                <div>
+                  <span id="selectedCount" style="font-weight:700;font-size:18px;">0</span>
+                  <span style="font-size:14px;opacity:0.8;"> vehicles selected</span>
+                </div>
+                <div style="font-size:22px;font-weight:700;">
+                  Total: $<span id="selectedTotal">0.00</span>
+                </div>
+                <button onclick="clearSelection()" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;">Clear Selection</button>
+              </div>
+            </div>
+
+            <div class="links" style="margin-top:20px;">
+              <a href="/registrar">&larr; Back to Dashboard</a>
+            </div>
           </div>
 
           <script>
@@ -623,6 +677,38 @@ module.exports = function (db, appConfig, upload) {
                 }
               });
               document.getElementById('noResults').style.display = visibleCount === 0 && cards.length > 0 ? '' : 'none';
+            }
+
+            function updateSelectionTotal() {
+              const checkboxes = document.querySelectorAll('.vehicle-checkbox');
+              let count = 0;
+              let total = 0;
+              checkboxes.forEach(cb => {
+                const card = cb.closest('.vehicle-card');
+                if (cb.checked) {
+                  count++;
+                  total += parseFloat(cb.dataset.price) || 0;
+                  card.classList.add('selected');
+                } else {
+                  card.classList.remove('selected');
+                }
+              });
+              const bar = document.getElementById('selectionBar');
+              if (count > 0) {
+                bar.style.display = '';
+                document.getElementById('selectedCount').textContent = count;
+                document.getElementById('selectedTotal').textContent = total.toFixed(2);
+              } else {
+                bar.style.display = 'none';
+              }
+            }
+
+            function clearSelection() {
+              document.querySelectorAll('.vehicle-checkbox').forEach(cb => {
+                cb.checked = false;
+                cb.closest('.vehicle-card').classList.remove('selected');
+              });
+              document.getElementById('selectionBar').style.display = 'none';
             }
           </script>
         </body>
@@ -678,7 +764,7 @@ module.exports = function (db, appConfig, upload) {
             .vehicle-preview-image img {
               width: 100%;
               height: 100%;
-              object-fit: cover;
+              object-fit: contain;
             }
             .vehicle-preview-placeholder {
               width: 100%;
@@ -754,7 +840,7 @@ module.exports = function (db, appConfig, upload) {
             <div class="admin-nav">
               <a href="/registrar">Dashboard</a>
               <a href="/registrar/vehicles">Vehicles</a>
-              <a href="/registrar/users">View Users</a>
+              <a href="/registrar/users">Users</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -762,11 +848,11 @@ module.exports = function (db, appConfig, upload) {
 
             <div class="vehicle-preview">
               ${car.image_url
-                ? `<div class="vehicle-preview-image"><img src="${car.image_url}" alt="${car.make} ${car.model}"></div>`
+                ? `<div class="vehicle-preview-image"><img src="${car.image_url}" alt="${car.year ? car.year + ' ' : ''}${car.make} ${car.model}"></div>`
                 : `<div class="vehicle-preview-placeholder">🚗</div>`
               }
               <div class="vehicle-preview-info">
-                <h4>${car.year || ''} ${car.make} ${car.model}</h4>
+                <h4>${car.year ? car.year + ' ' : ''}${car.make} ${car.model}</h4>
                 <p><strong>Type:</strong> ${car.vehicle_name || 'N/A'}</p>
                 <p><strong>Class:</strong> ${car.class_name || 'N/A'}</p>
                 ${car.description ? `<p><strong>Description:</strong> ${car.description}</p>` : ''}
@@ -854,7 +940,7 @@ module.exports = function (db, appConfig, upload) {
             .vehicle-preview-image img {
               width: 100%;
               height: 100%;
-              object-fit: cover;
+              object-fit: contain;
             }
             .vehicle-preview-placeholder {
               width: 100%;
@@ -907,7 +993,7 @@ module.exports = function (db, appConfig, upload) {
             <div class="admin-nav">
               <a href="/registrar">Dashboard</a>
               <a href="/registrar/vehicles">Vehicles</a>
-              <a href="/registrar/users">View Users</a>
+              <a href="/registrar/users">Users</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -915,11 +1001,11 @@ module.exports = function (db, appConfig, upload) {
 
             <div class="vehicle-preview">
               ${car.image_url
-                ? `<div class="vehicle-preview-image"><img src="${car.image_url}" alt="${car.make} ${car.model}"></div>`
+                ? `<div class="vehicle-preview-image"><img src="${car.image_url}" alt="${car.year ? car.year + ' ' : ''}${car.make} ${car.model}"></div>`
                 : `<div class="vehicle-preview-placeholder">🚗</div>`
               }
               <div class="vehicle-preview-info">
-                <h4>${car.make} ${car.model}</h4>
+                <h4>${car.year ? car.year + ' ' : ''}${car.make} ${car.model}</h4>
                 <p><strong>Type:</strong> ${car.vehicle_name || 'N/A'}</p>
                 <p><strong>Class:</strong> ${car.class_name || 'N/A'}</p>
                 ${car.description ? `<p>${car.description}</p>` : ''}
@@ -953,6 +1039,10 @@ module.exports = function (db, appConfig, upload) {
                 <button type="submit">${car.is_active ? 'Update Vehicle' : 'Activate Vehicle'}</button>
               </div>
             </form>
+
+            <div class="links" style="margin-top:20px;">
+              <a href="/registrar/vehicles">&larr; Back to Vehicles</a>
+            </div>
           </div>
         </body>
         </html>

@@ -34,7 +34,7 @@ app.use(cookieSession({
 // Public routes (login, register, setup, logout, dashboard redirect)
 app.use('/', require('./routes/public')(db, appConfig, upload, port));
 
-// Shared profile routes (all roles: admin, judge, registrar, user)
+// Shared profile routes (all roles: admin, judge, registrar, vendor, user)
 app.use('/', require('./routes/profile')(db, appConfig, upload));
 
 // Role-specific routes
@@ -44,6 +44,7 @@ app.use('/admin', require('./routes/adminVoting')(db, appConfig, upload, saveCon
 app.use('/judge', require('./routes/judge')(db, appConfig, upload));
 app.use('/registrar', require('./routes/registrar')(db, appConfig, upload));
 app.use('/user', require('./routes/user')(db, appConfig, upload));
+app.use('/vendor', require('./routes/vendor')(db, appConfig, upload));
 
 // ── HTTPS Server ──────────────────────────────────────────────────────
 const options = {

@@ -1,6 +1,7 @@
 {
-  "appTitle": "Matt Car show",
+  "appTitle": "Testing Car Show",
   "appSubtitle": "Sign in to your account",
-  "judgeVotingStatus": "Close",
-  "specialtyVotingStatus": "Close"
+  "judgeVotingStatus": "Open",
+  "specialtyVotingStatus": "Open",
+  "defaultRegistrationPrice": 25.00
 }

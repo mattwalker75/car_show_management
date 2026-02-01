@@ -12,7 +12,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Judge Status Page ───────────────────────────────────────────────────────
 
-  router.get('/admin/judge-status', requireAdmin, (req, res) => {
+  router.get('/judge-status', requireAdmin, (req, res) => {
     const user = req.session.user;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     const avatarContent = user.image_url
@@ -101,11 +101,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 </div>
 
                 <div class="admin-nav">
+                  <a href="/admin/dashboard">Dashboard</a>
                   <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                   <a href="/admin">Users</a>
-                  <a href="/admin/vehicles">Cars</a>
-                  <a href="/admin/judge-status" class="active">Judge Status</a>
-                  <a href="/admin/vote-status">Vote Status</a>
+                  <a href="/admin/vehicles">Vehicles</a>
+                  <a href="#" class="active" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                   <a href="/admin/reports">Reports</a>
                   <a href="/user/vote">Vote Here!</a>
                 </div>
@@ -155,7 +155,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Edit Judge Scores for a Car ─────────────────────────────────────────────
 
-  router.get('/admin/edit-judge-scores/:carId', requireAdmin, (req, res) => {
+  router.get('/edit-judge-scores/:carId', requireAdmin, (req, res) => {
     const carId = req.params.carId;
     const user = req.session.user;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -249,11 +249,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   </div>
 
                   <div class="admin-nav">
+                    <a href="/admin/dashboard">Dashboard</a>
                     <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                     <a href="/admin">Users</a>
-                    <a href="/admin/vehicles">Cars</a>
-                    <a href="/admin/judge-status" class="active">Judge Status</a>
-                    <a href="/admin/vote-status">Vote Status</a>
+                    <a href="/admin/vehicles">Vehicles</a>
+                    <a href="#" class="active" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                     <a href="/admin/reports">Reports</a>
                     <a href="/user/vote">Vote Here!</a>
                   </div>
@@ -280,7 +280,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Save Edited Judge Scores ────────────────────────────────────────────────
 
-  router.post('/admin/save-judge-scores/:carId', requireAdmin, (req, res) => {
+  router.post('/save-judge-scores/:carId', requireAdmin, (req, res) => {
     const carId = req.params.carId;
     const body = req.body;
 
@@ -319,7 +319,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Preview Judge Results ───────────────────────────────────────────────────
 
-  router.get('/admin/preview-judge-results', requireAdmin, (req, res) => {
+  router.get('/preview-judge-results', requireAdmin, (req, res) => {
     const user = req.session.user;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     const avatarContent = user.image_url
@@ -401,11 +401,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
 
               <div class="admin-nav">
+                <a href="/admin/dashboard">Dashboard</a>
                 <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                 <a href="/admin">Users</a>
-                <a href="/admin/vehicles">Cars</a>
-                <a href="/admin/judge-status" class="active">Judge Status</a>
-                <a href="/admin/vote-status">Vote Status</a>
+                <a href="/admin/vehicles">Vehicles</a>
+                <a href="#" class="active" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
@@ -432,7 +432,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Lock Judge Voting & Publish Results ─────────────────────────────────────
 
-  router.get('/admin/lock-judge-voting', requireAdmin, (req, res) => {
+  router.get('/lock-judge-voting', requireAdmin, (req, res) => {
     appConfig.judgeVotingStatus = 'Lock';
     saveConfig();
 
@@ -496,7 +496,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Open Judge Voting ───────────────────────────────────────────────────────
 
-  router.get('/admin/open-judge-voting', requireAdmin, (req, res) => {
+  router.get('/open-judge-voting', requireAdmin, (req, res) => {
     appConfig.judgeVotingStatus = 'Open';
     saveConfig();
     res.redirect('/admin/judge-status');
@@ -504,7 +504,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Close Judge Voting ──────────────────────────────────────────────────────
 
-  router.get('/admin/close-judge-voting', requireAdmin, (req, res) => {
+  router.get('/close-judge-voting', requireAdmin, (req, res) => {
     appConfig.judgeVotingStatus = 'Close';
     saveConfig();
     res.redirect('/admin/judge-status');
@@ -512,7 +512,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Specialty Vote Status Page ──────────────────────────────────────────────
 
-  router.get('/admin/vote-status', requireAdmin, (req, res) => {
+  router.get('/vote-status', requireAdmin, (req, res) => {
     const user = req.session.user;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     const avatarContent = user.image_url
@@ -591,11 +591,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
 
               <div class="admin-nav">
+                <a href="/admin/dashboard">Dashboard</a>
                 <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                 <a href="/admin">Users</a>
-                <a href="/admin/vehicles">Cars</a>
-                <a href="/admin/judge-status">Judge Status</a>
-                <a href="/admin/vote-status" class="active">Vote Status</a>
+                <a href="/admin/vehicles">Vehicles</a>
+                <a href="#" class="active" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
@@ -643,7 +643,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Edit/View Vote Results ──────────────────────────────────────────────────
 
-  router.get('/admin/edit-vote-results/:voteId', requireAdmin, (req, res) => {
+  router.get('/edit-vote-results/:voteId', requireAdmin, (req, res) => {
     const voteId = req.params.voteId;
     const user = req.session.user;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -700,11 +700,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
 
               <div class="admin-nav">
+                <a href="/admin/dashboard">Dashboard</a>
                 <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                 <a href="/admin">Users</a>
-                <a href="/admin/vehicles">Cars</a>
-                <a href="/admin/judge-status">Judge Status</a>
-                <a href="/admin/vote-status" class="active">Vote Status</a>
+                <a href="/admin/vehicles">Vehicles</a>
+                <a href="#" class="active" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
@@ -741,7 +741,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Delete a Vote Result ────────────────────────────────────────────────────
 
-  router.get('/admin/delete-vote-result/:id', requireAdmin, (req, res) => {
+  router.get('/delete-vote-result/:id', requireAdmin, (req, res) => {
     const resultId = req.params.id;
     const voteId = req.query.voteId;
 
@@ -752,7 +752,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Preview Specialty Vote Results ──────────────────────────────────────────
 
-  router.get('/admin/preview-vote-results', requireAdmin, (req, res) => {
+  router.get('/preview-vote-results', requireAdmin, (req, res) => {
     const user = req.session.user;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     const avatarContent = user.image_url
@@ -828,11 +828,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
 
               <div class="admin-nav">
+                <a href="/admin/dashboard">Dashboard</a>
                 <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                 <a href="/admin">Users</a>
-                <a href="/admin/vehicles">Cars</a>
-                <a href="/admin/judge-status">Judge Status</a>
-                <a href="/admin/vote-status" class="active">Vote Status</a>
+                <a href="/admin/vehicles">Vehicles</a>
+                <a href="#" class="active" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
@@ -859,7 +859,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Lock Specialty Voting & Publish Results ─────────────────────────────────
 
-  router.get('/admin/lock-specialty-voting', requireAdmin, (req, res) => {
+  router.get('/lock-specialty-voting', requireAdmin, (req, res) => {
     appConfig.specialtyVotingStatus = 'Lock';
     saveConfig();
 
@@ -907,7 +907,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Open Specialty Voting ───────────────────────────────────────────────────
 
-  router.get('/admin/open-specialty-voting', requireAdmin, (req, res) => {
+  router.get('/open-specialty-voting', requireAdmin, (req, res) => {
     appConfig.specialtyVotingStatus = 'Open';
     saveConfig();
     res.redirect('/admin/vote-status');
@@ -915,7 +915,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Close Specialty Voting ──────────────────────────────────────────────────
 
-  router.get('/admin/close-specialty-voting', requireAdmin, (req, res) => {
+  router.get('/close-specialty-voting', requireAdmin, (req, res) => {
     appConfig.specialtyVotingStatus = 'Close';
     saveConfig();
     res.redirect('/admin/vote-status');
@@ -923,7 +923,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Reports Index Page ──────────────────────────────────────────────────────
 
-  router.get('/admin/reports', requireAdmin, (req, res) => {
+  router.get('/reports', requireAdmin, (req, res) => {
     const user = req.session.user;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     const avatarContent = user.image_url
@@ -1007,11 +1007,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                     </div>
 
                     <div class="admin-nav">
+                      <a href="/admin/dashboard">Dashboard</a>
                       <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                       <a href="/admin">Users</a>
-                      <a href="/admin/vehicles">Cars</a>
-                      <a href="/admin/judge-status">Judge Status</a>
-                      <a href="/admin/vote-status">Vote Status</a>
+                      <a href="/admin/vehicles">Vehicles</a>
+                      <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                       <a href="/admin/reports" class="active">Reports</a>
                       <a href="/user/vote">Vote Here!</a>
                     </div>
@@ -1033,7 +1033,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── View a Specific Report ──────────────────────────────────────────────────
 
-  router.get('/admin/reports/view/:reportId', requireAdmin, (req, res) => {
+  router.get('/reports/view/:reportId', requireAdmin, (req, res) => {
     const user = req.session.user;
     const reportId = req.params.reportId;
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -1068,11 +1068,11 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             </div>
 
             <div class="admin-nav">
+              <a href="/admin/dashboard">Dashboard</a>
               <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
-              <a href="/admin/vehicles">Cars</a>
-              <a href="/admin/judge-status">Judge Status</a>
-              <a href="/admin/vote-status">Vote Status</a>
+              <a href="/admin/vehicles">Vehicles</a>
+              <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports" class="active">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
@@ -1256,7 +1256,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // ─── Export Report as CSV ────────────────────────────────────────────────────
 
-  router.get('/admin/reports/export/:reportId', requireAdmin, (req, res) => {
+  router.get('/reports/export/:reportId', requireAdmin, (req, res) => {
     const reportId = req.params.reportId;
 
     const sendCsv = (filename, headers, rows) => {

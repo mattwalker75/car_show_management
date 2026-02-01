@@ -795,11 +795,13 @@ module.exports = function (db, appConfig, upload, port) {
         req.session = { user: user };
         // Redirect based on role
         if (user.role === 'admin') {
-          res.redirect('/admin');
+          res.redirect('/admin/dashboard');
         } else if (user.role === 'judge') {
           res.redirect('/judge');
         } else if (user.role === 'registrar') {
           res.redirect('/registrar');
+        } else if (user.role === 'vendor') {
+          res.redirect('/vendor');
         } else {
           res.redirect('/user');
         }
@@ -968,11 +970,13 @@ module.exports = function (db, appConfig, upload, port) {
   router.get('/dashboard', requireAuth, (req, res) => {
     const user = req.session.user;
     if (user.role === 'admin') {
-      res.redirect('/admin');
+      res.redirect('/admin/dashboard');
     } else if (user.role === 'judge') {
       res.redirect('/judge');
     } else if (user.role === 'registrar') {
       res.redirect('/registrar');
+    } else if (user.role === 'vendor') {
+      res.redirect('/vendor');
     } else {
       res.redirect('/user');
     }

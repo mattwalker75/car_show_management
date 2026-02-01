@@ -53,11 +53,11 @@ function dashboardHeader(role, user, title) {
 function adminNav(activeTab) {
   return `
     <div class="admin-nav">
+      <a href="/admin/dashboard"${activeTab === 'dashboard' ? ' class="active"' : ''}>Dashboard</a>
       <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;"${activeTab === 'config' ? ' class="active"' : ''}>Config</a>
       <a href="/admin"${activeTab === 'users' ? ' class="active"' : ''}>Users</a>
-      <a href="/admin/vehicles"${activeTab === 'vehicles' ? ' class="active"' : ''}>Cars</a>
-      <a href="/admin/judge-status"${activeTab === 'judge-status' ? ' class="active"' : ''}>Judge Status</a>
-      <a href="/admin/vote-status"${activeTab === 'vote-status' ? ' class="active"' : ''}>Vote Status</a>
+      <a href="/admin/vehicles"${activeTab === 'vehicles' ? ' class="active"' : ''}>Vehicles</a>
+      <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;"${activeTab === 'voting' ? ' class="active"' : ''}>Voting</a>
       <a href="/admin/reports"${activeTab === 'reports' ? ' class="active"' : ''}>Reports</a>
       <a href="/user/vote">Vote Here!</a>
     </div>`;
@@ -74,7 +74,7 @@ function judgeNav(activeTab) {
       <a href="/judge"${activeTab === 'dashboard' ? ' class="active"' : ''}>Dashboard</a>
       <a href="/judge/judge-vehicles"${activeTab === 'judge-vehicles' ? ' class="active"' : ''}>Judge Vehicles</a>
       <a href="/judge/vehicles"${activeTab === 'vehicles' ? ' class="active"' : ''}>Vehicles</a>
-      <a href="/judge/users"${activeTab === 'users' ? ' class="active"' : ''}>View Users</a>
+      <a href="/judge/users"${activeTab === 'users' ? ' class="active"' : ''}>Users</a>
       <a href="/judge/results"${activeTab === 'results' ? ' class="active"' : ''}>Results</a>
       <a href="/user/vote">Vote Here!</a>
     </div>`;
@@ -90,21 +90,34 @@ function registrarNav(activeTab) {
     <div class="admin-nav">
       <a href="/registrar"${activeTab === 'dashboard' ? ' class="active"' : ''}>Dashboard</a>
       <a href="/registrar/vehicles"${activeTab === 'vehicles' ? ' class="active"' : ''}>Vehicles</a>
-      <a href="/registrar/users"${activeTab === 'users' ? ' class="active"' : ''}>View Users</a>
+      <a href="/registrar/users"${activeTab === 'users' ? ' class="active"' : ''}>Users</a>
       <a href="/user/vote">Vote Here!</a>
     </div>`;
 }
 
 /**
  * User navigation bar.
- * @param {string} activeTab - Currently active tab: 'dashboard', 'vote'
+ * @param {string} activeTab - Currently active tab: 'dashboard', 'vehicles', 'vote'
  * @returns {string} User nav HTML
  */
 function userNav(activeTab) {
   return `
     <div class="admin-nav">
       <a href="/user"${activeTab === 'dashboard' ? ' class="active"' : ''}>Dashboard</a>
+      <a href="/user/vehicles"${activeTab === 'vehicles' ? ' class="active"' : ''}>Vehicles</a>
       <a href="/user/vote"${activeTab === 'vote' ? ' class="active"' : ''}>Vote Here!</a>
+    </div>`;
+}
+
+/**
+ * Vendor navigation bar.
+ * @param {string} activeTab - Currently active tab: 'dashboard'
+ * @returns {string} Vendor nav HTML
+ */
+function vendorNav(activeTab) {
+  return `
+    <div class="admin-nav">
+      <a href="/vendor"${activeTab === 'dashboard' ? ' class="active"' : ''}>Dashboard</a>
     </div>`;
 }
 
@@ -119,6 +132,7 @@ function getNav(role, activeTab) {
     case 'admin': return adminNav(activeTab);
     case 'judge': return judgeNav(activeTab);
     case 'registrar': return registrarNav(activeTab);
+    case 'vendor': return vendorNav(activeTab);
     case 'user': return userNav(activeTab);
     default: return '';
   }
@@ -131,6 +145,7 @@ module.exports = {
   adminNav,
   judgeNav,
   registrarNav,
+  vendorNav,
   userNav,
   getNav
 };

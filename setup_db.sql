@@ -2,7 +2,7 @@
 -- CAR SHOW MANAGEMENT SYSTEM - DATABASE SCHEMA
 -- ============================================================================
 -- This database supports a car show voting and judging system with:
---   - User authentication and role-based access (admin, judge, registrar, user)
+--   - User authentication and role-based access (admin, judge, registrar, vendor, user)
 --   - Vehicle registration and classification
 --   - Judge scoring with configurable categories and questions
 --   - Specialty voting (e.g., People's Choice awards)
@@ -23,12 +23,13 @@
 --   - 'admin': Full system access, can configure all settings
 --   - 'judge': Can score vehicles, view users, reset passwords
 --   - 'registrar': Can register vehicles, manage vehicle activation
+--   - 'vendor': Can manage vendor/business profile visible to all users
 --   - 'user': Can register their own vehicles, participate in specialty votes
 -- ============================================================================
 CREATE TABLE IF NOT EXISTS users (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- Unique identifier for the user
     username TEXT UNIQUE NOT NULL,               -- Login username (must be unique)
-    role TEXT NOT NULL,                          -- User role: 'admin', 'judge', 'registrar', 'user'
+    role TEXT NOT NULL,                          -- User role: 'admin', 'judge', 'registrar', 'vendor', 'user'
     name TEXT NOT NULL,                          -- Full display name
     phone TEXT,                                  -- Optional phone number
     email TEXT UNIQUE NOT NULL,                  -- Email address (must be unique)
@@ -48,6 +49,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS vehicles (
     vehicle_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- Unique identifier for vehicle type
     vehicle_name TEXT NOT NULL UNIQUE,             -- Name of vehicle type (e.g., 'Car', 'Truck')
+    registration_price REAL DEFAULT 25.00,         -- Registration fee for this vehicle type
     is_active BOOLEAN DEFAULT 1                    -- 1=active, 0=hidden from selection
 );
 

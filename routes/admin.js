@@ -16,7 +16,105 @@ module.exports = function (db, appConfig, upload) {
   const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script>';
 
   // ============================================================
-  // Admin Dashboard - User list
+  // Admin Dashboard - Stats overview
+  // ============================================================
+  router.get('/dashboard', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const avatarContent = user.image_url
+      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+      : initials;
+
+    db.all(`SELECT role, COUNT(*) as count FROM users WHERE is_active = 1 GROUP BY role`, (err, roleCounts) => {
+      const stats = { admin: 0, judge: 0, registrar: 0, user: 0 };
+      if (!err && roleCounts) {
+        roleCounts.forEach(r => { stats[r.role] = r.count; });
+      }
+
+      db.get(`SELECT COUNT(*) as total, SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active FROM cars`, (err, carStats) => {
+        if (err) carStats = { total: 0, active: 0 };
+        const totalVehicles = carStats.total || 0;
+        const activeVehicles = carStats.active || 0;
+        const inactiveVehicles = totalVehicles - activeVehicles;
+
+        const judgeStatus = appConfig.judgeVotingStatus || 'Close';
+        const specialtyStatus = appConfig.specialtyVotingStatus || 'Close';
+
+        res.send(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Admin Dashboard - Car Show Manager</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            ${styles}
+            ${adminStyles}
+          </head>
+          <body>
+            <div class="container dashboard-container">
+              <div class="dashboard-header">
+                <h1>🏎️ Admin Dashboard</h1>
+                <div class="user-info">
+                  <div class="user-avatar">${avatarContent}</div>
+                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  <a href="/logout" class="logout-btn">Sign Out</a>
+                </div>
+              </div>
+
+              <div class="welcome-card">
+                <h2>Welcome, ${user.name}!</h2>
+                <p>Manage users, judges, and system settings.</p>
+              </div>
+
+              <div class="admin-nav">
+                <a href="/admin/dashboard" class="active">Dashboard</a>
+                <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
+                <a href="/admin">Users</a>
+                <a href="/admin/vehicles">Vehicles</a>
+                <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
+                <a href="/admin/reports">Reports</a>
+                <a href="/user/vote">Vote Here!</a>
+              </div>
+
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <div class="stat-number">${stats.user}</div>
+                  <div class="stat-label">Users</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-number">${stats.judge}</div>
+                  <div class="stat-label">Judges</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-number">${stats.registrar}</div>
+                  <div class="stat-label">Registrars</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-number">${activeVehicles}</div>
+                  <div class="stat-label">Active Vehicles</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-number">${inactiveVehicles}</div>
+                  <div class="stat-label">Pending Vehicles</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-number">${judgeStatus}</div>
+                  <div class="stat-label">Judge Voting</div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-number">${specialtyStatus}</div>
+                  <div class="stat-label">Specialty Voting</div>
+                </div>
+              </div>
+            </div>
+          </body>
+          </html>
+        `);
+      });
+    });
+  });
+
+  // ============================================================
+  // Admin Users - User list
   // ============================================================
   router.get('/', requireAdmin, (req, res) => {
     const user = req.session.user;
@@ -31,13 +129,15 @@ module.exports = function (db, appConfig, upload) {
       }
 
       const userRows = users.map(u => `
+        <tr style="border-bottom:none;">
+          <td style="border-bottom:none;">${u.username}</td>
+          <td style="border-bottom:none;">${u.name}</td>
+          <td style="border-bottom:none;">${u.email}</td>
+          <td style="border-bottom:none;"><span class="role-badge ${u.role}">${u.role}</span></td>
+          <td style="border-bottom:none;"><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+        </tr>
         <tr>
-          <td>${u.username}</td>
-          <td>${u.name}</td>
-          <td>${u.email}</td>
-          <td><span class="role-badge ${u.role}">${u.role}</span></td>
-          <td><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
-          <td>
+          <td colspan="5" style="border-top:none;padding-top:0;text-align:center;">
             <a href="/admin/edit-user/${u.id}" class="action-btn edit">Edit</a>
             ${u.id !== user.user_id ? `<a href="/admin/delete-user/${u.id}" class="action-btn delete" onclick="return confirm('Are you sure you want to delete this user?')">Delete</a>` : ''}
           </td>
@@ -71,7 +171,7 @@ module.exports = function (db, appConfig, upload) {
         <!DOCTYPE html>
         <html>
         <head>
-          <title>Admin Dashboard - Car Show Manager</title>
+          <title>Users - Admin Dashboard</title>
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
@@ -83,23 +183,18 @@ module.exports = function (db, appConfig, upload) {
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
                 <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
-                  <a href="/logout" class="logout-btn">Sign Out</a>
+                <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
 
-            <div class="welcome-card">
-              <h2>Welcome, ${user.name}!</h2>
-              <p>Manage users, judges, and system settings.</p>
-            </div>
-
             <div class="admin-nav">
+              <a href="/admin/dashboard">Dashboard</a>
               <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin" class="active">Users</a>
-              <a href="/admin/vehicles">Cars</a>
-              <a href="/admin/judge-status">Judge Status</a>
-              <a href="/admin/vote-status">Vote Status</a>
+              <a href="/admin/vehicles">Vehicles</a>
+              <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports">Reports</a>
-                <a href="/user/vote">Vote Here!</a>
+              <a href="/user/vote">Vote Here!</a>
             </div>
 
             <h3 class="section-title">All Users</h3>
@@ -119,7 +214,6 @@ module.exports = function (db, appConfig, upload) {
                     <th>Email</th>
                     <th>Role</th>
                     <th>Status</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -170,11 +264,11 @@ module.exports = function (db, appConfig, upload) {
           </div>
 
           <div class="admin-nav">
+            <a href="/admin/dashboard">Dashboard</a>
             <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
             <a href="/admin">Users</a>
-            <a href="/admin/vehicles">Cars</a>
-            <a href="/admin/judge-status">Judge Status</a>
-            <a href="/admin/vote-status">Vote Status</a>
+            <a href="/admin/vehicles">Vehicles</a>
+            <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
             <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
           </div>
@@ -201,6 +295,7 @@ module.exports = function (db, appConfig, upload) {
               <label>Role</label>
               <select name="role" required>
                 <option value="user">User</option>
+                <option value="vendor">Vendor</option>
                 <option value="judge">Judge</option>
                 <option value="registrar">Registrar</option>
                 <option value="admin">Admin</option>
@@ -327,11 +422,11 @@ module.exports = function (db, appConfig, upload) {
             </div>
 
             <div class="admin-nav">
+              <a href="/admin/dashboard">Dashboard</a>
               <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
-              <a href="/admin/vehicles">Cars</a>
-              <a href="/admin/judge-status">Judge Status</a>
-              <a href="/admin/vote-status">Vote Status</a>
+              <a href="/admin/vehicles">Vehicles</a>
+              <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
@@ -358,6 +453,7 @@ module.exports = function (db, appConfig, upload) {
                 <label>Role</label>
                 <select name="role" required>
                   <option value="user" ${editUser.role === 'user' ? 'selected' : ''}>User</option>
+                  <option value="vendor" ${editUser.role === 'vendor' ? 'selected' : ''}>Vendor</option>
                   <option value="judge" ${editUser.role === 'judge' ? 'selected' : ''}>Judge</option>
                   <option value="registrar" ${editUser.role === 'registrar' ? 'selected' : ''}>Registrar</option>
                   <option value="admin" ${editUser.role === 'admin' ? 'selected' : ''}>Admin</option>
@@ -477,34 +573,71 @@ module.exports = function (db, appConfig, upload) {
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
 
-    // Get all vehicles with owner info and class names
-    db.all(`SELECT c.car_id, c.make, c.model, c.description, c.image_url, c.voter_id, c.is_active, c.created_at,
+    // Get active vehicles with owner info and class names
+    db.all(`SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.voter_id, c.is_active, c.created_at,
             u.name as owner_name, u.username as owner_username,
             cl.class_name, v.vehicle_name
             FROM cars c
             LEFT JOIN users u ON c.user_id = u.user_id
             LEFT JOIN classes cl ON c.class_id = cl.class_id
             LEFT JOIN vehicles v ON c.vehicle_id = v.vehicle_id
-            ORDER BY c.created_at DESC`, (err, cars) => {
-      if (err) {
-        cars = [];
-      }
+            WHERE c.is_active = 1
+            ORDER BY cl.class_name, c.make, c.model`, (err, activeCars) => {
+      if (err) activeCars = [];
 
-      const vehicleCards = cars.map(car => `
-        <div class="vehicle-card ${car.is_active ? '' : 'inactive'}">
+      // Get inactive vehicles
+      db.all(`SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.voter_id, c.is_active, c.created_at,
+              u.name as owner_name, u.username as owner_username,
+              cl.class_name, v.vehicle_name
+              FROM cars c
+              LEFT JOIN users u ON c.user_id = u.user_id
+              LEFT JOIN classes cl ON c.class_id = cl.class_id
+              LEFT JOIN vehicles v ON c.vehicle_id = v.vehicle_id
+              WHERE c.is_active = 0
+              ORDER BY c.make, c.model`, (err, inactiveCars) => {
+        if (err) inactiveCars = [];
+
+      const makeCard = (car) => `
+        <div class="vehicle-card">
           <div class="vehicle-image">
             ${car.image_url
-              ? `<img src="${car.image_url}" alt="${car.make} ${car.model}">`
+              ? `<img src="${car.image_url}" alt="${car.year ? car.year + ' ' : ''}${car.make} ${car.model}">`
               : `<div class="vehicle-placeholder">🚗</div>`
             }
           </div>
           <div class="vehicle-info">
-            <div class="vehicle-title">${car.make} ${car.model}</div>
+            <div class="vehicle-title">${car.year ? car.year + ' ' : ''}${car.make} ${car.model}</div>
             <div class="vehicle-meta">Owner: ${car.owner_name || 'Unknown'} (@${car.owner_username || 'N/A'})</div>
             <div class="vehicle-class">
               ${car.vehicle_name ? `<span class="type-badge">${car.vehicle_name}</span>` : ''}
               ${car.class_name ? `<span class="class-badge">${car.class_name}</span>` : ''}
-              <span class="status-badge ${car.is_active ? 'active' : 'inactive'}">${car.is_active ? 'Active' : 'Inactive'}</span>
+              ${car.voter_id ? `<span class="voter-badge">#${car.voter_id}</span>` : ''}
+            </div>
+            ${car.description ? `<div class="vehicle-description">${car.description}</div>` : ''}
+          </div>
+          <div class="vehicle-actions">
+            <a href="/admin/edit-vehicle/${car.car_id}" class="action-btn edit">Edit</a>
+            <a href="/admin/delete-vehicle/${car.car_id}" class="action-btn delete" onclick="return confirm('Are you sure you want to permanently delete this vehicle?')">Delete</a>
+          </div>
+        </div>
+      `;
+
+      const activeVehicleCards = activeCars.map(makeCard).join('');
+
+      const inactiveVehicleCards = inactiveCars.map(car => `
+        <div class="vehicle-card" style="opacity: 0.7; border-color: #ffc107;">
+          <div class="vehicle-image">
+            ${car.image_url
+              ? `<img src="${car.image_url}" alt="${car.year ? car.year + ' ' : ''}${car.make} ${car.model}">`
+              : `<div class="vehicle-placeholder">🚗</div>`
+            }
+          </div>
+          <div class="vehicle-info">
+            <div class="vehicle-title">${car.year ? car.year + ' ' : ''}${car.make} ${car.model}</div>
+            <div class="vehicle-meta">Owner: ${car.owner_name || 'Unknown'} (@${car.owner_username || 'N/A'})</div>
+            <div class="vehicle-class">
+              ${car.vehicle_name ? `<span class="type-badge">${car.vehicle_name}</span>` : ''}
+              ${car.class_name ? `<span class="class-badge">${car.class_name}</span>` : ''}
               ${car.voter_id ? `<span class="voter-badge">#${car.voter_id}</span>` : ''}
             </div>
             ${car.description ? `<div class="vehicle-description">${car.description}</div>` : ''}
@@ -535,10 +668,6 @@ module.exports = function (db, appConfig, upload) {
               flex-direction: column;
               gap: 12px;
             }
-            .vehicle-card.inactive {
-              opacity: 0.6;
-              border-style: dashed;
-            }
             .vehicle-image {
               width: 100%;
               height: 120px;
@@ -549,7 +678,7 @@ module.exports = function (db, appConfig, upload) {
             .vehicle-image img {
               width: 100%;
               height: 100%;
-              object-fit: cover;
+              object-fit: contain;
             }
             .vehicle-placeholder {
               width: 100%;
@@ -590,22 +719,6 @@ module.exports = function (db, appConfig, upload) {
             }
             .class-badge {
               background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
-              color: white;
-              padding: 3px 10px;
-              border-radius: 20px;
-              font-size: 11px;
-              font-weight: 600;
-            }
-            .status-badge.active {
-              background: #27ae60;
-              color: white;
-              padding: 3px 10px;
-              border-radius: 20px;
-              font-size: 11px;
-              font-weight: 600;
-            }
-            .status-badge.inactive {
-              background: #e74c3c;
               color: white;
               padding: 3px 10px;
               border-radius: 20px;
@@ -657,22 +770,28 @@ module.exports = function (db, appConfig, upload) {
             </div>
 
             <div class="admin-nav">
+              <a href="/admin/dashboard">Dashboard</a>
               <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
               <a href="/admin">Users</a>
-              <a href="/admin/vehicles" class="active">Cars</a>
-              <a href="/admin/judge-status">Judge Status</a>
-              <a href="/admin/vote-status">Vote Status</a>
+              <a href="/admin/vehicles" class="active">Vehicles</a>
+              <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports">Reports</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
-            <h3 class="section-title">All Vehicles (${cars.length})</h3>
+            <h3 class="section-title">Active Vehicles (${activeCars.length})</h3>
 
-            ${cars.length > 0 ? vehicleCards : '<p style="color: #666; text-align: center; padding: 20px;">No vehicles registered yet.</p>'}
+            ${activeCars.length > 0 ? activeVehicleCards : '<p style="color: #666; text-align: center; padding: 20px;">No active vehicles.</p>'}
+
+            <h3 class="section-title" style="margin-top:30px;">Inactive Vehicles - Awaiting Registration (${inactiveCars.length})</h3>
+            <p style="color:#856404;font-size:13px;margin-bottom:15px;">These vehicles are waiting to be activated by the registrar.</p>
+
+            ${inactiveCars.length > 0 ? inactiveVehicleCards : '<p style="color: #666; text-align: center; padding: 20px;">No inactive vehicles.</p>'}
           </div>
         </body>
         </html>
       `);
+      });
     });
   });
 
@@ -826,16 +945,16 @@ module.exports = function (db, appConfig, upload) {
                 </div>
 
                 <div class="admin-nav">
+                  <a href="/admin/dashboard">Dashboard</a>
                   <a href="#" onclick="var sn=document.getElementById('configSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Config</a>
                   <a href="/admin">Users</a>
-                  <a href="/admin/vehicles">Cars</a>
-                  <a href="/admin/judge-status">Judge Status</a>
-                  <a href="/admin/vote-status">Vote Status</a>
+                  <a href="/admin/vehicles">Vehicles</a>
+                  <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                   <a href="/admin/reports">Reports</a>
                   <a href="/user/vote">Vote Here!</a>
                 </div>
 
-                <h3 class="section-title">Edit Vehicle: ${car.make} ${car.model}</h3>
+                <h3 class="section-title">Edit Vehicle: ${car.year ? car.year + ' ' : ''}${car.make} ${car.model}</h3>
 
                 <div class="owner-info">
                   <strong>Owner:</strong> ${car.owner_name || 'Unknown'} (@${car.owner_username || 'N/A'})
@@ -843,6 +962,10 @@ module.exports = function (db, appConfig, upload) {
 
                 <form method="POST" action="/admin/edit-vehicle/${car.car_id}" enctype="multipart/form-data">
                   <div class="profile-card">
+                    <div class="form-group">
+                      <label>Year (Optional)</label>
+                      <input type="text" name="year" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" placeholder="e.g., 1969" value="${car.year || ''}" style="font-size:16px;">
+                    </div>
                     <div class="form-group">
                       <label>Make *</label>
                       <input type="text" name="make" required value="${car.make}">
@@ -956,7 +1079,7 @@ module.exports = function (db, appConfig, upload) {
   // ============================================================
   router.post('/edit-vehicle/:id', requireAdmin, upload.single('vehicle_photo'), async (req, res) => {
     const carId = req.params.id;
-    const { make, model, vehicle_id, class_id, voter_id, is_active, description } = req.body;
+    const { year, make, model, vehicle_id, class_id, voter_id, is_active, description } = req.body;
 
     db.get('SELECT car_id, image_url FROM cars WHERE car_id = ?', [carId], async (err, car) => {
       if (err || !car) {
@@ -975,7 +1098,7 @@ module.exports = function (db, appConfig, upload) {
 
           await sharp(req.file.buffer)
             .rotate()
-            .resize(800, 600, { fit: 'cover', position: 'center' })
+            .resize(800, 600, { fit: 'inside', withoutEnlargement: true })
             .jpeg({ quality: 85 })
             .toFile(filepath);
 
@@ -1013,8 +1136,8 @@ module.exports = function (db, appConfig, upload) {
 
       // Check if voter_id is unique (if provided)
       const performUpdate = () => {
-        db.run('UPDATE cars SET make = ?, model = ?, vehicle_id = ?, class_id = ?, voter_id = ?, is_active = ?, description = ?, image_url = ? WHERE car_id = ?',
-          [make, model, vehicle_id, class_id, voter_id || null, is_active, description || null, imageUrl, carId],
+        db.run('UPDATE cars SET year = ?, make = ?, model = ?, vehicle_id = ?, class_id = ?, voter_id = ?, is_active = ?, description = ?, image_url = ? WHERE car_id = ?',
+          [year || null, make, model, vehicle_id, class_id, voter_id || null, is_active, description || null, imageUrl, carId],
           function(err) {
             if (err) {
               console.error('Error updating vehicle:', err.message);

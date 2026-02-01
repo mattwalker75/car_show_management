@@ -40,6 +40,15 @@ function requireRegistrar(req, res, next) {
   }
 }
 
+// Require vendor role
+function requireVendor(req, res, next) {
+  if (req.session && req.session.user && req.session.user.role === 'vendor') {
+    next();
+  } else {
+    res.redirect('/login');
+  }
+}
+
 // Hash a plaintext password using bcrypt (salt rounds = 10)
 function hashPassword(password) {
   return bcrypt.hashSync(password, 10);
@@ -67,6 +76,7 @@ module.exports = {
   requireAdmin,
   requireJudge,
   requireRegistrar,
+  requireVendor,
   hashPassword,
   verifyPassword,
   checkInitialSetup

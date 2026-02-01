@@ -73,8 +73,8 @@ async function handleVehiclePhotoUpload(file) {
     await sharp(file.buffer)
       .rotate()
       .resize(800, 600, {
-        fit: 'cover',
-        position: 'center'
+        fit: 'inside',
+        withoutEnlargement: true
       })
       .jpeg({ quality: 85 })
       .toFile(filepath);
