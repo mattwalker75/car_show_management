@@ -99,7 +99,7 @@ module.exports = function (db, appConfig, upload) {
       }
 
       const userRows = users.map(u => `
-        <tr style="border-bottom:none;">
+        <tr class="user-row" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}" style="border-bottom:none;">
           <td style="border-bottom:none;">${u.username}</td>
           <td style="border-bottom:none;">${u.name}</td>
           <td style="border-bottom:none;">${u.email}</td>
@@ -107,7 +107,7 @@ module.exports = function (db, appConfig, upload) {
           <td style="border-bottom:none;"><span class="role-badge ${u.role}">${u.role}</span></td>
           <td style="border-bottom:none;"><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
         </tr>
-        <tr>
+        <tr class="user-row-actions" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}">
           <td colspan="6" style="border-top:none;padding-top:0;text-align:center;">
             <a href="/registrar/reset-password/${u.id}" class="action-btn edit">Reset Password</a>
           </td>
@@ -116,7 +116,7 @@ module.exports = function (db, appConfig, upload) {
 
       // Mobile card view
       const userCards = users.map(u => `
-        <div class="user-card">
+        <div class="user-card" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}">
           <div class="user-card-header">
             <div>
               <div class="user-card-name">${u.name}</div>
@@ -167,6 +167,11 @@ module.exports = function (db, appConfig, upload) {
             <h3 class="section-title">Users & Judges</h3>
             <p style="color: #666; margin-bottom: 15px; font-size: 14px;">You can reset passwords for users and judges.</p>
 
+            <div style="margin-bottom:16px;">
+              <input type="text" id="userSearch" placeholder="Search by name, login ID, email, or phone..." oninput="filterUsers()" style="width:100%;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#e94560'" onblur="this.style.borderColor='#e1e1e1'">
+            </div>
+            <div id="noResults" style="display:none;text-align:center;color:#666;padding:20px;font-size:14px;">No users match your search.</div>
+
             <!-- Mobile card view -->
             <div class="user-cards">
               ${userCards}
@@ -196,6 +201,29 @@ module.exports = function (db, appConfig, upload) {
               <a href="/registrar">&larr; Back to Dashboard</a>
             </div>
           </div>
+          <script>
+            function filterUsers() {
+              var query = document.getElementById('userSearch').value.toLowerCase().trim();
+              var cards = document.querySelectorAll('.user-card');
+              var rows = document.querySelectorAll('.user-row');
+              var actionRows = document.querySelectorAll('.user-row-actions');
+              var visibleCount = 0;
+
+              cards.forEach(function(card) {
+                var match = !query || card.dataset.username.indexOf(query) !== -1 || card.dataset.name.indexOf(query) !== -1 || card.dataset.email.indexOf(query) !== -1 || card.dataset.phone.indexOf(query) !== -1;
+                card.style.display = match ? '' : 'none';
+                if (match) visibleCount++;
+              });
+
+              rows.forEach(function(row, i) {
+                var match = !query || row.dataset.username.indexOf(query) !== -1 || row.dataset.name.indexOf(query) !== -1 || row.dataset.email.indexOf(query) !== -1 || row.dataset.phone.indexOf(query) !== -1;
+                row.style.display = match ? '' : 'none';
+                if (actionRows[i]) actionRows[i].style.display = match ? '' : 'none';
+              });
+
+              document.getElementById('noResults').style.display = (query && visibleCount === 0) ? '' : 'none';
+            }
+          </script>
         </body>
         </html>
       `);
@@ -405,7 +433,7 @@ module.exports = function (db, appConfig, upload) {
               ${car.vehicle_name ? `<span class="type-badge">${car.vehicle_name}</span>` : ''}
               ${car.class_name ? `<span class="class-badge">${car.class_name}</span>` : ''}
               <span class="status-badge ${car.is_active ? 'active' : 'pending'}">${car.is_active ? 'Active' : 'Pending Payment'}</span>
-              ${car.voter_id ? `<span class="voter-badge">#${car.voter_id}</span>` : ''}
+              ${car.voter_id ? `<span class="voter-badge">Registration: ${car.voter_id}</span>` : ''}
               <span class="price-badge">$${price.toFixed(2)}</span>
             </div>
           </div>

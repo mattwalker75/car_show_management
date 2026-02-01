@@ -19,8 +19,8 @@ module.exports = function (db, appConfig, upload) {
       : initials;
 
     // Get user's registered vehicles (both active and pending) with class names
-    db.all(`SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.is_active,
-            cl.class_name, v.vehicle_name
+    db.all(`SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.is_active, c.voter_id,
+            cl.class_name, v.vehicle_name, v.registration_price
             FROM cars c
             LEFT JOIN classes cl ON c.class_id = cl.class_id
             LEFT JOIN vehicles v ON c.vehicle_id = v.vehicle_id
@@ -43,7 +43,9 @@ module.exports = function (db, appConfig, upload) {
               ${car.vehicle_name ? `<span class="type-badge">${car.vehicle_name}</span>` : ''}
               ${car.class_name ? `<span class="class-badge">${car.class_name}</span>` : ''}
               ${car.is_active ? '' : '<span class="status-badge pending">Pending Approval</span>'}
+              ${car.is_active && car.voter_id ? `<span class="voter-badge">Registration: ${car.voter_id}</span>` : ''}
             </div>
+            ${!car.is_active && car.registration_price != null ? `<div class="registration-fee">Registration Fee: $${parseFloat(car.registration_price).toFixed(2)}</div>` : ''}
             ${car.description ? `<div class="vehicle-description">${car.description}</div>` : ''}
           </div>
           <div class="vehicle-actions">
@@ -126,6 +128,20 @@ module.exports = function (db, appConfig, upload) {
               border-radius: 20px;
               font-size: 10px;
               font-weight: 600;
+            }
+            .voter-badge {
+              background: #9b59b6;
+              color: white;
+              padding: 3px 8px;
+              border-radius: 20px;
+              font-size: 10px;
+              font-weight: 600;
+            }
+            .registration-fee {
+              font-size: 14px;
+              color: #000;
+              font-weight: 700;
+              margin-top: 4px;
             }
             .vehicle-description {
               font-size: 12px;
@@ -439,7 +455,7 @@ module.exports = function (db, appConfig, upload) {
                 <div class="profile-card">
                   <div class="form-group">
                     <label>Year (Optional)</label>
-                    <input type="text" name="year" inputmode="numeric" maxlength="4" placeholder="e.g., 1969" style="font-size:16px;width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                    <input type="text" name="year" inputmode="numeric" maxlength="4" placeholder="e.g., 1969" style="font-size:16px;width:120px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                   </div>
                   <div class="form-group">
                     <label>Make *</label>
@@ -1565,7 +1581,7 @@ module.exports = function (db, appConfig, upload) {
                 </div>
                 <div class="vehicle-vote-info">
                   <div class="vehicle-vote-title">
-                    ${car.voter_id ? `<span class="voter-badge">#${car.voter_id}</span>` : ''}
+                    ${car.voter_id ? `<span class="voter-badge">Registration: ${car.voter_id}</span>` : ''}
                     ${car.year || ''} ${car.make} ${car.model}
                   </div>
                   <div class="vehicle-vote-details">

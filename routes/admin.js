@@ -612,7 +612,7 @@ module.exports = function (db, appConfig, upload) {
 
     // Get active vehicles with owner info and class names
     db.all(`SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.voter_id, c.is_active, c.created_at,
-            u.name as owner_name, u.username as owner_username,
+            u.name as owner_name, u.username as owner_username, u.email as owner_email,
             cl.class_name, v.vehicle_name
             FROM cars c
             LEFT JOIN users u ON c.user_id = u.user_id
@@ -624,7 +624,7 @@ module.exports = function (db, appConfig, upload) {
 
       // Get inactive vehicles
       db.all(`SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.voter_id, c.is_active, c.created_at,
-              u.name as owner_name, u.username as owner_username,
+              u.name as owner_name, u.username as owner_username, u.email as owner_email,
               cl.class_name, v.vehicle_name
               FROM cars c
               LEFT JOIN users u ON c.user_id = u.user_id
@@ -635,7 +635,7 @@ module.exports = function (db, appConfig, upload) {
         if (err) inactiveCars = [];
 
       const makeCard = (car) => `
-        <div class="vehicle-card">
+        <div class="vehicle-card" data-year="${(car.year || '').toString().toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-username="${(car.owner_username || '').toLowerCase()}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-voterid="${car.voter_id || ''}" data-status="active">
           <div class="vehicle-image">
             ${car.image_url
               ? `<img src="${car.image_url}" alt="${car.year ? car.year + ' ' : ''}${car.make} ${car.model}">`
@@ -648,7 +648,7 @@ module.exports = function (db, appConfig, upload) {
             <div class="vehicle-class">
               ${car.vehicle_name ? `<span class="type-badge">${car.vehicle_name}</span>` : ''}
               ${car.class_name ? `<span class="class-badge">${car.class_name}</span>` : ''}
-              ${car.voter_id ? `<span class="voter-badge">#${car.voter_id}</span>` : ''}
+              ${car.voter_id ? `<span class="voter-badge">Registration: ${car.voter_id}</span>` : ''}
             </div>
             ${car.description ? `<div class="vehicle-description">${car.description}</div>` : ''}
           </div>
@@ -659,10 +659,14 @@ module.exports = function (db, appConfig, upload) {
         </div>
       `;
 
+      // Build sorted voter ID list for dropdown
+      const allCars = [...activeCars, ...inactiveCars];
+      const voterIds = allCars.map(c => c.voter_id).filter(Boolean).sort((a, b) => a - b);
+
       const activeVehicleCards = activeCars.map(makeCard).join('');
 
       const inactiveVehicleCards = inactiveCars.map(car => `
-        <div class="vehicle-card" style="opacity: 0.7; border-color: #ffc107;">
+        <div class="vehicle-card" data-year="${(car.year || '').toString().toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-username="${(car.owner_username || '').toLowerCase()}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-voterid="${car.voter_id || ''}" data-status="pending" style="opacity: 0.7; border-color: #ffc107;">
           <div class="vehicle-image">
             ${car.image_url
               ? `<img src="${car.image_url}" alt="${car.year ? car.year + ' ' : ''}${car.make} ${car.model}">`
@@ -675,7 +679,7 @@ module.exports = function (db, appConfig, upload) {
             <div class="vehicle-class">
               ${car.vehicle_name ? `<span class="type-badge">${car.vehicle_name}</span>` : ''}
               ${car.class_name ? `<span class="class-badge">${car.class_name}</span>` : ''}
-              ${car.voter_id ? `<span class="voter-badge">#${car.voter_id}</span>` : ''}
+              ${car.voter_id ? `<span class="voter-badge">Registration: ${car.voter_id}</span>` : ''}
             </div>
             ${car.description ? `<div class="vehicle-description">${car.description}</div>` : ''}
           </div>
@@ -816,18 +820,82 @@ module.exports = function (db, appConfig, upload) {
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
-            <h3 class="section-title">Active Vehicles (${activeCars.length})</h3>
+            <h3 class="section-title">All Vehicles (${activeCars.length + inactiveCars.length})</h3>
 
-            ${activeCars.length > 0 ? activeVehicleCards : '<p style="color: #666; text-align: center; padding: 20px;">No active vehicles.</p>'}
+            <div style="margin-bottom:15px;display:flex;gap:8px;flex-wrap:wrap;">
+              <input type="text" id="vehicleSearch" placeholder="Search by year, make, model, owner, or email..." oninput="filterVehicles()" style="flex:1;min-width:200px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#e94560'" onblur="this.style.borderColor='#e1e1e1'">
+              <select id="statusFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+                <option value="">All Statuses</option>
+                <option value="pending">Pending Payment</option>
+                <option value="active">Active</option>
+              </select>
+              <select id="voterIdFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+                <option value="">All Voter IDs</option>
+                ${voterIds.map(id => `<option value="${id}">#${id}</option>`).join('')}
+              </select>
+            </div>
+            <div id="noResults" style="display:none;text-align:center;color:#666;padding:20px;font-size:14px;">No vehicles match your search.</div>
 
-            <h3 class="section-title" style="margin-top:30px;">Inactive Vehicles - Awaiting Registration (${inactiveCars.length})</h3>
-            <p style="color:#856404;font-size:13px;margin-bottom:15px;">These vehicles are waiting to be activated by the registrar.</p>
+            <div id="activeSection">
+              <h3 class="section-title">Active Vehicles (<span id="activeCount">${activeCars.length}</span>)</h3>
+              <div id="activeVehicles">
+                ${activeCars.length > 0 ? activeVehicleCards : '<p class="no-vehicles-msg" style="color: #666; text-align: center; padding: 20px;">No active vehicles.</p>'}
+              </div>
+            </div>
 
-            ${inactiveCars.length > 0 ? inactiveVehicleCards : '<p style="color: #666; text-align: center; padding: 20px;">No inactive vehicles.</p>'}
+            <div id="inactiveSection">
+              <h3 class="section-title" style="margin-top:30px;">Inactive Vehicles - Awaiting Registration (<span id="inactiveCount">${inactiveCars.length}</span>)</h3>
+              <p style="color:#856404;font-size:13px;margin-bottom:15px;">These vehicles are waiting to be activated by the registrar.</p>
+              <div id="inactiveVehicles">
+                ${inactiveCars.length > 0 ? inactiveVehicleCards : '<p class="no-vehicles-msg" style="color: #666; text-align: center; padding: 20px;">No inactive vehicles.</p>'}
+              </div>
+            </div>
+
             <div class="links" style="margin-top:20px;">
               <a href="/admin/dashboard">&larr; Back to Dashboard</a>
             </div>
           </div>
+          <script>
+            function filterVehicles() {
+              var query = document.getElementById('vehicleSearch').value.toLowerCase().trim();
+              var status = document.getElementById('statusFilter').value;
+              var voterId = document.getElementById('voterIdFilter').value;
+              var cards = document.querySelectorAll('.vehicle-card');
+              var visibleCount = 0;
+              var activeVisible = 0;
+              var inactiveVisible = 0;
+
+              cards.forEach(function(card) {
+                var year = card.dataset.year || '';
+                var make = card.dataset.make || '';
+                var model = card.dataset.model || '';
+                var username = card.dataset.username || '';
+                var name = card.dataset.name || '';
+                var email = card.dataset.email || '';
+                var voterid = card.dataset.voterid || '';
+                var cardStatus = card.dataset.status || '';
+
+                var matchesSearch = !query || year.indexOf(query) !== -1 || make.indexOf(query) !== -1 || model.indexOf(query) !== -1 || username.indexOf(query) !== -1 || name.indexOf(query) !== -1 || email.indexOf(query) !== -1;
+                var matchesStatus = !status || cardStatus === status;
+                var matchesVoterId = !voterId || voterid === voterId;
+
+                if (matchesSearch && matchesStatus && matchesVoterId) {
+                  card.style.display = '';
+                  visibleCount++;
+                  if (cardStatus === 'active') activeVisible++;
+                  else inactiveVisible++;
+                } else {
+                  card.style.display = 'none';
+                }
+              });
+
+              document.getElementById('activeCount').textContent = activeVisible;
+              document.getElementById('inactiveCount').textContent = inactiveVisible;
+              document.getElementById('activeSection').style.display = (status === 'pending') ? 'none' : '';
+              document.getElementById('inactiveSection').style.display = (status === 'active') ? 'none' : '';
+              document.getElementById('noResults').style.display = (visibleCount === 0 && cards.length > 0) ? '' : 'none';
+            }
+          </script>
         </body>
         </html>
       `);
@@ -1004,7 +1072,7 @@ module.exports = function (db, appConfig, upload) {
                   <div class="profile-card">
                     <div class="form-group">
                       <label>Year (Optional)</label>
-                      <input type="text" name="year" inputmode="numeric" maxlength="4" placeholder="e.g., 1969" value="${car.year || ''}" style="font-size:16px;width:80px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                      <input type="text" name="year" inputmode="numeric" maxlength="4" placeholder="e.g., 1969" value="${car.year || ''}" style="font-size:16px;width:120px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                     </div>
                     <div class="form-group">
                       <label>Make *</label>

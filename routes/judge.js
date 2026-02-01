@@ -131,7 +131,7 @@ module.exports = function (db, appConfig, upload) {
       }
 
       const userRows = users.map(u => `
-        <tr style="border-bottom:none;">
+        <tr class="user-row" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}" style="border-bottom:none;">
           <td style="border-bottom:none;">${u.username}</td>
           <td style="border-bottom:none;">${u.name}</td>
           <td style="border-bottom:none;">${u.email}</td>
@@ -139,7 +139,7 @@ module.exports = function (db, appConfig, upload) {
           <td style="border-bottom:none;"><span class="role-badge ${u.role}">${u.role}</span></td>
           <td style="border-bottom:none;"><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
         </tr>
-        <tr>
+        <tr class="user-row-actions" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}">
           <td colspan="6" style="border-top:none;padding-top:0;text-align:center;">
             <a href="/judge/reset-password/${u.id}" class="action-btn edit">Reset Password</a>
           </td>
@@ -148,7 +148,7 @@ module.exports = function (db, appConfig, upload) {
 
       // Mobile card view
       const userCards = users.map(u => `
-        <div class="user-card">
+        <div class="user-card" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}">
           <div class="user-card-header">
             <div>
               <div class="user-card-name">${u.name}</div>
@@ -201,6 +201,11 @@ module.exports = function (db, appConfig, upload) {
             <h3 class="section-title">Users & Judges</h3>
             <p style="color: #666; margin-bottom: 15px; font-size: 14px;">You can reset passwords for users and other judges. Admin accounts are not shown.</p>
 
+            <div style="margin-bottom:16px;">
+              <input type="text" id="userSearch" placeholder="Search by name, login ID, email, or phone..." oninput="filterUsers()" style="width:100%;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#e94560'" onblur="this.style.borderColor='#e1e1e1'">
+            </div>
+            <div id="noResults" style="display:none;text-align:center;color:#666;padding:20px;font-size:14px;">No users match your search.</div>
+
             <!-- Mobile card view -->
             <div class="user-cards">
               ${userCards}
@@ -230,6 +235,29 @@ module.exports = function (db, appConfig, upload) {
               <a href="/judge">&larr; Back to Dashboard</a>
             </div>
           </div>
+          <script>
+            function filterUsers() {
+              var query = document.getElementById('userSearch').value.toLowerCase().trim();
+              var cards = document.querySelectorAll('.user-card');
+              var rows = document.querySelectorAll('.user-row');
+              var actionRows = document.querySelectorAll('.user-row-actions');
+              var visibleCount = 0;
+
+              cards.forEach(function(card) {
+                var match = !query || card.dataset.username.indexOf(query) !== -1 || card.dataset.name.indexOf(query) !== -1 || card.dataset.email.indexOf(query) !== -1 || card.dataset.phone.indexOf(query) !== -1;
+                card.style.display = match ? '' : 'none';
+                if (match) visibleCount++;
+              });
+
+              rows.forEach(function(row, i) {
+                var match = !query || row.dataset.username.indexOf(query) !== -1 || row.dataset.name.indexOf(query) !== -1 || row.dataset.email.indexOf(query) !== -1 || row.dataset.phone.indexOf(query) !== -1;
+                row.style.display = match ? '' : 'none';
+                if (actionRows[i]) actionRows[i].style.display = match ? '' : 'none';
+              });
+
+              document.getElementById('noResults').style.display = (query && visibleCount === 0) ? '' : 'none';
+            }
+          </script>
         </body>
         </html>
       `);
@@ -458,7 +486,8 @@ module.exports = function (db, appConfig, upload) {
     // Get all active cars that this judge has NOT yet scored
     db.all(`
       SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.voter_id, c.vehicle_id, c.class_id,
-             u.name as owner_name, cl.class_name, v.vehicle_name
+             u.name as owner_name, u.username as owner_username, u.email as owner_email,
+             cl.class_name, v.vehicle_name
       FROM cars c
       LEFT JOIN users u ON c.user_id = u.user_id
       LEFT JOIN classes cl ON c.class_id = cl.class_id
@@ -482,8 +511,11 @@ module.exports = function (db, appConfig, upload) {
       `, [user.user_id], (err, carsJudged) => {
         if (err) carsJudged = [];
 
+        // Build sorted voter ID list for dropdown
+        const judgeVoterIds = carsToJudge.map(c => c.voter_id).filter(Boolean).sort((a, b) => a - b);
+
         const toJudgeCards = carsToJudge.map(car => `
-          <div class="vehicle-card">
+          <div class="vehicle-card to-judge-card" data-year="${(car.year || '').toString().toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-username="${(car.owner_username || '').toLowerCase()}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-voterid="${car.voter_id || ''}">
             <div class="vehicle-image">
               ${car.image_url
                 ? `<img src="${car.image_url}" alt="${car.make} ${car.model}">`
@@ -496,7 +528,7 @@ module.exports = function (db, appConfig, upload) {
               <div class="vehicle-class">
                 ${car.vehicle_name ? `<span class="type-badge">${car.vehicle_name}</span>` : ''}
                 ${car.class_name ? `<span class="class-badge">${car.class_name}</span>` : ''}
-                ${car.voter_id ? `<span class="voter-badge">#${car.voter_id}</span>` : ''}
+                ${car.voter_id ? `<span class="voter-badge">Registration: ${car.voter_id}</span>` : ''}
               </div>
             </div>
             <div class="vehicle-actions">
@@ -511,7 +543,7 @@ module.exports = function (db, appConfig, upload) {
               <div class="vehicle-title">${car.year || ''} ${car.make} ${car.model}</div>
               <div class="vehicle-class">
                 ${car.class_name ? `<span class="class-badge">${car.class_name}</span>` : ''}
-                ${car.voter_id ? `<span class="voter-badge">#${car.voter_id}</span>` : ''}
+                ${car.voter_id ? `<span class="voter-badge">Registration: ${car.voter_id}</span>` : ''}
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;">
@@ -642,7 +674,16 @@ module.exports = function (db, appConfig, upload) {
                 <a href="/user/vote">Vote Here!</a>
               </div>
 
-              <h3 class="section-title">Vehicles Ready to Judge (${carsToJudge.length})</h3>
+              <h3 class="section-title">Vehicles Ready to Judge (<span id="toJudgeCount">${carsToJudge.length}</span>)</h3>
+
+              <div style="margin-bottom:15px;display:flex;gap:8px;flex-wrap:wrap;">
+                <input type="text" id="vehicleSearch" placeholder="Search by year, make, model, owner, or email..." oninput="filterVehicles()" style="flex:1;min-width:200px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#e94560'" onblur="this.style.borderColor='#e1e1e1'">
+                <select id="voterIdFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+                  <option value="">All Voter IDs</option>
+                  ${judgeVoterIds.map(id => `<option value="${id}">#${id}</option>`).join('')}
+                </select>
+              </div>
+              <div id="noResults" style="display:none;text-align:center;color:#666;padding:20px;font-size:14px;">No vehicles match your search.</div>
 
               ${carsToJudge.length > 0 ? toJudgeCards : '<p style="color: #27ae60; text-align: center; padding: 20px; background: #d4edda; border-radius: 8px;">🎉 You have scored all active vehicles!</p>'}
 
@@ -651,6 +692,34 @@ module.exports = function (db, appConfig, upload) {
                 ${judgedCards}
               ` : ''}
             </div>
+            <script>
+              function filterVehicles() {
+                var query = document.getElementById('vehicleSearch').value.toLowerCase().trim();
+                var voterId = document.getElementById('voterIdFilter').value;
+                var cards = document.querySelectorAll('.to-judge-card');
+                var visibleCount = 0;
+
+                cards.forEach(function(card) {
+                  var year = card.dataset.year || '';
+                  var make = card.dataset.make || '';
+                  var model = card.dataset.model || '';
+                  var username = card.dataset.username || '';
+                  var name = card.dataset.name || '';
+                  var email = card.dataset.email || '';
+                  var voterid = card.dataset.voterid || '';
+
+                  var matchesSearch = !query || year.indexOf(query) !== -1 || make.indexOf(query) !== -1 || model.indexOf(query) !== -1 || username.indexOf(query) !== -1 || name.indexOf(query) !== -1 || email.indexOf(query) !== -1;
+                  var matchesVoterId = !voterId || voterid === voterId;
+
+                  var match = matchesSearch && matchesVoterId;
+                  card.style.display = match ? '' : 'none';
+                  if (match) visibleCount++;
+                });
+
+                document.getElementById('toJudgeCount').textContent = visibleCount;
+                document.getElementById('noResults').style.display = ((query || voterId) && visibleCount === 0) ? '' : 'none';
+              }
+            </script>
           </body>
           </html>
         `);
@@ -1213,7 +1282,8 @@ module.exports = function (db, appConfig, upload) {
 
     // Get all active vehicles with owner info and class names
     db.all(`SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.voter_id, c.vehicle_id, c.class_id,
-            u.name as owner_name, cl.class_name, v.vehicle_name
+            u.name as owner_name, u.username as owner_username, u.email as owner_email,
+            cl.class_name, v.vehicle_name
             FROM cars c
             LEFT JOIN users u ON c.user_id = u.user_id
             LEFT JOIN classes cl ON c.class_id = cl.class_id
@@ -1224,7 +1294,8 @@ module.exports = function (db, appConfig, upload) {
 
       // Get all inactive vehicles
       db.all(`SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.voter_id, c.vehicle_id, c.class_id,
-              u.name as owner_name, cl.class_name, v.vehicle_name
+              u.name as owner_name, u.username as owner_username, u.email as owner_email,
+              cl.class_name, v.vehicle_name
               FROM cars c
               LEFT JOIN users u ON c.user_id = u.user_id
               LEFT JOIN classes cl ON c.class_id = cl.class_id
@@ -1233,8 +1304,12 @@ module.exports = function (db, appConfig, upload) {
               ORDER BY c.make, c.model`, (err, inactiveCars) => {
         if (err) inactiveCars = [];
 
+        // Build sorted voter ID list for dropdown
+        const allVehicleCars = [...activeCars, ...inactiveCars];
+        const voterIds = allVehicleCars.map(c => c.voter_id).filter(Boolean).sort((a, b) => a - b);
+
         const vehicleCards = activeCars.map(car => `
-          <div class="vehicle-card">
+          <div class="vehicle-card" data-year="${(car.year || '').toString().toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-username="${(car.owner_username || '').toLowerCase()}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-voterid="${car.voter_id || ''}" data-status="active">
             <a href="/judge/view-vehicle/${car.car_id}" class="vehicle-image" style="cursor:pointer;display:block;text-decoration:none;">
               ${car.image_url
                 ? `<img src="${car.image_url}" alt="${car.make} ${car.model}">`
@@ -1247,7 +1322,7 @@ module.exports = function (db, appConfig, upload) {
               <div class="vehicle-class">
                 ${car.vehicle_name ? `<span class="type-badge">${car.vehicle_name}</span>` : ''}
                 ${car.class_name ? `<span class="class-badge">${car.class_name}</span>` : ''}
-                ${car.voter_id ? `<span class="voter-badge">#${car.voter_id}</span>` : ''}
+                ${car.voter_id ? `<span class="voter-badge">Registration: ${car.voter_id}</span>` : ''}
               </div>
               ${car.description ? `<div class="vehicle-description">${car.description}</div>` : ''}
             </div>
@@ -1258,7 +1333,7 @@ module.exports = function (db, appConfig, upload) {
         `).join('');
 
         const inactiveVehicleCards = inactiveCars.map(car => `
-          <div class="vehicle-card" style="opacity: 0.7; border-color: #ffc107;">
+          <div class="vehicle-card" data-year="${(car.year || '').toString().toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-username="${(car.owner_username || '').toLowerCase()}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-voterid="${car.voter_id || ''}" data-status="pending" style="opacity: 0.7; border-color: #ffc107;">
             <a href="/judge/view-vehicle/${car.car_id}" class="vehicle-image" style="cursor:pointer;display:block;text-decoration:none;">
               ${car.image_url
                 ? `<img src="${car.image_url}" alt="${car.make} ${car.model}">`
@@ -1271,7 +1346,7 @@ module.exports = function (db, appConfig, upload) {
               <div class="vehicle-class">
                 ${car.vehicle_name ? `<span class="type-badge">${car.vehicle_name}</span>` : ''}
                 ${car.class_name ? `<span class="class-badge">${car.class_name}</span>` : ''}
-                ${car.voter_id ? `<span class="voter-badge">#${car.voter_id}</span>` : ''}
+                ${car.voter_id ? `<span class="voter-badge">Registration: ${car.voter_id}</span>` : ''}
               </div>
               ${car.description ? `<div class="vehicle-description">${car.description}</div>` : ''}
             </div>
@@ -1410,19 +1485,82 @@ module.exports = function (db, appConfig, upload) {
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
-            <h3 class="section-title">Active Vehicles (${activeCars.length})</h3>
+            <h3 class="section-title">All Vehicles (${activeCars.length + inactiveCars.length})</h3>
 
-            ${activeCars.length > 0 ? vehicleCards : '<p style="color: #666; text-align: center; padding: 20px;">No active vehicles to judge.</p>'}
+            <div style="margin-bottom:15px;display:flex;gap:8px;flex-wrap:wrap;">
+              <input type="text" id="vehicleSearch" placeholder="Search by year, make, model, owner, or email..." oninput="filterVehicles()" style="flex:1;min-width:200px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#e94560'" onblur="this.style.borderColor='#e1e1e1'">
+              <select id="statusFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+                <option value="">All Statuses</option>
+                <option value="pending">Pending Payment</option>
+                <option value="active">Active</option>
+              </select>
+              <select id="voterIdFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+                <option value="">All Voter IDs</option>
+                ${voterIds.map(id => `<option value="${id}">#${id}</option>`).join('')}
+              </select>
+            </div>
+            <div id="noResults" style="display:none;text-align:center;color:#666;padding:20px;font-size:14px;">No vehicles match your search.</div>
 
-            <h3 class="section-title" style="margin-top:30px;">Inactive Vehicles - Awaiting Registration (${inactiveCars.length})</h3>
-            <p style="color:#856404;font-size:13px;margin-bottom:15px;">These vehicles are waiting to be activated by the registrar. You cannot judge them until they are activated.</p>
+            <div id="activeSection">
+              <h3 class="section-title">Active Vehicles (<span id="activeCount">${activeCars.length}</span>)</h3>
+              <div id="activeVehicles">
+                ${activeCars.length > 0 ? vehicleCards : '<p class="no-vehicles-msg" style="color: #666; text-align: center; padding: 20px;">No active vehicles to judge.</p>'}
+              </div>
+            </div>
 
-            ${inactiveCars.length > 0 ? inactiveVehicleCards : '<p style="color: #666; text-align: center; padding: 20px;">No inactive vehicles.</p>'}
+            <div id="inactiveSection">
+              <h3 class="section-title" style="margin-top:30px;">Inactive Vehicles - Awaiting Registration (<span id="inactiveCount">${inactiveCars.length}</span>)</h3>
+              <p style="color:#856404;font-size:13px;margin-bottom:15px;">These vehicles are waiting to be activated by the registrar. You cannot judge them until they are activated.</p>
+              <div id="inactiveVehicles">
+                ${inactiveCars.length > 0 ? inactiveVehicleCards : '<p class="no-vehicles-msg" style="color: #666; text-align: center; padding: 20px;">No inactive vehicles.</p>'}
+              </div>
+            </div>
 
             <div class="links" style="margin-top:20px;">
               <a href="/judge">&larr; Back to Dashboard</a>
             </div>
           </div>
+          <script>
+            function filterVehicles() {
+              var query = document.getElementById('vehicleSearch').value.toLowerCase().trim();
+              var status = document.getElementById('statusFilter').value;
+              var voterId = document.getElementById('voterIdFilter').value;
+              var cards = document.querySelectorAll('.vehicle-card');
+              var visibleCount = 0;
+              var activeVisible = 0;
+              var inactiveVisible = 0;
+
+              cards.forEach(function(card) {
+                var year = card.dataset.year || '';
+                var make = card.dataset.make || '';
+                var model = card.dataset.model || '';
+                var username = card.dataset.username || '';
+                var name = card.dataset.name || '';
+                var email = card.dataset.email || '';
+                var voterid = card.dataset.voterid || '';
+                var cardStatus = card.dataset.status || '';
+
+                var matchesSearch = !query || year.indexOf(query) !== -1 || make.indexOf(query) !== -1 || model.indexOf(query) !== -1 || username.indexOf(query) !== -1 || name.indexOf(query) !== -1 || email.indexOf(query) !== -1;
+                var matchesStatus = !status || cardStatus === status;
+                var matchesVoterId = !voterId || voterid === voterId;
+
+                if (matchesSearch && matchesStatus && matchesVoterId) {
+                  card.style.display = '';
+                  visibleCount++;
+                  if (cardStatus === 'active') activeVisible++;
+                  else inactiveVisible++;
+                } else {
+                  card.style.display = 'none';
+                }
+              });
+
+              document.getElementById('activeCount').textContent = activeVisible;
+              document.getElementById('inactiveCount').textContent = inactiveVisible;
+              document.getElementById('activeSection').style.display = (status === 'pending') ? 'none' : '';
+              document.getElementById('inactiveSection').style.display = (status === 'active') ? 'none' : '';
+              document.getElementById('noResults').style.display = (visibleCount === 0 && cards.length > 0) ? '' : 'none';
+            }
+          </script>
         </body>
         </html>
       `);

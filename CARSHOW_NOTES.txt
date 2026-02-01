@@ -37,12 +37,25 @@ registrar
   - Can change vehicle information 
 user
   - Add vehicles to show and fill out vehicle information
+vendor
+  - Vendors who participate in the car show
 
 --------------------------------------
 
 TODO
 ----
 
+- Enable WebSockets to enable push notification and bi-directional communication
+   - This will enable the following
+      - Send notifications to all the judges when Judging is open
+      - Send everyone a notification when "special voting" is enabled
+      - Can send individual users notifications too
+   - This means you will be able to enable inapp chat
+      - If we enable inapp chat then consider the following
+         - Setup a server-side word filter, such as using "bad-words" or "leo-profanity" library.
+            - THus if someone says "fuck", it will come up as "f***"
+      - If someone is being an ass, then be able to block him from posting so that all he can do is read the posts but can not make any
+      - Limit the number of characters someone can post so that someone can't copy/paste a novel into chat
 
 
 

@@ -193,6 +193,10 @@ module.exports = function (db, appConfig, upload) {
                 <script src="/js/imageUpload.js"></script>
               </div>
 
+              <div class="profile-card" style="padding:10px 20px;margin-top:-8px;margin-bottom:-8px;text-align:center;">
+                <strong style="font-size:18px;">${currentUser.username}</strong>
+              </div>
+
               <div class="profile-card">
                 <h3>Update Email</h3>
                 <form method="POST" action="/${role}/update-email">
