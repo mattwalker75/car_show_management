@@ -54,6 +54,7 @@ TODO
       - Limit the number of characters someone can post so that someone can't copy/paste a novel into chat
 
 
+All the code is commited and posted to the repo, so if we need to back out changes, that is not going to be an issue
 - Add notifications for the following events utilizing WebSockets
    - Role:  Admin
       - "Voting" main tab

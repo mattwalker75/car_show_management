@@ -2,7 +2,7 @@
   "appTitle": "Testing Car Show",
   "appSubtitle": "Sign in to your account",
   "judgeVotingStatus": "Close",
-  "specialtyVotingStatus": "Open",
+  "specialtyVotingStatus": "Close",
   "defaultRegistrationPrice": 25,
   "defaultMinScore": 0,
   "defaultMaxScore": 5,

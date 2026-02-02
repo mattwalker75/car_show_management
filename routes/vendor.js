@@ -9,8 +9,9 @@ module.exports = function (db, appConfig, upload) {
   const { handleVendorImageUpload, deleteVendorImage } = require('../helpers/imageUpload');
 
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
-  const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script>';
+  const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
   const appBgStyles = () => getAppBackgroundStyles(appConfig);
+  const bodyTag = (req) => `<body data-user-role="${req.session && req.session.user ? req.session.user.role : ''}">`;
 
   // Shared vendor page styles
   const vendorStyles = `
@@ -250,7 +251,7 @@ module.exports = function (db, appConfig, upload) {
             ${appBgStyles()}
             ${vendorStyles}
           </head>
-          <body>
+          ${bodyTag(req)}
             <div class="container dashboard-container">
               ${vendorHeader(user)}
               ${vendorNav('dashboard')}
@@ -355,7 +356,7 @@ module.exports = function (db, appConfig, upload) {
           ${appBgStyles()}
           ${vendorStyles}
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             ${vendorHeader(user)}
             ${vendorNav('dashboard')}
@@ -511,7 +512,7 @@ module.exports = function (db, appConfig, upload) {
           ${appBgStyles()}
           ${vendorStyles}
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             ${vendorHeader(user)}
             ${vendorNav('dashboard')}
@@ -574,7 +575,7 @@ module.exports = function (db, appConfig, upload) {
         ${appBgStyles()}
         ${vendorStyles}
       </head>
-      <body>
+      ${bodyTag(req)}
         <div class="container dashboard-container">
           ${vendorHeader(user)}
           ${vendorNav('dashboard')}
@@ -683,7 +684,7 @@ module.exports = function (db, appConfig, upload) {
           ${appBgStyles()}
           ${vendorStyles}
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             ${vendorHeader(user)}
             ${vendorNav('dashboard')}
@@ -807,6 +808,22 @@ module.exports = function (db, appConfig, upload) {
         [product_name.trim(), description || null, formattedPrice, formattedDiscount, imageUrl, productId, user.user_id],
         (err) => {
           if (err) return res.send(errorPage('Error updating product: ' + err.message, `/vendor/edit-product/${productId}`, 'Try Again'));
+
+          // Notify all users if a discount price was added or changed
+          if (formattedDiscount && formattedDiscount !== product.discount_price) {
+            const displayPrice = formattedPrice || product.price || '0.00';
+            db.get('SELECT business_name FROM vendor_business WHERE user_id = ?', [user.user_id], (err2, biz) => {
+              if (!err2) {
+                const vendorName = (biz && biz.business_name) || user.name;
+                const io = req.app.get('io');
+                io.to('role:all').emit('notification', {
+                  message: vendorName + ' reduced the price for ' + product_name.trim() + ' from $' + displayPrice + ' to $' + formattedDiscount,
+                  icon: '\uD83D\uDCB0'
+                });
+              }
+            });
+          }
+
           res.redirect('/vendor');
         });
     });
@@ -976,7 +993,7 @@ module.exports = function (db, appConfig, upload) {
             }
           </style>
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             ${vendorHeader(user)}
             ${vendorNav('vendors')}
@@ -1112,7 +1129,7 @@ module.exports = function (db, appConfig, upload) {
               }
             </style>
           </head>
-          <body>
+          ${bodyTag(req)}
             <div class="container dashboard-container">
               ${vendorHeader(user)}
               ${vendorNav('vendors')}
@@ -1297,7 +1314,7 @@ module.exports = function (db, appConfig, upload) {
               }
             </style>
           </head>
-          <body>
+          ${bodyTag(req)}
             <div class="container dashboard-container">
               ${vendorHeader(user)}
               ${vendorNav('vendors')}

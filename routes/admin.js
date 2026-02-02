@@ -13,8 +13,9 @@ module.exports = function (db, appConfig, upload) {
   const fs = require('fs');
 
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
-  const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script>';
+  const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
   const appBgStyles = () => getAppBackgroundStyles(appConfig);
+  const bodyTag = (req) => `<body data-user-role="${req.session && req.session.user ? req.session.user.role : ''}">`;
 
   // ============================================================
   // Admin Dashboard - Stats overview
@@ -51,7 +52,7 @@ module.exports = function (db, appConfig, upload) {
             ${adminStyles}
         ${appBgStyles()}
           </head>
-          <body>
+          ${bodyTag(req)}
             <div class="container dashboard-container">
               <div class="dashboard-header">
                 <h1>🏎️ Admin Dashboard</h1>
@@ -180,7 +181,7 @@ module.exports = function (db, appConfig, upload) {
           ${adminStyles}
         ${appBgStyles()}
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             <div class="dashboard-header">
               <h1>🏎️ Admin Dashboard</h1>
@@ -289,7 +290,7 @@ module.exports = function (db, appConfig, upload) {
         ${adminStyles}
         ${appBgStyles()}
       </head>
-      <body>
+      ${bodyTag(req)}
         <div class="container dashboard-container">
           <div class="dashboard-header">
             <h1>🏎️ Admin Dashboard</h1>
@@ -373,7 +374,7 @@ module.exports = function (db, appConfig, upload) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container">
             <div class="logo">
               <div class="logo-icon">🏎️</div>
@@ -405,7 +406,7 @@ module.exports = function (db, appConfig, upload) {
               <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
               ${styles}
             </head>
-            <body>
+            ${bodyTag(req)}
               <div class="container">
                 <div class="logo">
                   <div class="logo-icon">🏎️</div>
@@ -452,7 +453,7 @@ module.exports = function (db, appConfig, upload) {
           ${adminStyles}
         ${appBgStyles()}
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             <div class="dashboard-header">
               <h1>🏎️ Admin Dashboard</h1>
@@ -546,7 +547,7 @@ module.exports = function (db, appConfig, upload) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container">
             <div class="logo">
               <div class="logo-icon">🏎️</div>
@@ -809,7 +810,7 @@ module.exports = function (db, appConfig, upload) {
             }
           </style>
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             <div class="dashboard-header">
               <h1>🏎️ Admin Dashboard</h1>
@@ -1053,7 +1054,7 @@ module.exports = function (db, appConfig, upload) {
                 }
               </style>
             </head>
-            <body>
+            ${bodyTag(req)}
               <div class="container dashboard-container">
                 <div class="dashboard-header">
                   <h1>🏎️ Admin Dashboard</h1>
@@ -1237,7 +1238,7 @@ module.exports = function (db, appConfig, upload) {
               <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
               ${styles}
             </head>
-            <body>
+            ${bodyTag(req)}
               <div class="container">
                 <div class="logo">
                   <div class="logo-icon">🏎️</div>
@@ -1270,7 +1271,7 @@ module.exports = function (db, appConfig, upload) {
                   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                   ${styles}
                 </head>
-                <body>
+                ${bodyTag(req)}
                   <div class="container">
                     <div class="logo">
                       <div class="logo-icon">🏎️</div>
@@ -1301,7 +1302,7 @@ module.exports = function (db, appConfig, upload) {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                 ${styles}
               </head>
-              <body>
+              ${bodyTag(req)}
                 <div class="container">
                   <div class="logo">
                     <div class="logo-icon">🏎️</div>
@@ -1643,7 +1644,7 @@ module.exports = function (db, appConfig, upload) {
           ${appBgStyles()}
           ${vendorStyles}
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             ${adminVendorHeader(user)}
             ${adminNav('vendors')}
@@ -1816,7 +1817,7 @@ module.exports = function (db, appConfig, upload) {
             }
           </style>
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             ${adminVendorHeader(user)}
             ${adminNav('vendors')}
@@ -2036,7 +2037,7 @@ module.exports = function (db, appConfig, upload) {
             }
           </style>
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             ${adminVendorHeader(user)}
             ${adminNav('vendors')}

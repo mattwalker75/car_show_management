@@ -6,6 +6,7 @@ const https = require('https');
 const fs = require('fs');
 const cookieSession = require('cookie-session');
 const morgan = require('morgan');
+const { Server: SocketIOServer } = require('socket.io');
 
 // Initialize database (creates tables on startup)
 const db = require('./db/database');
@@ -57,7 +58,22 @@ const options = {
   cert: fs.readFileSync('/Users/matt/Desktop/My_Data/AI/Vibe_Coding/REPOS/cert.pem')
 };
 
-https.createServer(options, app).listen(port, () => {
+const server = https.createServer(options, app);
+
+// ── Socket.io for real-time notifications ──────────────────────────────
+const io = new SocketIOServer(server);
+app.set('io', io);
+
+io.on('connection', (socket) => {
+  socket.on('join-role', (role) => {
+    if (['admin', 'judge', 'registrar', 'vendor', 'user'].includes(role)) {
+      socket.join('role:' + role);
+      socket.join('role:all');
+    }
+  });
+});
+
+server.listen(port, () => {
   console.log(`Car Show Voting App listening at https://localhost:${port}`);
   console.log('Note: You may see a security warning in your browser - this is expected for self-signed certificates');
 });

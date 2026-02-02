@@ -10,8 +10,9 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   const { handleBackgroundImageUpload, deleteBackgroundImage } = require('../helpers/imageUpload');
 
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
-  const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script>';
+  const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
   const appBgStyles = () => getAppBackgroundStyles(appConfig);
+  const bodyTag = (req) => `<body data-user-role="${req.session && req.session.user ? req.session.user.role : ''}">`;
 
   // ==========================================
   // VEHICLE CONFIG & TYPES
@@ -88,7 +89,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 ${adminStyles}
         ${appBgStyles()}
               </head>
-              <body>
+              ${bodyTag(req)}
                 <div class="container dashboard-container">
                   <div class="dashboard-header">
                     <h1>🏎️ Admin Dashboard</h1>
@@ -249,7 +250,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           ${adminStyles}
         ${appBgStyles()}
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             <div class="dashboard-header">
               <h1>🏎️ Admin Dashboard</h1>
@@ -358,7 +359,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           ${adminStyles}
         ${appBgStyles()}
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             <div class="dashboard-header">
               <h1>🏎️ Admin Dashboard</h1>
@@ -493,7 +494,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             ${adminStyles}
         ${appBgStyles()}
           </head>
-          <body>
+          ${bodyTag(req)}
             <div class="container dashboard-container">
               <div class="dashboard-header">
                 <h1>🏎️ Admin Dashboard</h1>
@@ -611,7 +612,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             ${adminStyles}
         ${appBgStyles()}
           </head>
-          <body>
+          ${bodyTag(req)}
             <div class="container dashboard-container">
               <div class="dashboard-header">
                 <h1>🏎️ Admin Dashboard</h1>
@@ -732,7 +733,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             ${adminStyles}
         ${appBgStyles()}
           </head>
-          <body>
+          ${bodyTag(req)}
             <div class="container dashboard-container">
               <div class="dashboard-header">
                 <h1>🏎️ Admin Dashboard</h1>
@@ -858,7 +859,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             ${adminStyles}
         ${appBgStyles()}
           </head>
-          <body>
+          ${bodyTag(req)}
             <div class="container dashboard-container">
               <div class="dashboard-header">
                 <h1>🏎️ Admin Dashboard</h1>
@@ -979,7 +980,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             ${adminStyles}
         ${appBgStyles()}
           </head>
-          <body>
+          ${bodyTag(req)}
             <div class="container dashboard-container">
               <div class="dashboard-header">
                 <h1>🏎️ Admin Dashboard</h1>
@@ -1125,7 +1126,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           ${adminStyles}
         ${appBgStyles()}
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             <div class="dashboard-header">
               <h1>🏎️ Admin Dashboard</h1>
@@ -1275,7 +1276,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           ${adminStyles}
         ${appBgStyles()}
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             <div class="dashboard-header">
               <h1>🏎️ Admin Dashboard</h1>
@@ -1436,7 +1437,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           ${adminStyles}
         ${appBgStyles()}
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             <div class="dashboard-header">
               <h1>🏎️ Admin Dashboard</h1>
@@ -1690,7 +1691,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               }
             </style>
           </head>
-          <body>
+          ${bodyTag(req)}
             <div class="container dashboard-container">
               <div class="dashboard-header">
                 <h1>🏎️ Admin Dashboard</h1>
@@ -1816,7 +1817,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               ${adminStyles}
         ${appBgStyles()}
             </head>
-            <body>
+            ${bodyTag(req)}
               <div class="container dashboard-container">
                 <div class="dashboard-header">
                   <h1>🏎️ Admin Dashboard</h1>
@@ -2039,7 +2040,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
         ${adminStyles}
         ${appBgStyles()}
       </head>
-      <body>
+      ${bodyTag(req)}
         <div class="container dashboard-container">
           <div class="dashboard-header">
             <h1>🏎️ Admin Dashboard</h1>

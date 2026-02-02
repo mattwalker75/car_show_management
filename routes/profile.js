@@ -156,10 +156,12 @@ module.exports = function (db, appConfig, upload) {
             <link rel="stylesheet" href="/css/styles.css">
             <link rel="stylesheet" href="/css/admin.css">
             <script src="/js/configSubnav.js"></script>
+            <script src="/socket.io/socket.io.js"></script>
+            <script src="/js/notifications.js"></script>
         ${getAppBackgroundStyles(appConfig)}
             ${profileStyles}
           </head>
-          <body>
+          <body data-user-role="${role}">
             <div class="container dashboard-container">
               <div class="dashboard-header">
                 <h1>🏎️ ${config.heading}</h1>

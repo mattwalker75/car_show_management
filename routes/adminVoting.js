@@ -8,8 +8,9 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   const { getAvatarContent, adminNav } = require('../views/components');
 
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
-  const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script>';
+  const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
   const appBgStyles = () => getAppBackgroundStyles(appConfig);
+  const bodyTag = (req) => `<body data-user-role="${req.session && req.session.user ? req.session.user.role : ''}">`;
 
   // ─── Judge Status Page ───────────────────────────────────────────────────────
 
@@ -91,7 +92,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               ${adminStyles}
         ${appBgStyles()}
             </head>
-            <body>
+            ${bodyTag(req)}
               <div class="container dashboard-container">
                 <div class="dashboard-header">
                   <h1>🏎️ Admin Dashboard</h1>
@@ -244,7 +245,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 ${adminStyles}
         ${appBgStyles()}
               </head>
-              <body>
+              ${bodyTag(req)}
                 <div class="container dashboard-container">
                   <div class="dashboard-header">
                     <h1>🏎️ Admin Dashboard</h1>
@@ -398,7 +399,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             ${adminStyles}
         ${appBgStyles()}
           </head>
-          <body>
+          ${bodyTag(req)}
             <div class="container dashboard-container">
               <div class="dashboard-header">
                 <h1>🏎️ Admin Dashboard</h1>
@@ -487,6 +488,8 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           });
 
           if (insertValues.length === 0) {
+            const io = req.app.get('io');
+            io.to('role:judge').emit('notification', { message: 'Judge Voting results are published', icon: '\uD83C\uDFC6' });
             res.redirect('/admin/judge-status');
             return;
           }
@@ -497,6 +500,8 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           }
 
           db.run(`INSERT INTO published_results (result_type, class_id, car_id, place, total_score) VALUES ${placeholders.join(', ')}`, insertValues, (err) => {
+            const io = req.app.get('io');
+            io.to('role:judge').emit('notification', { message: 'Judge Voting results are published', icon: '\uD83C\uDFC6' });
             res.redirect('/admin/judge-status');
           });
         });
@@ -509,6 +514,8 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   router.get('/open-judge-voting', requireAdmin, (req, res) => {
     appConfig.judgeVotingStatus = 'Open';
     saveConfig();
+    const io = req.app.get('io');
+    io.to('role:judge').emit('notification', { message: 'Judge Voting is open', icon: '\uD83D\uDD13' });
     res.redirect('/admin/judge-status');
   });
 
@@ -517,6 +524,8 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   router.get('/close-judge-voting', requireAdmin, (req, res) => {
     appConfig.judgeVotingStatus = 'Close';
     saveConfig();
+    const io = req.app.get('io');
+    io.to('role:judge').emit('notification', { message: 'Judge Voting is closed', icon: '\uD83D\uDD12' });
     res.redirect('/admin/judge-status');
   });
 
@@ -590,7 +599,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             ${adminStyles}
         ${appBgStyles()}
           </head>
-          <body>
+          ${bodyTag(req)}
             <div class="container dashboard-container">
               <div class="dashboard-header">
                 <h1>🏎️ Admin Dashboard</h1>
@@ -704,7 +713,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             ${adminStyles}
         ${appBgStyles()}
           </head>
-          <body>
+          ${bodyTag(req)}
             <div class="container dashboard-container">
               <div class="dashboard-header">
                 <h1>🏎️ Admin Dashboard</h1>
@@ -834,7 +843,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             ${adminStyles}
         ${appBgStyles()}
           </head>
-          <body>
+          ${bodyTag(req)}
             <div class="container dashboard-container">
               <div class="dashboard-header">
                 <h1>🏎️ Admin Dashboard</h1>
@@ -908,6 +917,8 @@ module.exports = function (db, appConfig, upload, saveConfig) {
         });
 
         if (insertValues.length === 0) {
+          const io = req.app.get('io');
+          io.to('role:all').emit('notification', { message: 'Votes sent to Judges for review', icon: '\uD83D\uDCE8' });
           res.redirect('/admin/vote-status');
           return;
         }
@@ -918,6 +929,8 @@ module.exports = function (db, appConfig, upload, saveConfig) {
         }
 
         db.run(`INSERT INTO published_results (result_type, specialty_vote_id, car_id, place, total_score) VALUES ${placeholders.join(', ')}`, insertValues, (err) => {
+          const io = req.app.get('io');
+          io.to('role:all').emit('notification', { message: 'Votes sent to Judges for review', icon: '\uD83D\uDCE8' });
           res.redirect('/admin/vote-status');
         });
       });
@@ -929,6 +942,8 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   router.get('/open-specialty-voting', requireAdmin, (req, res) => {
     appConfig.specialtyVotingStatus = 'Open';
     saveConfig();
+    const io = req.app.get('io');
+    io.to('role:all').emit('notification', { message: "Cast your vote by clicking 'Vote Here!'", icon: '\uD83D\uDDF3\uFE0F' });
     res.redirect('/admin/vote-status');
   });
 
@@ -1015,7 +1030,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   ${adminStyles}
         ${appBgStyles()}
                 </head>
-                <body>
+                ${bodyTag(req)}
                   <div class="container dashboard-container">
                     <div class="dashboard-header">
                       <h1>🏎️ Admin Dashboard</h1>
@@ -1081,7 +1096,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           ${adminStyles}
         ${appBgStyles()}
         </head>
-        <body>
+        ${bodyTag(req)}
           <div class="container dashboard-container">
             <div class="dashboard-header">
               <h1>🏎️ Admin Dashboard</h1>
