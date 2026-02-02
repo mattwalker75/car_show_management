@@ -26,6 +26,15 @@ let appConfig = {
     tintColor: '#1a1a2e',
     tintOpacity: 0.5,
     cardOpacity: 0.98
+  },
+  appBackground: {
+    useImage: false,
+    imageUrl: '',
+    backgroundColor: '#1a1a2e',
+    useTint: false,
+    tintColor: '#1a1a2e',
+    tintOpacity: 0.5,
+    containerOpacity: 0.98
   }
 };
 
@@ -40,6 +49,17 @@ const defaultLoginBackground = {
   cardOpacity: 0.98
 };
 
+// Default appBackground settings (used for merge on load)
+const defaultAppBackground = {
+  useImage: false,
+  imageUrl: '',
+  backgroundColor: '#1a1a2e',
+  useTint: false,
+  tintColor: '#1a1a2e',
+  tintOpacity: 0.5,
+  containerOpacity: 0.98
+};
+
 // Load config from disk (called at startup and when config may have changed)
 function loadConfig() {
   try {
@@ -48,6 +68,8 @@ function loadConfig() {
       appConfig = JSON.parse(configData);
       // Ensure loginBackground exists with all defaults merged
       appConfig.loginBackground = Object.assign({}, defaultLoginBackground, appConfig.loginBackground || {});
+      // Ensure appBackground exists with all defaults merged
+      appConfig.appBackground = Object.assign({}, defaultAppBackground, appConfig.appBackground || {});
     }
   } catch (err) {
     console.error('Error loading config:', err.message);

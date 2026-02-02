@@ -5,12 +5,13 @@ const router = express.Router();
 
 module.exports = function (db, appConfig, upload, saveConfig) {
   const { requireAdmin } = require('../middleware/auth');
-  const { errorPage, successPage } = require('../views/layout');
+  const { errorPage, successPage, getAppBackgroundStyles } = require('../views/layout');
   const { getAvatarContent, adminNav } = require('../views/components');
   const { handleBackgroundImageUpload, deleteBackgroundImage } = require('../helpers/imageUpload');
 
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
   const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script>';
+  const appBgStyles = () => getAppBackgroundStyles(appConfig);
 
   // ==========================================
   // VEHICLE CONFIG & TYPES
@@ -85,6 +86,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                 ${styles}
                 ${adminStyles}
+        ${appBgStyles()}
               </head>
               <body>
                 <div class="container dashboard-container">
@@ -244,6 +246,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
+        ${appBgStyles()}
         </head>
         <body>
           <div class="container dashboard-container">
@@ -351,6 +354,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
+        ${appBgStyles()}
         </head>
         <body>
           <div class="container dashboard-container">
@@ -484,6 +488,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             ${styles}
             ${adminStyles}
+        ${appBgStyles()}
           </head>
           <body>
             <div class="container dashboard-container">
@@ -600,6 +605,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             ${styles}
             ${adminStyles}
+        ${appBgStyles()}
           </head>
           <body>
             <div class="container dashboard-container">
@@ -719,6 +725,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             ${styles}
             ${adminStyles}
+        ${appBgStyles()}
           </head>
           <body>
             <div class="container dashboard-container">
@@ -843,6 +850,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             ${styles}
             ${adminStyles}
+        ${appBgStyles()}
           </head>
           <body>
             <div class="container dashboard-container">
@@ -962,6 +970,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             ${styles}
             ${adminStyles}
+        ${appBgStyles()}
           </head>
           <body>
             <div class="container dashboard-container">
@@ -1106,6 +1115,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
+        ${appBgStyles()}
         </head>
         <body>
           <div class="container dashboard-container">
@@ -1254,6 +1264,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
+        ${appBgStyles()}
         </head>
         <body>
           <div class="container dashboard-container">
@@ -1413,6 +1424,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
+        ${appBgStyles()}
         </head>
         <body>
           <div class="container dashboard-container">
@@ -1611,6 +1623,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             ${styles}
             ${adminStyles}
+        ${appBgStyles()}
             <style>
               .results-header {
                 background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
@@ -1789,6 +1802,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
               ${styles}
               ${adminStyles}
+        ${appBgStyles()}
             </head>
             <body>
               <div class="container dashboard-container">
@@ -1951,6 +1965,39 @@ module.exports = function (db, appConfig, upload, saveConfig) {
     res.redirect('/admin/app-config?saved=1');
   });
 
+  // Upload app background image
+  router.post('/upload-app-background', requireAdmin, upload.single('appBackgroundImage'), async (req, res) => {
+    if (!req.file) {
+      return res.send(errorPage('No image file selected.', '/admin/app-config', 'Try Again'));
+    }
+    try {
+      if (!appConfig.appBackground) appConfig.appBackground = {};
+      const oldImageUrl = appConfig.appBackground.imageUrl || null;
+      const result = await handleBackgroundImageUpload(req.file, oldImageUrl);
+      if (result.success) {
+        appConfig.appBackground.imageUrl = result.imageUrl;
+        appConfig.appBackground.useImage = true;
+        saveConfig();
+        res.redirect('/admin/app-config?saved=1');
+      } else {
+        res.send(errorPage('Error uploading image: ' + result.error, '/admin/app-config', 'Try Again'));
+      }
+    } catch (error) {
+      res.send(errorPage('Error uploading image: ' + error.message, '/admin/app-config', 'Try Again'));
+    }
+  });
+
+  // Remove app background image
+  router.post('/remove-app-background', requireAdmin, (req, res) => {
+    if (appConfig.appBackground && appConfig.appBackground.imageUrl) {
+      deleteBackgroundImage(appConfig.appBackground.imageUrl);
+      appConfig.appBackground.imageUrl = '';
+      appConfig.appBackground.useImage = false;
+      saveConfig();
+    }
+    res.redirect('/admin/app-config?saved=1');
+  });
+
   // App config page
   router.get('/app-config', requireAdmin, (req, res) => {
     const user = req.session.user;
@@ -1964,6 +2011,10 @@ module.exports = function (db, appConfig, upload, saveConfig) {
       useImage: false, imageUrl: '', backgroundColor: '#1a1a2e',
       useTint: false, tintColor: '#1a1a2e', tintOpacity: 0.5, cardOpacity: 0.98
     };
+    const abg = appConfig.appBackground || {
+      useImage: false, imageUrl: '', backgroundColor: '#1a1a2e',
+      useTint: false, tintColor: '#1a1a2e', tintOpacity: 0.5, containerOpacity: 0.98
+    };
 
     res.send(`
       <!DOCTYPE html>
@@ -1973,6 +2024,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         ${styles}
         ${adminStyles}
+        ${appBgStyles()}
       </head>
       <body>
         <div class="container dashboard-container">
@@ -2010,6 +2062,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               <input type="text" name="appSubtitle" value="${appConfig.appSubtitle || ''}" placeholder="Enter subtitle (optional)">
               <small style="color: #666; display: block; margin-top: 5px;">Appears below the title on the login page</small>
             </div>
+            <div style="border-top:3px solid #000;margin:20px 0;"></div>
             <div class="form-group">
               <label>Default Registration Price</label>
               <div style="display:flex;align-items:center;gap:4px;">
@@ -2018,7 +2071,8 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
               <small style="color: #666; display: block; margin-top: 5px;">Default price when creating new vehicle types</small>
             </div>
-            <div style="margin-top:10px;margin-bottom:10px;border-top:1px solid #e1e1e1;padding-top:15px;">
+            <div style="border-top:3px solid #000;margin:20px 0;"></div>
+            <div style="margin-bottom:10px;">
               <label style="font-weight:600;margin-bottom:8px;display:block;">Default Judging Points</label>
               <small style="color: #666; display: block; margin-bottom: 10px;">Default min and max score values when adding new judging questions</small>
               <div style="display:flex;gap:15px;flex-wrap:wrap;">
@@ -2032,7 +2086,8 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 </div>
               </div>
             </div>
-            <div style="margin-top:10px;margin-bottom:10px;border-top:1px solid #e1e1e1;padding-top:15px;">
+            <div style="border-top:3px solid #000;margin:20px 0;"></div>
+            <div style="margin-bottom:10px;">
               <label style="font-weight:600;margin-bottom:8px;display:block;">Login Configuration</label>
               <small style="color: #666; display: block; margin-bottom: 12px;">Control the login experience for all users</small>
               <div style="display:flex;align-items:center;gap:12px;">
@@ -2144,6 +2199,114 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
             </div>
 
+            <div style="border-top:3px solid #000;margin:20px 0;"></div>
+
+            <!-- App Background Customization -->
+            <div style="margin-bottom:10px;">
+              <label style="font-weight:600;margin-bottom:8px;display:block;">App Background Customization</label>
+              <small style="color: #666; display: block; margin-bottom: 15px;">Customize the background appearance of the app after login</small>
+
+              <!-- Background Type Selector -->
+              <div class="form-group" style="margin-bottom:15px;">
+                <label>Background Type</label>
+                <div style="display:flex;gap:10px;margin-top:6px;">
+                  <button type="button" id="btnAppSolidColor" onclick="setAppBgType('color')"
+                    style="flex:1;padding:10px;border:2px solid ${abg.useImage ? '#e1e1e1' : '#e94560'};border-radius:8px;background:${abg.useImage ? '#f8f9fa' : '#fff0f3'};cursor:pointer;font-weight:600;color:${abg.useImage ? '#666' : '#e94560'};">
+                    Solid Color
+                  </button>
+                  <button type="button" id="btnAppBgImage" onclick="setAppBgType('image')"
+                    style="flex:1;padding:10px;border:2px solid ${abg.useImage ? '#e94560' : '#e1e1e1'};border-radius:8px;background:${abg.useImage ? '#fff0f3' : '#f8f9fa'};cursor:pointer;font-weight:600;color:${abg.useImage ? '#e94560' : '#666'};">
+                    Background Image
+                  </button>
+                </div>
+                <input type="hidden" name="appBgUseImage" id="appBgUseImage" value="${abg.useImage ? 'true' : 'false'}">
+              </div>
+
+              <!-- Solid Color Section -->
+              <div id="appSolidColorSection" style="display:${abg.useImage ? 'none' : 'block'};margin-bottom:15px;">
+                <label>Background Color</label>
+                <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
+                  <input type="color" name="appBgColor" id="appBgColor" value="${abg.backgroundColor || '#1a1a2e'}"
+                    style="width:60px;height:40px;border:2px solid #e1e1e1;border-radius:8px;cursor:pointer;padding:2px;">
+                  <span id="appBgColorHex" style="font-family:monospace;color:#666;">${abg.backgroundColor || '#1a1a2e'}</span>
+                </div>
+              </div>
+
+              <!-- Background Image Section -->
+              <div id="appBgImageSection" style="display:${abg.useImage ? 'block' : 'none'};margin-bottom:15px;">
+                ${abg.imageUrl ? `
+                <div style="margin-bottom:12px;">
+                  <label>Current Background</label>
+                  <div style="position:relative;width:200px;height:120px;border-radius:8px;overflow:hidden;border:2px solid #e1e1e1;margin-top:6px;">
+                    <img src="${abg.imageUrl}" style="width:100%;height:100%;object-fit:cover;">
+                  </div>
+                </div>
+                ` : ''}
+                <label>${abg.imageUrl ? 'Replace' : 'Upload'} Background Image</label>
+                <small style="color:#666;display:block;margin-bottom:8px;">Recommended: 1920x1080 or larger. JPEG, PNG, GIF, or WebP.</small>
+                <div id="appBgImageUploadArea" style="margin-top:8px;"></div>
+              </div>
+            </div>
+
+            <!-- App Tint Overlay (only when image mode) -->
+            <div id="appTintSection" style="display:${abg.useImage ? 'block' : 'none'};margin-bottom:15px;border-top:1px solid #e1e1e1;padding-top:15px;">
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+                <label class="toggle-switch" style="position:relative;display:inline-block;width:50px;height:26px;margin:0;cursor:pointer;">
+                  <input type="hidden" name="appBgUseTint" value="${abg.useTint ? 'true' : 'false'}" id="appBgUseTintInput">
+                  <div id="appTintToggleTrack" style="position:absolute;top:0;left:0;right:0;bottom:0;background:${abg.useTint ? '#27ae60' : '#ccc'};border-radius:26px;transition:0.3s;" onclick="toggleAppTint()"></div>
+                  <div id="appTintToggleThumb" style="position:absolute;height:20px;width:20px;left:${abg.useTint ? '27px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.3s;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+                </label>
+                <span style="font-size:14px;color:#333;font-weight:600;">Color Tint Overlay</span>
+              </div>
+              <div id="appTintControls" style="display:${abg.useTint ? 'block' : 'none'};">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                  <label style="margin-bottom:0;min-width:70px;">Tint Color</label>
+                  <input type="color" name="appBgTintColor" id="appBgTintColor" value="${abg.tintColor || '#1a1a2e'}"
+                    style="width:60px;height:40px;border:2px solid #e1e1e1;border-radius:8px;cursor:pointer;padding:2px;">
+                  <span id="appTintColorHex" style="font-family:monospace;color:#666;">${abg.tintColor || '#1a1a2e'}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <label style="margin-bottom:0;min-width:70px;">Opacity</label>
+                  <input type="range" name="appBgTintOpacity" id="appBgTintOpacity" min="0" max="100" value="${Math.round((abg.tintOpacity ?? 0.5) * 100)}"
+                    style="flex:1;" oninput="document.getElementById('appTintOpacityValue').textContent=this.value+'%'; updateAppPreview();">
+                  <span id="appTintOpacityValue" style="font-family:monospace;color:#666;min-width:40px;">${Math.round((abg.tintOpacity ?? 0.5) * 100)}%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- App Container Transparency -->
+            <div style="margin-bottom:15px;border-top:1px solid #e1e1e1;padding-top:15px;">
+              <label style="font-weight:600;margin-bottom:8px;display:block;">App Window Transparency</label>
+              <small style="color:#666;display:block;margin-bottom:10px;">Controls how see-through the app window is (100% = fully solid, 0% = fully transparent)</small>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <input type="range" name="appBgContainerOpacity" id="appBgContainerOpacity" min="0" max="100" value="${Math.round((abg.containerOpacity ?? 0.98) * 100)}"
+                  style="flex:1;" oninput="document.getElementById('appContainerOpacityValue').textContent=this.value+'%'; updateAppPreview();">
+                <span id="appContainerOpacityValue" style="font-family:monospace;color:#666;min-width:40px;">${Math.round((abg.containerOpacity ?? 0.98) * 100)}%</span>
+              </div>
+            </div>
+
+            <!-- App Live Preview -->
+            <div style="margin-bottom:20px;border-top:1px solid #e1e1e1;padding-top:15px;">
+              <label style="font-weight:600;margin-bottom:8px;display:block;">Live Preview</label>
+              <div id="appPreviewPanel" data-has-image="${abg.useImage && abg.imageUrl ? 'true' : 'false'}" style="position:relative;width:100%;max-width:400px;height:250px;border-radius:12px;overflow:hidden;border:2px solid #e1e1e1;${abg.useImage && abg.imageUrl ? `background:url('${abg.imageUrl}') center/cover no-repeat` : `background:${abg.backgroundColor || '#1a1a2e'}`};">
+                <div id="appPreviewTint" style="position:absolute;top:0;left:0;width:100%;height:100%;background:${abg.tintColor || '#1a1a2e'};opacity:${abg.useImage && abg.useTint ? (abg.tintOpacity ?? 0.5) : 0};pointer-events:none;"></div>
+                <div id="appPreviewCard" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;background:rgba(255,255,255,${abg.containerOpacity ?? 0.98});border-radius:10px;padding:15px;box-shadow:0 4px 15px rgba(0,0,0,0.2);">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                    <div style="font-size:16px;">🏎️</div>
+                    <div style="font-size:11px;font-weight:700;color:#1a1a2e;">Dashboard</div>
+                    <div style="margin-left:auto;width:20px;height:20px;background:#e1e1e1;border-radius:50%;"></div>
+                  </div>
+                  <div style="display:flex;gap:6px;margin-bottom:10px;">
+                    <div style="flex:1;height:6px;background:linear-gradient(135deg,#e94560,#ff6b6b);border-radius:3px;"></div>
+                    <div style="flex:1;height:6px;background:#e1e1e1;border-radius:3px;"></div>
+                    <div style="flex:1;height:6px;background:#e1e1e1;border-radius:3px;"></div>
+                  </div>
+                  <div style="width:100%;height:8px;background:#f0f0f0;border-radius:3px;margin:4px 0;"></div>
+                  <div style="width:70%;height:8px;background:#f0f0f0;border-radius:3px;margin:4px 0;"></div>
+                </div>
+              </div>
+            </div>
+
             <button type="submit" style="background: #27ae60; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px;">Save Configuration</button>
           </form>
 
@@ -2156,6 +2319,20 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             </form>
             ${bg.imageUrl ? `
             <form method="POST" action="/admin/remove-login-background" style="margin-top:8px;">
+              <button type="submit" style="background:#e74c3c;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">Remove Image</button>
+            </form>
+            ` : ''}
+          </div>
+
+          <!-- App background image upload/remove forms (outside main form) -->
+          <div id="appBgImageUploadForm" style="display:${abg.useImage ? 'block' : 'none'};max-width:600px;margin-top:15px;">
+            <form method="POST" action="/admin/upload-app-background" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <input type="file" name="appBackgroundImage" accept="image/jpeg,image/png,image/gif,image/webp"
+                style="flex:1;min-width:200px;padding:8px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+              <button type="submit" style="background:#3498db;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;">Upload Image</button>
+            </form>
+            ${abg.imageUrl ? `
+            <form method="POST" action="/admin/remove-app-background" style="margin-top:8px;">
               <button type="submit" style="background:#e74c3c;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">Remove Image</button>
             </form>
             ` : ''}
@@ -2255,6 +2432,70 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           if (uploadForm && uploadArea) {
             uploadArea.appendChild(uploadForm);
           }
+          // Move app background upload forms
+          var appUploadForm = document.getElementById('appBgImageUploadForm');
+          var appUploadArea = document.getElementById('appBgImageUploadArea');
+          if (appUploadForm && appUploadArea) {
+            appUploadArea.appendChild(appUploadForm);
+          }
+          // App Background functions
+          function setAppBgType(type) {
+            var isImage = type === 'image';
+            document.getElementById('appBgUseImage').value = isImage ? 'true' : 'false';
+            document.getElementById('appSolidColorSection').style.display = isImage ? 'none' : 'block';
+            document.getElementById('appBgImageSection').style.display = isImage ? 'block' : 'none';
+            document.getElementById('appBgImageUploadForm').style.display = isImage ? 'block' : 'none';
+            document.getElementById('appTintSection').style.display = isImage ? 'block' : 'none';
+            var btnColor = document.getElementById('btnAppSolidColor');
+            var btnImage = document.getElementById('btnAppBgImage');
+            btnColor.style.borderColor = isImage ? '#e1e1e1' : '#e94560';
+            btnColor.style.background = isImage ? '#f8f9fa' : '#fff0f3';
+            btnColor.style.color = isImage ? '#666' : '#e94560';
+            btnImage.style.borderColor = isImage ? '#e94560' : '#e1e1e1';
+            btnImage.style.background = isImage ? '#fff0f3' : '#f8f9fa';
+            btnImage.style.color = isImage ? '#e94560' : '#666';
+            updateAppPreview();
+          }
+          function toggleAppTint() {
+            var input = document.getElementById('appBgUseTintInput');
+            var track = document.getElementById('appTintToggleTrack');
+            var thumb = document.getElementById('appTintToggleThumb');
+            var controls = document.getElementById('appTintControls');
+            var isOn = input.value === 'true';
+            input.value = isOn ? 'false' : 'true';
+            track.style.background = isOn ? '#ccc' : '#27ae60';
+            thumb.style.left = isOn ? '3px' : '27px';
+            controls.style.display = isOn ? 'none' : 'block';
+            updateAppPreview();
+          }
+          function updateAppPreview() {
+            var panel = document.getElementById('appPreviewPanel');
+            var tint = document.getElementById('appPreviewTint');
+            var card = document.getElementById('appPreviewCard');
+            var isImage = document.getElementById('appBgUseImage').value === 'true';
+            var bgColor = document.getElementById('appBgColor').value;
+            var useTint = document.getElementById('appBgUseTintInput').value === 'true';
+            var tintColor = document.getElementById('appBgTintColor').value;
+            var tintOpacity = parseInt(document.getElementById('appBgTintOpacity').value) / 100;
+            var containerOpacity = parseInt(document.getElementById('appBgContainerOpacity').value) / 100;
+            if (isImage && panel.dataset.hasImage === 'true') {
+              // keep image background
+            } else if (!isImage) {
+              panel.style.backgroundImage = 'none';
+              panel.style.backgroundColor = bgColor;
+            }
+            tint.style.background = tintColor;
+            tint.style.opacity = (isImage && useTint) ? tintOpacity : 0;
+            card.style.background = 'rgba(255,255,255,' + containerOpacity + ')';
+          }
+          document.getElementById('appBgColor').addEventListener('input', function() {
+            document.getElementById('appBgColorHex').textContent = this.value;
+            updateAppPreview();
+          });
+          document.getElementById('appBgTintColor').addEventListener('input', function() {
+            document.getElementById('appTintColorHex').textContent = this.value;
+            updateAppPreview();
+          });
         </script>
       </body>
       </html>
@@ -2264,7 +2505,8 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // Save app config
   router.post('/app-config', requireAdmin, (req, res) => {
     const { appTitle, appSubtitle, defaultRegistrationPrice, defaultMinScore, defaultMaxScore, animatedLogin,
-            loginBgUseImage, loginBgColor, loginBgUseTint, loginBgTintColor, loginBgTintOpacity, loginBgCardOpacity } = req.body;
+            loginBgUseImage, loginBgColor, loginBgUseTint, loginBgTintColor, loginBgTintOpacity, loginBgCardOpacity,
+            appBgUseImage, appBgColor, appBgUseTint, appBgTintColor, appBgTintOpacity, appBgContainerOpacity } = req.body;
 
     if (!/^\d+(\.\d{1,2})?$/.test((defaultRegistrationPrice || '').trim())) {
       return res.send(errorPage('Invalid price. Enter a number like 25 or 25.00.', '/admin/app-config', 'Try Again'));
@@ -2289,6 +2531,15 @@ module.exports = function (db, appConfig, upload, saveConfig) {
     appConfig.loginBackground.tintColor = /^#[0-9A-Fa-f]{6}$/.test(loginBgTintColor) ? loginBgTintColor : '#1a1a2e';
     appConfig.loginBackground.tintOpacity = Math.max(0, Math.min(1, (parseInt(loginBgTintOpacity) || 50) / 100));
     appConfig.loginBackground.cardOpacity = Math.max(0, Math.min(1, (parseInt(loginBgCardOpacity) || 98) / 100));
+
+    // Update appBackground settings (preserve imageUrl — only changed by upload/remove routes)
+    if (!appConfig.appBackground) appConfig.appBackground = {};
+    appConfig.appBackground.useImage = appBgUseImage === 'true';
+    appConfig.appBackground.backgroundColor = /^#[0-9A-Fa-f]{6}$/.test(appBgColor) ? appBgColor : '#1a1a2e';
+    appConfig.appBackground.useTint = appBgUseTint === 'true';
+    appConfig.appBackground.tintColor = /^#[0-9A-Fa-f]{6}$/.test(appBgTintColor) ? appBgTintColor : '#1a1a2e';
+    appConfig.appBackground.tintOpacity = Math.max(0, Math.min(1, (parseInt(appBgTintOpacity) || 50) / 100));
+    appConfig.appBackground.containerOpacity = Math.max(0, Math.min(1, (parseInt(appBgContainerOpacity) || 98) / 100));
 
     saveConfig();
 

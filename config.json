@@ -6,14 +6,23 @@
   "defaultRegistrationPrice": 25,
   "defaultMinScore": 0,
   "defaultMaxScore": 5,
-  "animatedLogin": false,
+  "animatedLogin": true,
   "loginBackground": {
-    "useImage": false,
-    "imageUrl": "/images/app_config/78c66f4cf35b731ef36da6ffd84e3909.jpg",
+    "useImage": true,
+    "imageUrl": "/images/app_config/e217a2abc1c9abfdef0a095cd3724df6.jpg",
     "backgroundColor": "#002e7a",
     "useTint": true,
     "tintColor": "#0056d6",
     "tintOpacity": 0.26,
-    "cardOpacity": 0.73
+    "cardOpacity": 0.65
+  },
+  "appBackground": {
+    "useImage": true,
+    "imageUrl": "/images/app_config/6c9e824511f3be812127ae9c8c0dd482.jpg",
+    "backgroundColor": "#1a1a2e",
+    "useTint": true,
+    "tintColor": "#1a1a2e",
+    "tintOpacity": 0.5,
+    "containerOpacity": 0.87
   }
 }

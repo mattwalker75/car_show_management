@@ -134,10 +134,59 @@ function successPage(message, link = '/', linkText = 'Continue') {
   });
 }
 
+/**
+ * Generate dynamic app background styles from appConfig.appBackground.
+ * Used on all authenticated/dashboard pages to override the default body gradient.
+ * @param {Object} appConfig - The application config object
+ * @returns {string} A <style> tag with dynamic background CSS
+ */
+function getAppBackgroundStyles(appConfig) {
+  const bg = (appConfig && appConfig.appBackground) || {};
+  const useImage = bg.useImage && bg.imageUrl;
+  const bgColor = bg.backgroundColor || '#1a1a2e';
+  const containerOpacity = bg.containerOpacity ?? 0.98;
+  const useTint = bg.useTint;
+  const tintColor = bg.tintColor || '#1a1a2e';
+  const tintOpacity = bg.tintOpacity ?? 0.5;
+
+  let bodyBg;
+  if (useImage) {
+    bodyBg = `background: url('${bg.imageUrl}') center/cover no-repeat fixed; background-color: #1a1a2e;`;
+  } else {
+    bodyBg = `background: ${bgColor};`;
+  }
+
+  let tintStyles = '';
+  if (useImage && useTint) {
+    tintStyles = `
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: ${tintColor};
+        opacity: ${tintOpacity};
+        z-index: 0;
+        pointer-events: none;
+      }
+      body > .container { position: relative; z-index: 1; }
+    `;
+  }
+
+  return `
+    <style>
+      body { ${bodyBg} }
+      .dashboard-container { background: rgba(255, 255, 255, ${containerOpacity}); }
+      ${tintStyles}
+    </style>
+  `;
+}
+
 module.exports = {
   pageShell,
   dashboardPage,
   formPage,
   errorPage,
-  successPage
+  successPage,
+  getAppBackgroundStyles
 };

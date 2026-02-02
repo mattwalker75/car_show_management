@@ -17,7 +17,6 @@ const app = express();
 const port = 3001;
 
 // ── Middleware ─────────────────────────────────────────────────────────
-app.use(morgan('short'));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(express.json({ limit: '10kb' }));
 app.use(express.static('public'));
@@ -28,6 +27,12 @@ app.use(cookieSession({
   keys: ['car-show-secret-key-2024', 'backup-secret-key'],
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
+
+// Custom morgan token for logged-in username
+morgan.token('username', (req) => {
+  return (req.session && req.session.user) ? req.session.user.username : 'anon';
+});
+app.use(morgan(':remote-addr - :username - :method :url HTTP/:http-version :status :res[content-length] - :response-time ms'));
 
 // ── Route Modules ─────────────────────────────────────────────────────
 

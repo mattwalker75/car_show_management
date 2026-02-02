@@ -57,5 +57,17 @@ TODO
       - If someone is being an ass, then be able to block him from posting so that all he can do is read the posts but can not make any
       - Limit the number of characters someone can post so that someone can't copy/paste a novel into chat
 
+- Add product sale prices for Vendor products
+   - It will put a line through the current price and add the new price
+      - It will be an option within the "Edit Product / Service" section for the specific price.
+         - NOTE:  This is NOT going to be in the "Add Product" section, because this should only be added to existing products
+      - Below the "Price (Optional)", add a "Discount Price (Optional)" window
+         - If a discount price is posted, then a line will go through the current price with the new discount price appearing next to it
+      - If the "Sold Out" button is clicked, then the line should go through this discount price too, if it is enabled
+   - Update the database as needed to support this discuount price and update the "setup_db.sql" file accordingly
 
+- Need Admin to be able to do the following with Vendors
+   - Disable vendor accounts if need be so the vendor ID can not log in
+   - Disable a specific vendor's information from showing up in the "Vendors" tab
+   - Disable and Delete vendor products
 

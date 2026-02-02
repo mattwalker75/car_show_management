@@ -8,7 +8,7 @@ const router = express.Router();
 module.exports = function (db, appConfig, upload) {
   const { requireAuth, requireAdmin, requireJudge, requireRegistrar, requireVendor, hashPassword, verifyPassword } = require('../middleware/auth');
   const { handleProfilePhotoUpload } = require('../helpers/imageUpload');
-  const { errorPage, successPage } = require('../views/layout');
+  const { errorPage, successPage, getAppBackgroundStyles } = require('../views/layout');
   const { getAvatarContent, adminNav, judgeNav, registrarNav, vendorNav, userNav } = require('../views/components');
 
   // Role-specific configuration: middleware, titles, nav, redirect paths
@@ -156,6 +156,7 @@ module.exports = function (db, appConfig, upload) {
             <link rel="stylesheet" href="/css/styles.css">
             <link rel="stylesheet" href="/css/admin.css">
             <script src="/js/configSubnav.js"></script>
+        ${getAppBackgroundStyles(appConfig)}
             ${profileStyles}
           </head>
           <body>

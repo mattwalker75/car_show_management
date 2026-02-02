@@ -76,6 +76,7 @@ function judgeNav(activeTab) {
       <a href="/judge/vehicles"${activeTab === 'vehicles' ? ' class="active"' : ''}>Vehicles</a>
       <a href="/judge/users"${activeTab === 'users' ? ' class="active"' : ''}>Users</a>
       <a href="/judge/results"${activeTab === 'results' ? ' class="active"' : ''}>Results</a>
+      <a href="/judge/vendors"${activeTab === 'vendors' ? ' class="active"' : ''}>Vendors</a>
       <a href="/user/vote">Vote Here!</a>
     </div>`;
 }
@@ -91,6 +92,7 @@ function registrarNav(activeTab) {
       <a href="/registrar"${activeTab === 'dashboard' ? ' class="active"' : ''}>Dashboard</a>
       <a href="/registrar/vehicles"${activeTab === 'vehicles' ? ' class="active"' : ''}>Vehicles</a>
       <a href="/registrar/users"${activeTab === 'users' ? ' class="active"' : ''}>Users</a>
+      <a href="/registrar/vendors"${activeTab === 'vendors' ? ' class="active"' : ''}>Vendors</a>
       <a href="/user/vote">Vote Here!</a>
     </div>`;
 }
@@ -105,6 +107,7 @@ function userNav(activeTab) {
     <div class="admin-nav">
       <a href="/user"${activeTab === 'dashboard' ? ' class="active"' : ''}>Dashboard</a>
       <a href="/user/vehicles"${activeTab === 'vehicles' ? ' class="active"' : ''}>Vehicles</a>
+      <a href="/user/vendors"${activeTab === 'vendors' ? ' class="active"' : ''}>Vendors</a>
       <a href="/user/vote"${activeTab === 'vote' ? ' class="active"' : ''}>Vote Here!</a>
     </div>`;
 }
@@ -118,6 +121,7 @@ function vendorNav(activeTab) {
   return `
     <div class="admin-nav">
       <a href="/vendor"${activeTab === 'dashboard' ? ' class="active"' : ''}>Dashboard</a>
+      <a href="/vendor/vendors"${activeTab === 'vendors' ? ' class="active"' : ''}>Vendors</a>
     </div>`;
 }
 

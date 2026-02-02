@@ -4,11 +4,12 @@ const router = express.Router();
 
 module.exports = function (db, appConfig, upload, saveConfig) {
   const { requireAdmin } = require('../middleware/auth');
-  const { errorPage, successPage } = require('../views/layout');
+  const { errorPage, successPage, getAppBackgroundStyles } = require('../views/layout');
   const { getAvatarContent, adminNav } = require('../views/components');
 
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
   const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script>';
+  const appBgStyles = () => getAppBackgroundStyles(appConfig);
 
   // ─── Judge Status Page ───────────────────────────────────────────────────────
 
@@ -88,6 +89,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
               ${styles}
               ${adminStyles}
+        ${appBgStyles()}
             </head>
             <body>
               <div class="container dashboard-container">
@@ -239,6 +241,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                 ${styles}
                 ${adminStyles}
+        ${appBgStyles()}
               </head>
               <body>
                 <div class="container dashboard-container">
@@ -391,6 +394,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             ${styles}
             ${adminStyles}
+        ${appBgStyles()}
           </head>
           <body>
             <div class="container dashboard-container">
@@ -581,6 +585,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             ${styles}
             ${adminStyles}
+        ${appBgStyles()}
           </head>
           <body>
             <div class="container dashboard-container">
@@ -693,6 +698,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             ${styles}
             ${adminStyles}
+        ${appBgStyles()}
           </head>
           <body>
             <div class="container dashboard-container">
@@ -821,6 +827,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             ${styles}
             ${adminStyles}
+        ${appBgStyles()}
           </head>
           <body>
             <div class="container dashboard-container">
@@ -1000,6 +1007,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
                   ${styles}
                   ${adminStyles}
+        ${appBgStyles()}
                 </head>
                 <body>
                   <div class="container dashboard-container">
@@ -1064,6 +1072,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
+        ${appBgStyles()}
         </head>
         <body>
           <div class="container dashboard-container">

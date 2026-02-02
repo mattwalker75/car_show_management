@@ -259,6 +259,52 @@ CREATE TABLE IF NOT EXISTS published_results (
 
 
 -- ============================================================================
+-- VENDOR BUSINESS TABLE
+-- ============================================================================
+-- Stores vendor business profile and booth information.
+-- Each vendor user has at most one business record (1:1 with users).
+-- Vendors can edit their own business info, booth location, and upload an image.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS vendor_business (
+    vendor_business_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- Unique identifier
+    user_id INTEGER NOT NULL UNIQUE,                       -- The vendor user (one business per vendor)
+    business_name TEXT,                                    -- Official business name
+    business_email TEXT,                                   -- Optional business email
+    business_phone TEXT,                                   -- Optional business phone
+    business_street TEXT,                                  -- Optional street address
+    business_city TEXT,                                    -- Optional city
+    business_state TEXT,                                   -- Optional state
+    business_zip TEXT,                                     -- Optional zip code
+    business_description TEXT,                             -- Short description of the business (1-2 sentences)
+    image_url TEXT,                                        -- Optional storefront/logo image path
+    booth_location TEXT,                                   -- Booth location info (table/area number)
+    is_active BOOLEAN DEFAULT 1,                           -- 1=active, 0=deactivated account
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,        -- Record creation timestamp
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,        -- Last update timestamp
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+);
+
+-- ============================================================================
+-- VENDOR PRODUCTS TABLE
+-- ============================================================================
+-- Stores products and services offered by each vendor.
+-- Each vendor can have multiple products/services.
+-- Vendors can add, edit, and delete their own products.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS vendor_products (
+    product_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- Unique identifier
+    user_id INTEGER NOT NULL,                      -- The vendor who owns this product
+    product_name TEXT NOT NULL,                     -- Product or service name
+    description TEXT,                               -- Optional one-line description
+    price TEXT,                                     -- Optional price info (text to allow "Starting at $X", etc.)
+    image_url TEXT,                                 -- Optional product image path
+    display_order INTEGER DEFAULT 0,               -- Sort order for display
+    available BOOLEAN DEFAULT 1,                   -- 1=available, 0=sold out
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Record creation timestamp
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+);
+
+-- ============================================================================
 -- INDEXES FOR PERFORMANCE OPTIMIZATION
 -- ============================================================================
 -- Indexes improve query performance for frequently accessed columns.
@@ -309,3 +355,7 @@ CREATE INDEX IF NOT EXISTS idx_specialty_vote_results_car ON specialty_vote_resu
 CREATE INDEX IF NOT EXISTS idx_published_results_type ON published_results(result_type);          -- Filter by result type
 CREATE INDEX IF NOT EXISTS idx_published_results_class ON published_results(class_id);            -- Results by class
 CREATE INDEX IF NOT EXISTS idx_published_results_specialty ON published_results(specialty_vote_id);  -- Results by specialty vote
+
+-- Vendor lookups
+CREATE INDEX IF NOT EXISTS idx_vendor_business_user ON vendor_business(user_id);      -- Find business by vendor user
+CREATE INDEX IF NOT EXISTS idx_vendor_products_user ON vendor_products(user_id);      -- Find products by vendor user

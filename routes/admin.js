@@ -5,7 +5,7 @@ const router = express.Router();
 module.exports = function (db, appConfig, upload) {
   const { requireAdmin, hashPassword } = require('../middleware/auth');
   const { handleVehiclePhotoUpload } = require('../helpers/imageUpload');
-  const { errorPage, successPage } = require('../views/layout');
+  const { errorPage, successPage, getAppBackgroundStyles } = require('../views/layout');
   const { getAvatarContent, adminNav } = require('../views/components');
   const sharp = require('sharp');
   const crypto = require('crypto');
@@ -14,6 +14,7 @@ module.exports = function (db, appConfig, upload) {
 
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
   const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script>';
+  const appBgStyles = () => getAppBackgroundStyles(appConfig);
 
   // ============================================================
   // Admin Dashboard - Stats overview
@@ -48,6 +49,7 @@ module.exports = function (db, appConfig, upload) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             ${styles}
             ${adminStyles}
+        ${appBgStyles()}
           </head>
           <body>
             <div class="container dashboard-container">
@@ -175,6 +177,7 @@ module.exports = function (db, appConfig, upload) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
+        ${appBgStyles()}
         </head>
         <body>
           <div class="container dashboard-container">
@@ -282,6 +285,7 @@ module.exports = function (db, appConfig, upload) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         ${styles}
         ${adminStyles}
+        ${appBgStyles()}
       </head>
       <body>
         <div class="container dashboard-container">
@@ -443,6 +447,7 @@ module.exports = function (db, appConfig, upload) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
+        ${appBgStyles()}
         </head>
         <body>
           <div class="container dashboard-container">
@@ -698,6 +703,7 @@ module.exports = function (db, appConfig, upload) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
+        ${appBgStyles()}
           <style>
             .vehicle-card {
               background: #f8f9fa;
@@ -954,6 +960,7 @@ module.exports = function (db, appConfig, upload) {
               <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
               ${styles}
               ${adminStyles}
+        ${appBgStyles()}
               <style>
                 .current-image {
                   width: 100%;

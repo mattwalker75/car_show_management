@@ -97,6 +97,45 @@ function deleteVehicleImage(imageUrl) {
 }
 
 /**
+ * Process and save a vendor image upload (business or product).
+ * Resizes to 800x600, converts to JPEG.
+ * @param {Object} file - The multer file object (req.file)
+ * @returns {Object} { success: boolean, imageUrl?: string, error?: string }
+ */
+async function handleVendorImageUpload(file) {
+  try {
+    const randomName = crypto.randomBytes(16).toString('hex');
+    const filename = `${randomName}.jpg`;
+    const filepath = path.join(BASE_DIR, 'images', 'user_uploads', 'vendors', filename);
+    const imageUrl = `/images/user_uploads/vendors/${filename}`;
+
+    await sharp(file.buffer)
+      .rotate()
+      .resize(800, 600, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({ quality: 85 })
+      .toFile(filepath);
+
+    return { success: true, imageUrl };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Delete a vendor image file from disk.
+ * @param {string|null} imageUrl - The image URL path
+ */
+function deleteVendorImage(imageUrl) {
+  if (imageUrl) {
+    const filePath = path.join(BASE_DIR, imageUrl);
+    fs.unlink(filePath, () => {});
+  }
+}
+
+/**
  * Process and save a login background image upload.
  * Resizes to max 1920x1080, converts to JPEG, deletes old background if present.
  * @param {Object} file - The multer file object (req.file)
@@ -142,4 +181,4 @@ function deleteBackgroundImage(imageUrl) {
   }
 }
 
-module.exports = { handleProfilePhotoUpload, handleVehiclePhotoUpload, deleteVehicleImage, handleBackgroundImageUpload, deleteBackgroundImage };
+module.exports = { handleProfilePhotoUpload, handleVehiclePhotoUpload, deleteVehicleImage, handleVendorImageUpload, deleteVendorImage, handleBackgroundImageUpload, deleteBackgroundImage };
