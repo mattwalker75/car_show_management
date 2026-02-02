@@ -5,19 +5,19 @@ const router = express.Router();
 module.exports = function (db, appConfig, upload) {
   const { requireJudge, hashPassword } = require('../middleware/auth');
   const { errorPage, successPage, getAppBackgroundStyles } = require('../views/layout');
-  const { getAvatarContent, judgeNav, dashboardHeader, getNav } = require('../views/components');
+  const { getInitials, getAvatarContent, judgeNav, dashboardHeader, getNav } = require('../views/components');
 
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
   const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
   const appBgStyles = () => getAppBackgroundStyles(appConfig);
-  const bodyTag = (req) => `<body data-user-role="${req.session && req.session.user ? req.session.user.role : ''}">`;
+  const bodyTag = (req) => { const u = req.session && req.session.user; return `<body data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
 
   // ============================================================
   // Judge Dashboard
   // ============================================================
   router.get('/', requireJudge, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -78,6 +78,7 @@ module.exports = function (db, appConfig, upload) {
                   <a href="/judge/users">Users</a>
                   <a href="/judge/results">Results</a>
                   <a href="/judge/vendors">Vendors</a>
+                  ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                   <a href="/user/vote">Vote Here!</a>
                 </div>
 
@@ -123,7 +124,7 @@ module.exports = function (db, appConfig, upload) {
   // ============================================================
   router.get('/users', requireJudge, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -201,6 +202,7 @@ module.exports = function (db, appConfig, upload) {
               <a href="/judge/users" class="active">Users</a>
               <a href="/judge/results">Results</a>
               <a href="/judge/vendors">Vendors</a>
+              ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
               <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -275,7 +277,7 @@ module.exports = function (db, appConfig, upload) {
   // ============================================================
   router.get('/reset-password/:id', requireJudge, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -316,6 +318,7 @@ module.exports = function (db, appConfig, upload) {
               <a href="/judge/users">Users</a>
               <a href="/judge/results">Results</a>
               <a href="/judge/vendors">Vendors</a>
+              ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -442,7 +445,7 @@ module.exports = function (db, appConfig, upload) {
   // ============================================================
   router.get('/judge-vehicles', requireJudge, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -478,6 +481,7 @@ module.exports = function (db, appConfig, upload) {
               <a href="/judge/users">Users</a>
               <a href="/judge/results">Results</a>
               <a href="/judge/vendors">Vendors</a>
+              ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -685,6 +689,7 @@ module.exports = function (db, appConfig, upload) {
                 <a href="/judge/users">Users</a>
                 <a href="/judge/results">Results</a>
                 <a href="/judge/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
               </div>
 
@@ -747,7 +752,7 @@ module.exports = function (db, appConfig, upload) {
   router.get('/score-vehicle/:carId', requireJudge, (req, res) => {
     const user = req.session.user;
     const carId = req.params.carId;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -987,6 +992,7 @@ module.exports = function (db, appConfig, upload) {
                     <a href="/judge/users">Users</a>
                     <a href="/judge/results">Results</a>
                     <a href="/judge/vendors">Vendors</a>
+                    ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                     <a href="/user/vote">Vote Here!</a>
                   </div>
 
@@ -1110,7 +1116,7 @@ module.exports = function (db, appConfig, upload) {
   // ============================================================
   router.get('/results', requireJudge, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -1148,6 +1154,7 @@ module.exports = function (db, appConfig, upload) {
               <a href="/judge/users">Users</a>
               <a href="/judge/results" class="active">Results</a>
               <a href="/judge/vendors">Vendors</a>
+              ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -1277,6 +1284,7 @@ module.exports = function (db, appConfig, upload) {
                 <a href="/judge/users">Users</a>
                 <a href="/judge/results" class="active">Results</a>
                 <a href="/judge/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
               </div>
 
@@ -1295,7 +1303,7 @@ module.exports = function (db, appConfig, upload) {
   // ============================================================
   router.get('/vehicles', requireJudge, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -1504,6 +1512,7 @@ module.exports = function (db, appConfig, upload) {
               <a href="/judge/users">Users</a>
               <a href="/judge/results">Results</a>
               <a href="/judge/vendors">Vendors</a>
+              ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -1596,7 +1605,7 @@ module.exports = function (db, appConfig, upload) {
   router.get('/view-vehicle/:id', requireJudge, (req, res) => {
     const user = req.session.user;
     const carId = req.params.id;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -1720,6 +1729,7 @@ module.exports = function (db, appConfig, upload) {
               <a href="/judge/users">Users</a>
               <a href="/judge/results">Results</a>
               <a href="/judge/vendors">Vendors</a>
+              ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -1773,7 +1783,7 @@ module.exports = function (db, appConfig, upload) {
   router.get('/edit-vehicle/:id', requireJudge, (req, res) => {
     const user = req.session.user;
     const carId = req.params.id;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -1867,6 +1877,7 @@ module.exports = function (db, appConfig, upload) {
                 <a href="/judge/users">Users</a>
                 <a href="/judge/results">Results</a>
                 <a href="/judge/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
               </div>
 
@@ -2088,7 +2099,7 @@ module.exports = function (db, appConfig, upload) {
           <div class="container dashboard-container">
             ${dashboardHeader('judge', user, 'Judge Dashboard')}
 
-            ${getNav('judge', 'vendors')}
+            ${getNav('judge', 'vendors', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
             <h3 class="section-title">Vendors (${vendors.length})</h3>
 
@@ -2299,7 +2310,7 @@ module.exports = function (db, appConfig, upload) {
             <div class="container dashboard-container">
               ${dashboardHeader('judge', user, 'Judge Dashboard')}
 
-              ${getNav('judge', 'vendors')}
+              ${getNav('judge', 'vendors', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
               <div class="vendor-detail-header">
                 <div class="vendor-detail-image">
@@ -2438,7 +2449,7 @@ module.exports = function (db, appConfig, upload) {
             <div class="container dashboard-container">
               ${dashboardHeader('judge', user, 'Judge Dashboard')}
 
-              ${getNav('judge', 'vendors')}
+              ${getNav('judge', 'vendors', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
               ${product.image_url ? `<div class="product-detail-image"><img src="${product.image_url}" alt="${product.product_name}"></div>` : ''}
 

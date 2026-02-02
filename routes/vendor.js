@@ -11,7 +11,7 @@ module.exports = function (db, appConfig, upload) {
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
   const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
   const appBgStyles = () => getAppBackgroundStyles(appConfig);
-  const bodyTag = (req) => `<body data-user-role="${req.session && req.session.user ? req.session.user.role : ''}">`;
+  const bodyTag = (req) => { const u = req.session && req.session.user; return `<body data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
 
   // Shared vendor page styles
   const vendorStyles = `
@@ -254,7 +254,7 @@ module.exports = function (db, appConfig, upload) {
           ${bodyTag(req)}
             <div class="container dashboard-container">
               ${vendorHeader(user)}
-              ${vendorNav('dashboard')}
+              ${vendorNav('dashboard', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
               <div class="welcome-card">
                 <h2>Welcome, ${user.name}!</h2>
@@ -359,7 +359,7 @@ module.exports = function (db, appConfig, upload) {
         ${bodyTag(req)}
           <div class="container dashboard-container">
             ${vendorHeader(user)}
-            ${vendorNav('dashboard')}
+            ${vendorNav('dashboard', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
             <h3 class="section-title">Edit Business Information</h3>
 
@@ -515,7 +515,7 @@ module.exports = function (db, appConfig, upload) {
         ${bodyTag(req)}
           <div class="container dashboard-container">
             ${vendorHeader(user)}
-            ${vendorNav('dashboard')}
+            ${vendorNav('dashboard', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
             <h3 class="section-title">Edit Booth Information</h3>
 
@@ -578,7 +578,7 @@ module.exports = function (db, appConfig, upload) {
       ${bodyTag(req)}
         <div class="container dashboard-container">
           ${vendorHeader(user)}
-          ${vendorNav('dashboard')}
+          ${vendorNav('dashboard', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
           <h3 class="section-title">Add Product / Service</h3>
 
@@ -687,7 +687,7 @@ module.exports = function (db, appConfig, upload) {
         ${bodyTag(req)}
           <div class="container dashboard-container">
             ${vendorHeader(user)}
-            ${vendorNav('dashboard')}
+            ${vendorNav('dashboard', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
             <h3 class="section-title">Edit Product / Service</h3>
 
@@ -996,7 +996,7 @@ module.exports = function (db, appConfig, upload) {
         ${bodyTag(req)}
           <div class="container dashboard-container">
             ${vendorHeader(user)}
-            ${vendorNav('vendors')}
+            ${vendorNav('vendors', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
             <h3 class="section-title">Vendors (${vendors.length})</h3>
 
@@ -1132,7 +1132,7 @@ module.exports = function (db, appConfig, upload) {
           ${bodyTag(req)}
             <div class="container dashboard-container">
               ${vendorHeader(user)}
-              ${vendorNav('vendors')}
+              ${vendorNav('vendors', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
               <div class="vendor-detail-header">
                 <div class="vendor-detail-image">
@@ -1317,7 +1317,7 @@ module.exports = function (db, appConfig, upload) {
           ${bodyTag(req)}
             <div class="container dashboard-container">
               ${vendorHeader(user)}
-              ${vendorNav('vendors')}
+              ${vendorNav('vendors', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
               ${product.image_url ? `
               <div class="product-detail-image">

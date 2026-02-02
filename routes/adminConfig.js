@@ -6,13 +6,13 @@ const router = express.Router();
 module.exports = function (db, appConfig, upload, saveConfig) {
   const { requireAdmin } = require('../middleware/auth');
   const { errorPage, successPage, getAppBackgroundStyles } = require('../views/layout');
-  const { getAvatarContent, adminNav } = require('../views/components');
+  const { getInitials, getAvatarContent, adminNav } = require('../views/components');
   const { handleBackgroundImageUpload, deleteBackgroundImage } = require('../helpers/imageUpload');
 
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
   const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
   const appBgStyles = () => getAppBackgroundStyles(appConfig);
-  const bodyTag = (req) => `<body data-user-role="${req.session && req.session.user ? req.session.user.role : ''}">`;
+  const bodyTag = (req) => { const u = req.session && req.session.user; return `<body data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
 
   // ==========================================
   // VEHICLE CONFIG & TYPES
@@ -21,7 +21,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // Vehicle config hub page (combined vehicle types + classes)
   router.get('/vehicle-config', requireAdmin, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -108,6 +108,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                     <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                     <a href="/admin/reports">Reports</a>
                     <a href="/admin/vendors">Vendors</a>
+                    ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                     <a href="/user/vote">Vote Here!</a>
                   </div>
 
@@ -222,7 +223,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // Vehicle types management page (legacy - NOT USED, redirects to vehicle-config)
   router.get('/vehicle-types', requireAdmin, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -269,6 +270,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports">Reports</a>
                 <a href="/admin/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -338,7 +340,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   router.get('/edit-vehicle-type/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const vehicleId = req.params.id;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -378,6 +380,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports">Reports</a>
                 <a href="/admin/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -455,7 +458,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // Classes management page (legacy - NOT USED, may redirect)
   router.get('/classes', requireAdmin, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -513,6 +516,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/admin/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
               </div>
 
@@ -584,7 +588,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   router.get('/edit-class/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const classId = req.params.id;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -631,6 +635,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/admin/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
               </div>
 
@@ -687,7 +692,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // Judge categories management page
   router.get('/categories', requireAdmin, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -752,6 +757,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/admin/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
               </div>
 
@@ -831,7 +837,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   router.get('/edit-category/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const categoryId = req.params.id;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -878,6 +884,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/admin/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
               </div>
 
@@ -939,7 +946,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   router.get('/category-questions/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const categoryId = req.params.id;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -999,6 +1006,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/admin/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
               </div>
 
@@ -1102,7 +1110,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   router.get('/edit-question/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const questionId = req.params.id;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -1145,6 +1153,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports">Reports</a>
                 <a href="/admin/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -1215,7 +1224,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // Specialty votes management page
   router.get('/specialty-votes', requireAdmin, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -1295,6 +1304,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports">Reports</a>
                 <a href="/admin/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -1399,7 +1409,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   router.get('/edit-specialty-vote/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const voteId = req.params.id;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -1456,6 +1466,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports">Reports</a>
                 <a href="/admin/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -1560,7 +1571,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   router.get('/specialty-vote-results/:id', requireAdmin, (req, res) => {
     const user = req.session.user;
     const voteId = req.params.id;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -1710,6 +1721,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
                 <a href="/admin/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
               </div>
 
@@ -1781,7 +1793,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
     const voteId = req.params.id;
     const saved = req.query.saved;
     const error = req.query.error;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -1836,6 +1848,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                   <a href="/admin/reports">Reports</a>
                   <a href="/admin/vendors">Vendors</a>
+                  ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                   <a href="/user/vote">Vote Here!</a>
                 </div>
 
@@ -2015,7 +2028,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // App config page
   router.get('/app-config', requireAdmin, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -2059,6 +2072,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
             <a href="/admin/reports">Reports</a>
                 <a href="/admin/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
           </div>
 
@@ -2112,6 +2126,19 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   <div id="toggleThumb" style="position:absolute;height:20px;width:20px;left:${appConfig.animatedLogin ? '27px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.3s;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
                 </label>
                 <span style="font-size:14px;color:#333;" id="toggleLabel">${appConfig.animatedLogin ? 'Enabled' : 'Disabled'} Animated Login Experience</span>
+              </div>
+            </div>
+
+            <div style="margin-top:10px;margin-bottom:10px;border-top:1px solid #e1e1e1;padding-top:15px;">
+              <label style="font-weight:600;margin-bottom:8px;display:block;">Group Chat</label>
+              <small style="color: #666; display: block; margin-bottom: 12px;">Enable or disable the group chat feature for all users</small>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <label class="toggle-switch" style="position:relative;display:inline-block;width:50px;height:26px;margin:0;cursor:pointer;">
+                  <input type="hidden" name="chatEnabled" value="${appConfig.chatEnabled !== false ? 'true' : 'false'}" id="chatEnabledInput">
+                  <div id="chatToggleTrack" style="position:absolute;top:0;left:0;right:0;bottom:0;background:${appConfig.chatEnabled !== false ? '#27ae60' : '#ccc'};border-radius:26px;transition:0.3s;" onclick="toggleChat()"></div>
+                  <div id="chatToggleThumb" style="position:absolute;height:20px;width:20px;left:${appConfig.chatEnabled !== false ? '27px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.3s;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+                </label>
+                <span style="font-size:14px;color:#333;" id="chatToggleLabel">${appConfig.chatEnabled !== false ? 'Enabled' : 'Disabled'} Group Chat</span>
               </div>
             </div>
 
@@ -2384,6 +2411,17 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             thumb.style.left = isOn ? '3px' : '27px';
             label.textContent = isOn ? 'Disabled Animated Login Experience' : 'Enabled Animated Login Experience';
           }
+          function toggleChat() {
+            var input = document.getElementById('chatEnabledInput');
+            var track = document.getElementById('chatToggleTrack');
+            var thumb = document.getElementById('chatToggleThumb');
+            var label = document.getElementById('chatToggleLabel');
+            var isOn = input.value === 'true';
+            input.value = isOn ? 'false' : 'true';
+            track.style.background = isOn ? '#ccc' : '#27ae60';
+            thumb.style.left = isOn ? '3px' : '27px';
+            label.textContent = isOn ? 'Disabled Group Chat' : 'Enabled Group Chat';
+          }
           function setBgType(type) {
             var isImage = type === 'image';
             document.getElementById('loginBgUseImage').value = isImage ? 'true' : 'false';
@@ -2519,7 +2557,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // Save app config
   router.post('/app-config', requireAdmin, (req, res) => {
-    const { appTitle, appSubtitle, defaultRegistrationPrice, defaultMinScore, defaultMaxScore, animatedLogin,
+    const { appTitle, appSubtitle, defaultRegistrationPrice, defaultMinScore, defaultMaxScore, animatedLogin, chatEnabled,
             loginBgUseImage, loginBgColor, loginBgUseTint, loginBgTintColor, loginBgTintOpacity, loginBgCardOpacity,
             appBgUseImage, appBgColor, appBgUseTint, appBgTintColor, appBgTintOpacity, appBgContainerOpacity } = req.body;
 
@@ -2537,6 +2575,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
     appConfig.defaultMinScore = parseInt(defaultMinScore) || 0;
     appConfig.defaultMaxScore = parseInt(defaultMaxScore) || 10;
     appConfig.animatedLogin = animatedLogin === 'true';
+    appConfig.chatEnabled = chatEnabled === 'true';
 
     // Update loginBackground settings (preserve imageUrl — only changed by upload/remove routes)
     if (!appConfig.loginBackground) appConfig.loginBackground = {};

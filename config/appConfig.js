@@ -17,6 +17,7 @@ let appConfig = {
   defaultRegistrationPrice: 25.00,
   defaultMinScore: 0,
   defaultMaxScore: 10,
+  chatEnabled: true,
   animatedLogin: true,
   loginBackground: {
     useImage: false,

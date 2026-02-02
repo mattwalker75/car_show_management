@@ -5,17 +5,17 @@ const router = express.Router();
 module.exports = function (db, appConfig, upload) {
   const { requireAuth } = require('../middleware/auth');
   const { errorPage, successPage, getAppBackgroundStyles } = require('../views/layout');
-  const { getAvatarContent, getNav, dashboardHeader } = require('../views/components');
+  const { getInitials, getAvatarContent, getNav, dashboardHeader } = require('../views/components');
   const { handleVehiclePhotoUpload, deleteVehicleImage } = require('../helpers/imageUpload');
 
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
   const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
   const appBgStyles = () => getAppBackgroundStyles(appConfig);
-  const bodyTag = (req) => `<body data-user-role="${req.session && req.session.user ? req.session.user.role : ''}">`;
+  const bodyTag = (req) => { const u = req.session && req.session.user; return `<body data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
 
   router.get('/', requireAuth, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -292,6 +292,7 @@ module.exports = function (db, appConfig, upload) {
               <a href="/user" class="active">Dashboard</a>
               <a href="/user/vehicles">Vehicles</a>
               <a href="/user/vendors">Vendors</a>
+              ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
               <a href="/user/vote">Vote Here!</a>
             </div>
 
@@ -339,7 +340,7 @@ module.exports = function (db, appConfig, upload) {
 
   router.get('/register-vehicle', requireAuth, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -449,6 +450,7 @@ module.exports = function (db, appConfig, upload) {
                 <a href="/user">Dashboard</a>
                 <a href="/user/vehicles">Vehicles</a>
                 <a href="/user/vendors">Vendors</a>
+                ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                 <a href="/user/vote">Vote Here!</a>
                 <a href="/user/profile">My Profile</a>
               </div>
@@ -559,42 +561,47 @@ module.exports = function (db, appConfig, upload) {
 
   // Handle vehicle registration
   router.post('/register-vehicle', requireAuth, upload.single('vehicle_photo'), async (req, res) => {
-    const user = req.session.user;
-    const { year, make, model, vehicle_id, class_id, description } = req.body;
+    try {
+      const user = req.session.user;
+      const { year, make, model, vehicle_id, class_id, description } = req.body;
 
-    if (year && !/^\d{4}$/.test(year.trim())) {
-      return res.send(errorPage('Year must be a 4-digit number.', '/user/register-vehicle', 'Try Again'));
-    }
-
-    let imageUrl = null;
-
-    // Process image if uploaded
-    if (req.file) {
-      const result = await handleVehiclePhotoUpload(req.file);
-      if (!result.success) {
-        return res.send(errorPage('Error processing image. Please try a different file.', '/user/register-vehicle', 'Try Again'));
+      if (year && !/^\d{4}$/.test(year.trim())) {
+        return res.send(errorPage('Year must be a 4-digit number.', '/user/register-vehicle', 'Try Again'));
       }
-      imageUrl = result.imageUrl;
-    }
 
-    // Insert vehicle into database - is_active=0 by default until registrar enables after payment
-    db.run('INSERT INTO cars (year, make, model, vehicle_id, class_id, description, image_url, user_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)',
-      [year ? year.trim() : null, make, model, vehicle_id, class_id, description || null, imageUrl, user.user_id],
-      function(err) {
-        if (err) {
-          console.error('Vehicle registration error:', err.message);
-          res.send(errorPage('Error registering vehicle. Please try again.', '/user/register-vehicle', 'Try Again'));
-        } else {
-          res.send(successPage(`Your ${make} ${model} has been registered successfully!`, '/user', 'Back to My Vehicles'));
+      let imageUrl = null;
+
+      // Process image if uploaded
+      if (req.file) {
+        const result = await handleVehiclePhotoUpload(req.file);
+        if (!result.success) {
+          return res.send(errorPage('Error processing image. Please try a different file.', '/user/register-vehicle', 'Try Again'));
         }
-      });
+        imageUrl = result.imageUrl;
+      }
+
+      // Insert vehicle into database - is_active=0 by default until registrar enables after payment
+      db.run('INSERT INTO cars (year, make, model, vehicle_id, class_id, description, image_url, user_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)',
+        [year ? year.trim() : null, make, model, vehicle_id, class_id, description || null, imageUrl, user.user_id],
+        function(err) {
+          if (err) {
+            console.error('Vehicle registration error:', err.message);
+            res.send(errorPage('Error registering vehicle. Please try again.', '/user/register-vehicle', 'Try Again'));
+          } else {
+            res.send(successPage(`Your ${make} ${model} has been registered successfully!`, '/user', 'Back to My Vehicles'));
+          }
+        });
+    } catch (err) {
+      console.error('Error registering vehicle:', err.message);
+      res.send(errorPage('An unexpected error occurred. Please try again.', '/user/register-vehicle', 'Try Again'));
+    }
   });
 
   // Edit vehicle page
   router.get('/edit-vehicle/:id', requireAuth, (req, res) => {
     const user = req.session.user;
     const carId = req.params.id;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -752,6 +759,7 @@ module.exports = function (db, appConfig, upload) {
                   <a href="/user">Dashboard</a>
                   <a href="/user/vehicles">Vehicles</a>
                   <a href="/user/vendors">Vendors</a>
+                  ${(appConfig.chatEnabled !== false && req.session.user.chat_enabled) ? '<a href="/chat">Chat</a>' : ''}
                   <a href="/user/vote">Vote Here!</a>
                   <a href="/user/profile">My Profile</a>
                 </div>
@@ -886,29 +894,34 @@ module.exports = function (db, appConfig, upload) {
         return;
       }
 
-      let imageUrl = car.image_url;
+      try {
+        let imageUrl = car.image_url;
 
-      // Process new image if uploaded
-      if (req.file) {
-        const result = await handleVehiclePhotoUpload(req.file);
-        if (!result.success) {
-          return res.send(errorPage('Error processing image. Please try a different file.', `/user/edit-vehicle/${carId}`, 'Try Again'));
-        }
-        deleteVehicleImage(car.image_url);
-        imageUrl = result.imageUrl;
-      }
-
-      // Update vehicle in database
-      db.run('UPDATE cars SET year = ?, make = ?, model = ?, vehicle_id = ?, class_id = ?, description = ?, image_url = ? WHERE car_id = ? AND user_id = ?',
-        [year ? year.trim() : null, make, model, vehicle_id, class_id, description || null, imageUrl, carId, user.user_id],
-        function(err) {
-          if (err) {
-            console.error('Vehicle update error:', err.message);
-            res.send(errorPage('Error updating vehicle. Please try again.', `/user/edit-vehicle/${carId}`, 'Try Again'));
-          } else {
-            res.send(successPage(`Your ${make} ${model} has been updated successfully!`, '/user', 'Back to My Vehicles'));
+        // Process new image if uploaded
+        if (req.file) {
+          const result = await handleVehiclePhotoUpload(req.file);
+          if (!result.success) {
+            return res.send(errorPage('Error processing image. Please try a different file.', `/user/edit-vehicle/${carId}`, 'Try Again'));
           }
-        });
+          deleteVehicleImage(car.image_url);
+          imageUrl = result.imageUrl;
+        }
+
+        // Update vehicle in database
+        db.run('UPDATE cars SET year = ?, make = ?, model = ?, vehicle_id = ?, class_id = ?, description = ?, image_url = ? WHERE car_id = ? AND user_id = ?',
+          [year ? year.trim() : null, make, model, vehicle_id, class_id, description || null, imageUrl, carId, user.user_id],
+          function(err) {
+            if (err) {
+              console.error('Vehicle update error:', err.message);
+              res.send(errorPage('Error updating vehicle. Please try again.', `/user/edit-vehicle/${carId}`, 'Try Again'));
+            } else {
+              res.send(successPage(`Your ${make} ${model} has been updated successfully!`, '/user', 'Back to My Vehicles'));
+            }
+          });
+      } catch (err) {
+        console.error('Error updating vehicle:', err.message);
+        res.send(errorPage('An unexpected error occurred. Please try again.', `/user/edit-vehicle/${carId}`, 'Try Again'));
+      }
     });
   });
 
@@ -1100,7 +1113,7 @@ module.exports = function (db, appConfig, upload) {
           <div class="container dashboard-container">
             ${dashboardHeader('user', user, 'Car Show Manager')}
 
-            ${getNav('user', 'vehicles')}
+            ${getNav('user', 'vehicles', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
             <h3 class="section-title">Registered Vehicles (${cars.length})</h3>
 
@@ -1293,7 +1306,7 @@ module.exports = function (db, appConfig, upload) {
           <div class="container dashboard-container">
             ${dashboardHeader('user', user, 'Car Show Manager')}
 
-            ${getNav('user', 'vehicles')}
+            ${getNav('user', 'vehicles', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
             <h3 class="section-title">${car.year ? car.year + ' ' : ''}${car.make} ${car.model}</h3>
 
@@ -1382,7 +1395,7 @@ module.exports = function (db, appConfig, upload) {
   // User voting page - shows available specialty votes
   router.get('/vote', requireAuth, (req, res) => {
     const user = req.session.user;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -1472,7 +1485,7 @@ module.exports = function (db, appConfig, upload) {
                 <p>Participate in specialty voting for the car show.</p>
               </div>
 
-              ${getNav(user.role, 'vote')}
+              ${getNav(user.role, 'vote', (appConfig.chatEnabled !== false && user.chat_enabled))}
 
               ${appConfig.specialtyVotingStatus === 'Lock' ? `
                 <div class="no-votes-message">
@@ -1530,7 +1543,7 @@ module.exports = function (db, appConfig, upload) {
   router.get('/vote/:id', requireAuth, (req, res) => {
     const user = req.session.user;
     const specialtyVoteId = req.params.id;
-    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    const initials = getInitials(user.name);
     const avatarContent = user.image_url
       ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
       : initials;
@@ -1846,7 +1859,7 @@ module.exports = function (db, appConfig, upload) {
               <div class="container dashboard-container">
                 ${dashboardHeader(user.role, user, user.role === 'admin' ? 'Admin Dashboard' : user.role === 'judge' ? 'Judge Dashboard' : user.role === 'registrar' ? 'Registrar' : 'Car Show Manager')}
 
-                ${getNav(user.role, 'vote')}
+                ${getNav(user.role, 'vote', (appConfig.chatEnabled !== false && user.chat_enabled))}
 
                 <div class="vote-header">
                   <h2>${vote.vote_name}</h2>
@@ -2132,7 +2145,7 @@ module.exports = function (db, appConfig, upload) {
           <div class="container dashboard-container">
             ${dashboardHeader('user', user, 'Car Show Manager')}
 
-            ${getNav('user', 'vendors')}
+            ${getNav('user', 'vendors', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
             <h3 class="section-title">Vendors (${vendors.length})</h3>
 
@@ -2347,7 +2360,7 @@ module.exports = function (db, appConfig, upload) {
             <div class="container dashboard-container">
               ${dashboardHeader('user', user, 'Car Show Manager')}
 
-              ${getNav('user', 'vendors')}
+              ${getNav('user', 'vendors', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
               <div class="vendor-detail-header">
                 <div class="vendor-detail-image">
@@ -2532,7 +2545,7 @@ module.exports = function (db, appConfig, upload) {
           ${bodyTag(req)}
             <div class="container dashboard-container">
               ${dashboardHeader('user', user, 'Vendors')}
-              ${getNav('user', 'vendors')}
+              ${getNav('user', 'vendors', (appConfig.chatEnabled !== false && req.session.user.chat_enabled))}
 
               ${product.image_url ? `
               <div class="product-detail-image">

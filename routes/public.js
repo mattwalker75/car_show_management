@@ -14,7 +14,7 @@ module.exports = function (db, appConfig, upload, port) {
   const path = require('path');
   const crypto = require('crypto');
   const { requireAuth, hashPassword, verifyPassword, checkInitialSetup } = require('../middleware/auth');
-  const { errorPage, successPage, formPage } = require('../views/layout');
+  const { errorPage, successPage } = require('../views/layout');
   const styles = `<link rel="stylesheet" href="/css/styles.css">`;
 
   // Generate dynamic login background styles from config
@@ -172,7 +172,7 @@ module.exports = function (db, appConfig, upload, port) {
 
     const hashedPassword = hashPassword(password);
 
-    db.run('INSERT INTO users (username, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)',
+    db.run('INSERT INTO users (username, name, email, password_hash, role, chat_enabled) VALUES (?, ?, ?, ?, ?, 1)',
       [username, name, email, hashedPassword, 'admin'],
       function(err) {
         if (err) {
@@ -587,7 +587,7 @@ module.exports = function (db, appConfig, upload, port) {
     const hashedPassword = hashPassword(password);
 
     // Insert new admin user
-    db.run('INSERT INTO users (username, name, email, password_hash, role) VALUES (?, ?, ?, ?, ?)',
+    db.run('INSERT INTO users (username, name, email, password_hash, role, chat_enabled) VALUES (?, ?, ?, ?, ?, 1)',
       [username, name, email, hashedPassword, 'admin'],
       function(err) {
         if (err) {

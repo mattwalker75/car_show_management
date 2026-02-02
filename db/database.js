@@ -14,6 +14,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
   } else {
     console.log('Connected to SQLite database');
 
+    // Enable foreign key enforcement (SQLite has this OFF by default)
+    db.run('PRAGMA foreign_keys = ON');
+
     // Create specialty votes tables if they don't exist
     db.run(`CREATE TABLE IF NOT EXISTS specialty_votes (
       specialty_vote_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -87,6 +90,18 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
     // Add admin_disabled column to vendor_business if it doesn't exist
     db.run(`ALTER TABLE vendor_business ADD COLUMN admin_disabled BOOLEAN DEFAULT 0`, (err) => {});
+
+    // Add chat_enabled column to users if it doesn't exist
+    db.run(`ALTER TABLE users ADD COLUMN chat_enabled BOOLEAN DEFAULT 0`, (err) => {});
+
+    // Create chat_messages table
+    db.run(`CREATE TABLE IF NOT EXISTS chat_messages (
+      message_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      message TEXT NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+    )`);
   }
 });
 

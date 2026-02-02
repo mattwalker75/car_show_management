@@ -40,6 +40,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
   socket.on('connect', function () {
     socket.emit('join-role', role);
+    var userId = document.body.getAttribute('data-user-id');
+    var userName = document.body.getAttribute('data-user-name');
+    var userImage = document.body.getAttribute('data-user-image');
+    if (userId) {
+      socket.emit('join-app', {
+        user_id: parseInt(userId, 10),
+        name: userName || '',
+        role: role,
+        image_url: userImage || null
+      });
+    }
   });
 
   socket.on('notification', function (data) {
@@ -49,8 +60,18 @@ document.addEventListener('DOMContentLoaded', function () {
   function showToast(message, icon) {
     var toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = '<span class="toast-icon">' + icon + '</span>' + message;
+    var iconSpan = document.createElement('span');
+    iconSpan.className = 'toast-icon';
+    iconSpan.textContent = icon;
+    toast.appendChild(iconSpan);
+    toast.appendChild(document.createTextNode(message));
     container.appendChild(toast);
+
+    // Limit to 5 visible toasts
+    var toasts = container.querySelectorAll('.toast');
+    if (toasts.length > 5) {
+      dismissToast(toasts[0]);
+    }
 
     requestAnimationFrame(function () {
       toast.classList.add('show');

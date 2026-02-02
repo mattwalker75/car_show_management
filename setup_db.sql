@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS users (
     image_url TEXT,                              -- Profile image path/URL
     password_hash TEXT NOT NULL,                 -- Bcrypt hashed password
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Account creation timestamp
-    is_active BOOLEAN DEFAULT 1                  -- 1=active, 0=deactivated account
+    is_active BOOLEAN DEFAULT 1,                 -- 1=active, 0=deactivated account
+    chat_enabled BOOLEAN DEFAULT 0               -- 1=can access group chat, 0=no chat access
 );
 
 -- ============================================================================
@@ -362,3 +363,22 @@ CREATE INDEX IF NOT EXISTS idx_published_results_specialty ON published_results(
 -- Vendor lookups
 CREATE INDEX IF NOT EXISTS idx_vendor_business_user ON vendor_business(user_id);      -- Find business by vendor user
 CREATE INDEX IF NOT EXISTS idx_vendor_products_user ON vendor_products(user_id);      -- Find products by vendor user
+
+-- ============================================================================
+-- CHAT MESSAGES TABLE
+-- ============================================================================
+-- Stores group chat messages for the car show event.
+-- Messages are sent via Socket.io and persisted here for history.
+-- Access controlled by users.chat_enabled column.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS chat_messages (
+    message_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- Unique message identifier
+    user_id INTEGER NOT NULL,                      -- Sender (references users table)
+    message TEXT NOT NULL,                          -- Message content (max 500 chars enforced in app)
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- When the message was sent
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+);
+
+-- Chat message indexes
+CREATE INDEX IF NOT EXISTS idx_chat_messages_created ON chat_messages(created_at DESC);  -- Recent messages lookup
+CREATE INDEX IF NOT EXISTS idx_chat_messages_user ON chat_messages(user_id);              -- Messages by user

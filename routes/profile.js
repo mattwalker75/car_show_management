@@ -9,7 +9,7 @@ module.exports = function (db, appConfig, upload) {
   const { requireAuth, requireAdmin, requireJudge, requireRegistrar, requireVendor, hashPassword, verifyPassword } = require('../middleware/auth');
   const { handleProfilePhotoUpload } = require('../helpers/imageUpload');
   const { errorPage, successPage, getAppBackgroundStyles } = require('../views/layout');
-  const { getAvatarContent, adminNav, judgeNav, registrarNav, vendorNav, userNav } = require('../views/components');
+  const { getInitials, getAvatarContent, adminNav, judgeNav, registrarNav, vendorNav, userNav } = require('../views/components');
 
   // Role-specific configuration: middleware, titles, nav, redirect paths
   const roleConfig = {
@@ -18,35 +18,35 @@ module.exports = function (db, appConfig, upload) {
       heading: 'Admin Dashboard',
       title: 'My Profile - Admin Dashboard',
       redirect: '/admin/dashboard',
-      getNav: (activeTab) => adminNav(activeTab)
+      getNav: (activeTab, chatEnabled) => adminNav(activeTab, chatEnabled)
     },
     judge: {
       middleware: requireJudge,
       heading: 'Judge Dashboard',
       title: 'My Profile - Judge Dashboard',
       redirect: '/judge',
-      getNav: (activeTab) => judgeNav(activeTab)
+      getNav: (activeTab, chatEnabled) => judgeNav(activeTab, chatEnabled)
     },
     registrar: {
       middleware: requireRegistrar,
       heading: 'Registrar Dashboard',
       title: 'My Profile - Registrar Dashboard',
       redirect: '/registrar',
-      getNav: (activeTab) => registrarNav(activeTab)
+      getNav: (activeTab, chatEnabled) => registrarNav(activeTab, chatEnabled)
     },
     vendor: {
       middleware: requireVendor,
       heading: 'Vendor Dashboard',
       title: 'My Profile - Vendor',
       redirect: '/vendor',
-      getNav: (activeTab) => vendorNav(activeTab)
+      getNav: (activeTab, chatEnabled) => vendorNav(activeTab, chatEnabled)
     },
     user: {
       middleware: requireAuth,
       heading: 'Car Show Manager',
       title: 'My Profile',
       redirect: '/user',
-      getNav: (activeTab) => userNav(activeTab)
+      getNav: (activeTab, chatEnabled) => userNav(activeTab, chatEnabled)
     }
   };
 
@@ -129,7 +129,7 @@ module.exports = function (db, appConfig, upload) {
     // ==========================================
     router.get(`/${role}/profile`, config.middleware, (req, res) => {
       const user = req.session.user;
-      const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+      const initials = getInitials(user.name);
 
       db.get('SELECT user_id as id, username, name, email, phone, image_url FROM users WHERE user_id = ?', [user.user_id], (err, currentUser) => {
         if (err || !currentUser) {
@@ -145,7 +145,7 @@ module.exports = function (db, appConfig, upload) {
           ? `<img src="${currentUser.image_url}" alt="Profile" class="profile-image">`
           : `<div class="profile-image-placeholder">${initials}</div>`;
 
-        const nav = config.getNav('');
+        const nav = config.getNav('', (appConfig.chatEnabled !== false && req.session.user.chat_enabled));
 
         res.send(`
           <!DOCTYPE html>
@@ -161,7 +161,7 @@ module.exports = function (db, appConfig, upload) {
         ${getAppBackgroundStyles(appConfig)}
             ${profileStyles}
           </head>
-          <body data-user-role="${role}">
+          <body data-user-role="${role}" data-user-id="${user.user_id}" data-user-name="${user.name}" data-user-image="${user.image_url || ''}">
             <div class="container dashboard-container">
               <div class="dashboard-header">
                 <h1>🏎️ ${config.heading}</h1>
@@ -248,19 +248,24 @@ module.exports = function (db, appConfig, upload) {
     // POST /{role}/upload-photo — Profile photo upload
     // ==========================================
     router.post(`/${role}/upload-photo`, config.middleware, upload.single('profile_photo'), async (req, res) => {
-      const user = req.session.user;
+      try {
+        const user = req.session.user;
 
-      if (!req.file) {
-        return res.send(errorPage('Please select an image file to upload.', `/${role}/profile`, 'Try Again'));
-      }
+        if (!req.file) {
+          return res.send(errorPage('Please select an image file to upload.', `/${role}/profile`, 'Try Again'));
+        }
 
-      const result = await handleProfilePhotoUpload(db, user.user_id, req.file);
+        const result = await handleProfilePhotoUpload(db, user.user_id, req.file);
 
-      if (result.success) {
-        req.session.user.image_url = result.imageUrl;
-        res.send(successPage('Profile photo uploaded successfully!', `/${role}/profile`, 'Back to Profile'));
-      } else {
-        res.send(errorPage(`Error saving photo: ${result.error}`, `/${role}/profile`, 'Try Again'));
+        if (result.success) {
+          req.session.user.image_url = result.imageUrl;
+          res.send(successPage('Profile photo uploaded successfully!', `/${role}/profile`, 'Back to Profile'));
+        } else {
+          res.send(errorPage(`Error saving photo: ${result.error}`, `/${role}/profile`, 'Try Again'));
+        }
+      } catch (err) {
+        console.error('Error uploading profile photo:', err.message);
+        res.send(errorPage('An unexpected error occurred. Please try again.', `/${role}/profile`, 'Try Again'));
       }
     });
 
