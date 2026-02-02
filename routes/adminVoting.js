@@ -109,6 +109,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   <a href="/admin/vehicles">Vehicles</a>
                   <a href="#" class="active" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                   <a href="/admin/reports">Reports</a>
+                  <a href="/admin/vendors">Vendors</a>
                   <a href="/user/vote">Vote Here!</a>
                 </div>
 
@@ -261,6 +262,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                     <a href="/admin/vehicles">Vehicles</a>
                     <a href="#" class="active" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                     <a href="/admin/reports">Reports</a>
+                    <a href="/admin/vendors">Vendors</a>
                     <a href="/user/vote">Vote Here!</a>
                   </div>
 
@@ -414,6 +416,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <a href="/admin/vehicles">Vehicles</a>
                 <a href="#" class="active" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
+                <a href="/admin/vendors">Vendors</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
 
@@ -605,6 +608,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <a href="/admin/vehicles">Vehicles</a>
                 <a href="#" class="active" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
+                <a href="/admin/vendors">Vendors</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
 
@@ -718,6 +722,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <a href="/admin/vehicles">Vehicles</a>
                 <a href="#" class="active" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
+                <a href="/admin/vendors">Vendors</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
 
@@ -847,6 +852,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <a href="/admin/vehicles">Vehicles</a>
                 <a href="#" class="active" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                 <a href="/admin/reports">Reports</a>
+                <a href="/admin/vendors">Vendors</a>
                 <a href="/user/vote">Vote Here!</a>
               </div>
 
@@ -1027,6 +1033,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                       <a href="/admin/vehicles">Vehicles</a>
                       <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
                       <a href="/admin/reports" class="active">Reports</a>
+                      <a href="/admin/vendors">Vendors</a>
                       <a href="/user/vote">Vote Here!</a>
                     </div>
 
@@ -1092,6 +1099,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               <a href="/admin/vehicles">Vehicles</a>
               <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;">Voting</a>
               <a href="/admin/reports" class="active">Reports</a>
+                <a href="/admin/vendors">Vendors</a>
                 <a href="/user/vote">Vote Here!</a>
             </div>
 

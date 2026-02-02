@@ -59,6 +59,7 @@ function adminNav(activeTab) {
       <a href="/admin/vehicles"${activeTab === 'vehicles' ? ' class="active"' : ''}>Vehicles</a>
       <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;"${activeTab === 'voting' ? ' class="active"' : ''}>Voting</a>
       <a href="/admin/reports"${activeTab === 'reports' ? ' class="active"' : ''}>Reports</a>
+      <a href="/admin/vendors"${activeTab === 'vendors' ? ' class="active"' : ''}>Vendors</a>
       <a href="/user/vote">Vote Here!</a>
     </div>`;
 }

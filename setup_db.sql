@@ -279,6 +279,7 @@ CREATE TABLE IF NOT EXISTS vendor_business (
     image_url TEXT,                                        -- Optional storefront/logo image path
     booth_location TEXT,                                   -- Booth location info (table/area number)
     is_active BOOLEAN DEFAULT 1,                           -- 1=active, 0=deactivated account
+    admin_disabled BOOLEAN DEFAULT 0,                      -- 1=store disabled by admin, 0=normal
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,        -- Record creation timestamp
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,        -- Last update timestamp
     FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
@@ -297,9 +298,11 @@ CREATE TABLE IF NOT EXISTS vendor_products (
     product_name TEXT NOT NULL,                     -- Product or service name
     description TEXT,                               -- Optional one-line description
     price TEXT,                                     -- Optional price info (text to allow "Starting at $X", etc.)
+    discount_price TEXT,                            -- Optional discount/sale price (strikes through original price)
     image_url TEXT,                                 -- Optional product image path
     display_order INTEGER DEFAULT 0,               -- Sort order for display
     available BOOLEAN DEFAULT 1,                   -- 1=available, 0=sold out
+    admin_deactivated BOOLEAN DEFAULT 0,           -- 1=deactivated by admin, 0=normal
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- Record creation timestamp
     FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
 );

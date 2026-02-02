@@ -201,13 +201,18 @@ module.exports = function (db, appConfig, upload) {
         // Products section
         const productsHtml = products.length > 0 ? products.map(p => {
           const soldOut = !p.available;
+          const deactivated = p.admin_deactivated;
           return `
-          <div class="product-card${soldOut ? ' sold-out' : ''}">
+          <div class="product-card${deactivated ? '' : (soldOut ? ' sold-out' : '')}"${deactivated ? ' style="opacity:0.6;border-color:#f39c12;"' : ''}>
             ${p.image_url ? `<img src="${p.image_url}" alt="${p.product_name}">` : ''}
             <div class="product-info">
               <h5>${p.product_name}${soldOut ? ' - SOLD OUT' : ''}</h5>
+              ${deactivated ? `<p style="color:#e74c3c;font-weight:700;font-size:12px;margin-bottom:4px;">Product deactivated by Admin</p>` : ''}
               ${p.description ? `<p>${p.description}</p>` : ''}
-              ${p.price ? `<p class="product-price${soldOut ? ' price-sold-out' : ''}">$${p.price}</p>` : ''}
+              ${p.price ? (p.discount_price
+                ? `<p class="product-price"><span style="text-decoration:line-through;color:#999;">$${p.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${p.discount_price}</span></p>`
+                : `<p class="product-price${soldOut ? ' price-sold-out' : ''}">$${p.price}</p>`
+              ) : ''}
               <div class="product-actions">
                 <a href="/vendor/edit-product/${p.product_id}" class="btn-sm btn-edit">Edit</a>
                 <a href="#" onclick="if(confirm('Delete this product?'))document.getElementById('delProd${p.product_id}').submit();return false;" class="btn-sm btn-delete">Delete</a>
@@ -254,6 +259,13 @@ module.exports = function (db, appConfig, upload) {
                 <h2>Welcome, ${user.name}!</h2>
                 <p>Manage your vendor profile and business information.</p>
               </div>
+
+              ${business && business.admin_disabled ? `
+              <div style="background:#fde8e8;border:2px solid #e74c3c;border-radius:10px;padding:16px;margin-bottom:16px;text-align:center;">
+                <div style="font-size:20px;font-weight:700;color:#e74c3c;margin-bottom:4px;">Vendor Store deactivated by Admin</div>
+                <div style="font-size:13px;color:#c0392b;">Your store is currently hidden from other users. Please contact an administrator for more information.</div>
+              </div>
+              ` : ''}
 
               <div class="vendor-section">
                 <h4>Business Information <a href="/vendor/edit-business" class="btn-sm btn-edit">Edit</a></h4>
@@ -678,6 +690,13 @@ module.exports = function (db, appConfig, upload) {
 
             <h3 class="section-title">Edit Product / Service</h3>
 
+            ${product.admin_deactivated ? `
+            <div style="background:#fde8e8;border:2px solid #e74c3c;border-radius:10px;padding:12px 16px;margin-bottom:16px;">
+              <div style="font-weight:700;color:#e74c3c;">Product deactivated by Admin</div>
+              <div style="font-size:13px;color:#c0392b;">This product has been deactivated by an administrator and is hidden from other users.</div>
+            </div>
+            ` : ''}
+
             <form method="POST" action="/vendor/update-product/${product.product_id}" enctype="multipart/form-data" style="max-width:600px;">
               <div class="form-group">
                 <label>Product / Service Name *</label>
@@ -693,6 +712,14 @@ module.exports = function (db, appConfig, upload) {
                   <span style="font-size:16px;font-weight:600;">$</span>
                   <input type="text" name="price" value="${product.price ? parseFloat(product.price).toFixed(2) : ''}" placeholder="0.00" style="flex:1;" oninput="validatePriceInput(this)" onblur="formatPriceBlur(this)">
                 </div>
+              </div>
+              <div class="form-group">
+                <label>Discount Price (Optional)</label>
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <span style="font-size:16px;font-weight:600;">$</span>
+                  <input type="text" name="discount_price" value="${product.discount_price ? parseFloat(product.discount_price).toFixed(2) : ''}" placeholder="0.00" style="flex:1;" oninput="validatePriceInput(this)" onblur="formatPriceBlur(this)">
+                </div>
+                <small style="color:#888;display:block;margin-top:4px;">If set, the original price will be shown with a line through it and this discount price will appear next to it.</small>
               </div>
 
               ${product.image_url ? `
@@ -753,13 +780,14 @@ module.exports = function (db, appConfig, upload) {
   router.post('/update-product/:id', requireVendor, upload.single('productImage'), async (req, res) => {
     const user = req.session.user;
     const productId = req.params.id;
-    const { product_name, description, price } = req.body;
+    const { product_name, description, price, discount_price } = req.body;
 
     if (!product_name || !product_name.trim()) {
       return res.send(errorPage('Product name is required.', `/vendor/edit-product/${productId}`, 'Try Again'));
     }
 
     const formattedPrice = price ? parseFloat(price).toFixed(2) : null;
+    const formattedDiscount = discount_price ? parseFloat(discount_price).toFixed(2) : null;
 
     db.get('SELECT * FROM vendor_products WHERE product_id = ? AND user_id = ?', [productId, user.user_id], async (err, product) => {
       if (!product) return res.send(errorPage('Product not found.', '/vendor', 'Back to Dashboard'));
@@ -775,8 +803,8 @@ module.exports = function (db, appConfig, upload) {
         } catch (e) { /* keep old image on error */ }
       }
 
-      db.run('UPDATE vendor_products SET product_name = ?, description = ?, price = ?, image_url = ? WHERE product_id = ? AND user_id = ?',
-        [product_name.trim(), description || null, formattedPrice, imageUrl, productId, user.user_id],
+      db.run('UPDATE vendor_products SET product_name = ?, description = ?, price = ?, discount_price = ?, image_url = ? WHERE product_id = ? AND user_id = ?',
+        [product_name.trim(), description || null, formattedPrice, formattedDiscount, imageUrl, productId, user.user_id],
         (err) => {
           if (err) return res.send(errorPage('Error updating product: ' + err.message, `/vendor/edit-product/${productId}`, 'Try Again'));
           res.redirect('/vendor');
@@ -833,7 +861,7 @@ module.exports = function (db, appConfig, upload) {
     db.all(`SELECT vb.*, u.name as vendor_name
             FROM vendor_business vb
             JOIN users u ON vb.user_id = u.user_id
-            WHERE u.role = 'vendor' AND u.is_active = 1
+            WHERE u.role = 'vendor' AND u.is_active = 1 AND (vb.admin_disabled = 0 OR vb.admin_disabled IS NULL)
             ORDER BY vb.business_name, u.name`, (err, vendors) => {
       if (err) vendors = [];
 
@@ -971,13 +999,13 @@ module.exports = function (db, appConfig, upload) {
     db.get(`SELECT vb.*, u.name as vendor_name
             FROM vendor_business vb
             JOIN users u ON vb.user_id = u.user_id
-            WHERE vb.user_id = ? AND u.role = 'vendor' AND u.is_active = 1`, [vendorUserId], (err, business) => {
+            WHERE vb.user_id = ? AND u.role = 'vendor' AND u.is_active = 1 AND (vb.admin_disabled = 0 OR vb.admin_disabled IS NULL)`, [vendorUserId], (err, business) => {
       if (err || !business) {
         res.redirect('/vendor/vendors');
         return;
       }
 
-      db.all('SELECT * FROM vendor_products WHERE user_id = ? ORDER BY display_order, product_id', [vendorUserId], (err2, products) => {
+      db.all('SELECT * FROM vendor_products WHERE user_id = ? AND (admin_deactivated = 0 OR admin_deactivated IS NULL) ORDER BY display_order, product_id', [vendorUserId], (err2, products) => {
         if (!products) products = [];
 
         const addressParts = [business.business_street, business.business_city, business.business_state].filter(Boolean);
@@ -997,7 +1025,10 @@ module.exports = function (db, appConfig, upload) {
               <div class="product-info">
                 <h5>${p.product_name}${soldOut ? ' - SOLD OUT' : ''}</h5>
                 ${p.description ? `<p>${p.description}</p>` : ''}
-                ${p.price ? `<p style="font-weight:600;color:#e94560;${soldOut ? 'text-decoration:line-through;' : ''}">$${p.price}</p>` : ''}
+                ${p.price ? (p.discount_price
+                  ? `<p style="font-weight:600;color:#e94560;"><span style="text-decoration:line-through;color:#999;">$${p.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${p.discount_price}</span></p>`
+                  : `<p style="font-weight:600;color:#e94560;${soldOut ? 'text-decoration:line-through;' : ''}">$${p.price}</p>`
+                ) : ''}
               </div>
             </div>
           </a>`;
@@ -1183,10 +1214,10 @@ module.exports = function (db, appConfig, upload) {
     db.get(`SELECT vb.*, u.name as vendor_name
             FROM vendor_business vb
             JOIN users u ON vb.user_id = u.user_id
-            WHERE vb.user_id = ? AND u.role = 'vendor' AND u.is_active = 1`, [vendorUserId], (err, business) => {
+            WHERE vb.user_id = ? AND u.role = 'vendor' AND u.is_active = 1 AND (vb.admin_disabled = 0 OR vb.admin_disabled IS NULL)`, [vendorUserId], (err, business) => {
       if (err || !business) return res.redirect('/vendor/vendors');
 
-      db.get('SELECT * FROM vendor_products WHERE product_id = ? AND user_id = ?', [productId, vendorUserId], (err2, product) => {
+      db.get('SELECT * FROM vendor_products WHERE product_id = ? AND user_id = ? AND (admin_deactivated = 0 OR admin_deactivated IS NULL)', [productId, vendorUserId], (err2, product) => {
         if (err2 || !product) return res.redirect(`/vendor/vendors/${vendorUserId}`);
 
         const soldOut = !product.available;
@@ -1283,7 +1314,10 @@ module.exports = function (db, appConfig, upload) {
               <span class="product-detail-status ${soldOut ? 'sold-out' : 'available'}">${soldOut ? 'Sold Out' : 'Available'}</span>
 
               ${product.description ? `<div class="product-detail-desc">${product.description}</div>` : ''}
-              ${product.price ? `<div class="product-detail-price${soldOut ? ' sold-out' : ''}">$${product.price}</div>` : ''}
+              ${product.price ? (product.discount_price
+                ? `<div class="product-detail-price"><span style="text-decoration:line-through;color:#999;font-size:0.8em;">$${product.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${product.discount_price}</span></div>`
+                : `<div class="product-detail-price${soldOut ? ' sold-out' : ''}">$${product.price}</div>`
+              ) : ''}
 
               <div class="links" style="margin-top:20px;">
                 <a href="/vendor/vendors/${vendorUserId}">&larr; Back to ${businessName}</a>

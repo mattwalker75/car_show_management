@@ -1179,7 +1179,7 @@ module.exports = function (db, appConfig, upload) {
     db.all(`SELECT vb.*, u.name as vendor_name
             FROM vendor_business vb
             JOIN users u ON vb.user_id = u.user_id
-            WHERE u.role = 'vendor' AND u.is_active = 1
+            WHERE u.role = 'vendor' AND u.is_active = 1 AND (vb.admin_disabled = 0 OR vb.admin_disabled IS NULL)
             ORDER BY vb.business_name, u.name`, (err, vendors) => {
       if (err) vendors = [];
 
@@ -1326,13 +1326,13 @@ module.exports = function (db, appConfig, upload) {
     db.get(`SELECT vb.*, u.name as vendor_name
             FROM vendor_business vb
             JOIN users u ON vb.user_id = u.user_id
-            WHERE vb.user_id = ? AND u.role = 'vendor' AND u.is_active = 1`, [vendorUserId], (err, business) => {
+            WHERE vb.user_id = ? AND u.role = 'vendor' AND u.is_active = 1 AND (vb.admin_disabled = 0 OR vb.admin_disabled IS NULL)`, [vendorUserId], (err, business) => {
       if (err || !business) {
         res.redirect('/registrar/vendors');
         return;
       }
 
-      db.all('SELECT * FROM vendor_products WHERE user_id = ? ORDER BY display_order, product_id', [vendorUserId], (err2, products) => {
+      db.all('SELECT * FROM vendor_products WHERE user_id = ? AND (admin_deactivated = 0 OR admin_deactivated IS NULL) ORDER BY display_order, product_id', [vendorUserId], (err2, products) => {
         if (!products) products = [];
 
         const addressParts = [business.business_street, business.business_city, business.business_state].filter(Boolean);
@@ -1352,7 +1352,10 @@ module.exports = function (db, appConfig, upload) {
             <div class="product-info">
               <h5>${p.product_name}${soldOut ? ' - SOLD OUT' : ''}</h5>
               ${p.description ? `<p>${p.description}</p>` : ''}
-              ${p.price ? `<p style="font-weight:600;color:#e94560;${soldOut ? 'text-decoration:line-through;' : ''}">$${p.price}</p>` : ''}
+              ${p.price ? (p.discount_price
+                ? `<p style="font-weight:600;color:#e94560;"><span style="text-decoration:line-through;color:#999;">$${p.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${p.discount_price}</span></p>`
+                : `<p style="font-weight:600;color:#e94560;${soldOut ? 'text-decoration:line-through;' : ''}">$${p.price}</p>`
+              ) : ''}
             </div>
           </div>
           </a>`;
@@ -1613,10 +1616,10 @@ module.exports = function (db, appConfig, upload) {
     db.get(`SELECT vb.*, u.name as vendor_name
             FROM vendor_business vb
             JOIN users u ON vb.user_id = u.user_id
-            WHERE vb.user_id = ? AND u.role = 'vendor' AND u.is_active = 1`, [vendorUserId], (err, business) => {
+            WHERE vb.user_id = ? AND u.role = 'vendor' AND u.is_active = 1 AND (vb.admin_disabled = 0 OR vb.admin_disabled IS NULL)`, [vendorUserId], (err, business) => {
       if (err || !business) return res.redirect('/registrar/vendors');
 
-      db.get('SELECT * FROM vendor_products WHERE product_id = ? AND user_id = ?', [productId, vendorUserId], (err2, product) => {
+      db.get('SELECT * FROM vendor_products WHERE product_id = ? AND user_id = ? AND (admin_deactivated = 0 OR admin_deactivated IS NULL)', [productId, vendorUserId], (err2, product) => {
         if (err2 || !product) return res.redirect(`/registrar/vendors/${vendorUserId}`);
 
         const soldOut = !product.available;
@@ -1663,7 +1666,10 @@ module.exports = function (db, appConfig, upload) {
               <span class="product-detail-status ${soldOut ? 'sold-out' : 'available'}">${soldOut ? 'Sold Out' : 'Available'}</span>
 
               ${product.description ? `<div class="product-detail-desc">${product.description}</div>` : ''}
-              ${product.price ? `<div class="product-detail-price${soldOut ? ' sold-out' : ''}">$${product.price}</div>` : ''}
+              ${product.price ? (product.discount_price
+                ? `<div class="product-detail-price"><span style="text-decoration:line-through;color:#999;font-size:0.8em;">$${product.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${product.discount_price}</span></div>`
+                : `<div class="product-detail-price${soldOut ? ' sold-out' : ''}">$${product.price}</div>`
+              ) : ''}
 
               <div class="links" style="margin-top:20px;">
                 <a href="/registrar/vendors/${vendorUserId}">&larr; Back to ${businessName}</a>

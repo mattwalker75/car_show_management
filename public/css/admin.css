@@ -85,8 +85,10 @@
   top: 0;
 }
 
-.user-table tr:active {
-  background: #f0f0f0;
+
+.user-row-actions td {
+  border-bottom: 1px solid #d0d0d0 !important;
+  padding-bottom: 10px !important;
 }
 
 /* Mobile card view for users (alternative to table) */
@@ -379,9 +381,6 @@ select:focus {
     font-size: 14px;
   }
 
-  .user-table tr:hover {
-    background: #f8f9fa;
-  }
 
   .action-btn {
     padding: 8px 14px;

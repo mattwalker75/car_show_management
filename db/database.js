@@ -78,6 +78,15 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
     // Add registration_price column to vehicles if it doesn't exist
     db.run(`ALTER TABLE vehicles ADD COLUMN registration_price REAL DEFAULT 25.00`, (err) => {});
+
+    // Add discount_price column to vendor_products if it doesn't exist
+    db.run(`ALTER TABLE vendor_products ADD COLUMN discount_price TEXT`, (err) => {});
+
+    // Add admin_deactivated column to vendor_products if it doesn't exist
+    db.run(`ALTER TABLE vendor_products ADD COLUMN admin_deactivated BOOLEAN DEFAULT 0`, (err) => {});
+
+    // Add admin_disabled column to vendor_business if it doesn't exist
+    db.run(`ALTER TABLE vendor_business ADD COLUMN admin_disabled BOOLEAN DEFAULT 0`, (err) => {});
   }
 });
 
