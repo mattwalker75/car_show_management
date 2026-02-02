@@ -46,15 +46,34 @@ TODO
 ----
 
 - Enable WebSockets to enable push notification and bi-directional communication
-   - This will enable the following
-      - Send notifications to all the judges when Judging is open
-      - Send everyone a notification when "special voting" is enabled
-      - Can send individual users notifications too
-   - This means you will be able to enable inapp chat
+   - This means you will be able to enable in app chat
       - If we enable inapp chat then consider the following
          - Setup a server-side word filter, such as using "bad-words" or "leo-profanity" library.
             - THus if someone says "fuck", it will come up as "f***"
       - If someone is being an ass, then be able to block him from posting so that all he can do is read the posts but can not make any
       - Limit the number of characters someone can post so that someone can't copy/paste a novel into chat
+
+
+- Add notifications for the following events utilizing WebSockets
+   - Role:  Admin
+      - "Voting" main tab
+         - "Judge Status" secondary tab
+            - When Voting status is changed, send out a notification to all "Judge" roles
+               - When "Open Voting" is clicked
+                  - Send notification:  Judge Voting is open
+               - When "Close Voting" is clicked
+                  - Send notification:  Judge Voting is closed
+               - When "Lock & Publish Results" is clicked
+                  - Send notification:  Judge Voting results are published
+         - "Vote Status" secondary tab
+            - When VOting status is changed, send out a notification to all every role
+               - When "Open Voting" is clicked
+                  - Send notification:   Cast your vote by clicking "Vote Here!" 
+               - When "Lock & Publish Results" is clicked
+                  - Send notification:  Votes sent to Judges for review
+   - Role:  Vendor
+      - When a discount price is added or updated, then send a notification to all roles 
+         - Send notification:  <Vendor name> reduced the price for <Product Name> from $<Price> to $<Discount Price>
+
 
 
