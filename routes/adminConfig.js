@@ -2100,7 +2100,6 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
               <small style="color: #666; display: block; margin-top: 5px;">Default price when creating new vehicle types</small>
             </div>
-            <div style="border-top:3px solid #000;margin:20px 0;"></div>
             <div style="margin-bottom:10px;">
               <label style="font-weight:600;margin-bottom:8px;display:block;">Default Judging Points</label>
               <small style="color: #666; display: block; margin-bottom: 10px;">Default min and max score values when adding new judging questions</small>
@@ -2117,19 +2116,6 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             </div>
             <div style="border-top:3px solid #000;margin:20px 0;"></div>
             <div style="margin-bottom:10px;">
-              <label style="font-weight:600;margin-bottom:8px;display:block;">Login Configuration</label>
-              <small style="color: #666; display: block; margin-bottom: 12px;">Control the login experience for all users</small>
-              <div style="display:flex;align-items:center;gap:12px;">
-                <label class="toggle-switch" style="position:relative;display:inline-block;width:50px;height:26px;margin:0;cursor:pointer;">
-                  <input type="hidden" name="animatedLogin" value="${appConfig.animatedLogin ? 'true' : 'false'}" id="animatedLoginInput">
-                  <div id="toggleTrack" style="position:absolute;top:0;left:0;right:0;bottom:0;background:${appConfig.animatedLogin ? '#27ae60' : '#ccc'};border-radius:26px;transition:0.3s;" onclick="toggleAnimatedLogin()"></div>
-                  <div id="toggleThumb" style="position:absolute;height:20px;width:20px;left:${appConfig.animatedLogin ? '27px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.3s;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
-                </label>
-                <span style="font-size:14px;color:#333;" id="toggleLabel">${appConfig.animatedLogin ? 'Enabled' : 'Disabled'} Animated Login Experience</span>
-              </div>
-            </div>
-
-            <div style="margin-top:10px;margin-bottom:10px;border-top:1px solid #e1e1e1;padding-top:15px;">
               <label style="font-weight:600;margin-bottom:8px;display:block;">Group Chat</label>
               <small style="color: #666; display: block; margin-bottom: 12px;">Enable or disable the group chat feature for all users</small>
               <div style="display:flex;align-items:center;gap:12px;">
@@ -2139,6 +2125,24 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   <div id="chatToggleThumb" style="position:absolute;height:20px;width:20px;left:${appConfig.chatEnabled !== false ? '27px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.3s;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
                 </label>
                 <span style="font-size:14px;color:#333;" id="chatToggleLabel">${appConfig.chatEnabled !== false ? 'Enabled' : 'Disabled'} Group Chat</span>
+              </div>
+              <div style="margin-top:15px;">
+                <label style="font-size:14px;color:#333;">Chat Message Limit</label>
+                <small style="color: #666; display: block; margin-bottom: 8px;">Maximum number of messages to keep in chat history (older messages are automatically deleted)</small>
+                <input type="number" name="chatMessageLimit" value="${appConfig.chatMessageLimit || 200}" min="50" max="10000" style="width:120px;padding:8px 12px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+              </div>
+            </div>
+            <div style="border-top:3px solid #000;margin:20px 0;"></div>
+            <div style="margin-bottom:10px;">
+              <label style="font-weight:600;margin-bottom:8px;display:block;">Login Configuration</label>
+              <small style="color: #666; display: block; margin-bottom: 12px;">Control the login experience for all users</small>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <label class="toggle-switch" style="position:relative;display:inline-block;width:50px;height:26px;margin:0;cursor:pointer;">
+                  <input type="hidden" name="animatedLogin" value="${appConfig.animatedLogin ? 'true' : 'false'}" id="animatedLoginInput">
+                  <div id="toggleTrack" style="position:absolute;top:0;left:0;right:0;bottom:0;background:${appConfig.animatedLogin ? '#27ae60' : '#ccc'};border-radius:26px;transition:0.3s;" onclick="toggleAnimatedLogin()"></div>
+                  <div id="toggleThumb" style="position:absolute;height:20px;width:20px;left:${appConfig.animatedLogin ? '27px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.3s;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+                </label>
+                <span style="font-size:14px;color:#333;" id="toggleLabel">${appConfig.animatedLogin ? 'Enabled' : 'Disabled'} Animated Login Experience</span>
               </div>
             </div>
 
@@ -2557,7 +2561,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // Save app config
   router.post('/app-config', requireAdmin, (req, res) => {
-    const { appTitle, appSubtitle, defaultRegistrationPrice, defaultMinScore, defaultMaxScore, animatedLogin, chatEnabled,
+    const { appTitle, appSubtitle, defaultRegistrationPrice, defaultMinScore, defaultMaxScore, animatedLogin, chatEnabled, chatMessageLimit,
             loginBgUseImage, loginBgColor, loginBgUseTint, loginBgTintColor, loginBgTintOpacity, loginBgCardOpacity,
             appBgUseImage, appBgColor, appBgUseTint, appBgTintColor, appBgTintOpacity, appBgContainerOpacity } = req.body;
 
@@ -2576,6 +2580,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
     appConfig.defaultMaxScore = parseInt(defaultMaxScore) || 10;
     appConfig.animatedLogin = animatedLogin === 'true';
     appConfig.chatEnabled = chatEnabled === 'true';
+    appConfig.chatMessageLimit = Math.max(50, Math.min(10000, parseInt(chatMessageLimit) || 200));
 
     // Update loginBackground settings (preserve imageUrl — only changed by upload/remove routes)
     if (!appConfig.loginBackground) appConfig.loginBackground = {};

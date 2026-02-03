@@ -12,6 +12,7 @@
   "license": "ISC",
   "type": "commonjs",
   "_dependencies_info": {
+    "bad-words-plus": "Profanity filter for group chat messages (replaces bad words with f*** style asterisks)",
     "bcrypt": "Password hashing and verification for user authentication",
     "cookie-session": "Session management via signed cookies (login state)",
     "express": "Web server framework for routing and HTTP handling",
@@ -22,11 +23,13 @@
     "sqlite3": "Embedded SQL database for storing users, vehicles, scores, and votes"
   },
   "dependencies": {
+    "bad-words-plus": "^3.0.4",
     "bcrypt": "^6.0.0",
     "cookie-session": "^2.1.1",
     "express": "^5.2.1",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
+    "mysql2": "^3.16.2",
     "sharp": "^0.34.5",
     "socket.io": "^4.8.3",
     "sqlite3": "^5.1.7"

@@ -16,6 +16,74 @@ document.addEventListener('DOMContentLoaded', function () {
   var oldestMessageId = null;
   var hasMore = false;
 
+  // Slide-over sidebar references
+  var sidebarEl = document.getElementById('chatSidebar');
+  var sidebarTab = document.getElementById('chatSidebarTab');
+  var sidebarBackdrop = document.getElementById('chatSidebarBackdrop');
+  var sidebarCloseBtn = document.getElementById('chatSidebarClose');
+  var onlineCountTabEl = document.getElementById('onlineCountTab');
+
+  // --- Sidebar slide-over toggle ---
+
+  function openSidebar() {
+    sidebarEl.classList.add('open');
+    sidebarBackdrop.classList.add('visible');
+    sidebarTab.classList.add('hidden');
+  }
+
+  function closeSidebar() {
+    sidebarEl.classList.remove('open');
+    sidebarBackdrop.classList.remove('visible');
+    sidebarTab.classList.remove('hidden');
+  }
+
+  sidebarTab.addEventListener('click', function () {
+    openSidebar();
+  });
+
+  sidebarCloseBtn.addEventListener('click', function () {
+    closeSidebar();
+  });
+
+  sidebarBackdrop.addEventListener('click', function () {
+    closeSidebar();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && sidebarEl.classList.contains('open')) {
+      closeSidebar();
+    }
+  });
+
+  // Swipe right to close on touch devices
+  (function () {
+    var startX = 0;
+    var startY = 0;
+    var tracking = false;
+
+    sidebarEl.addEventListener('touchstart', function (e) {
+      var touch = e.touches[0];
+      startX = touch.clientX;
+      startY = touch.clientY;
+      tracking = true;
+    }, { passive: true });
+
+    sidebarEl.addEventListener('touchmove', function (e) {
+      if (!tracking) return;
+      var touch = e.touches[0];
+      var dx = touch.clientX - startX;
+      var dy = touch.clientY - startY;
+      if (dx > 60 && Math.abs(dy) < Math.abs(dx)) {
+        closeSidebar();
+        tracking = false;
+      }
+    }, { passive: true });
+
+    sidebarEl.addEventListener('touchend', function () {
+      tracking = false;
+    }, { passive: true });
+  })();
+
   // Socket connection
   var socket = io({ transports: ['websocket', 'polling'] });
 
@@ -26,6 +94,47 @@ document.addEventListener('DOMContentLoaded', function () {
       role: user.role,
       image_url: user.image_url
     });
+  });
+
+  // --- Blocked state management ---
+  var inputArea = document.getElementById('chatInputArea');
+
+  function disableChatInput() {
+    if (!inputArea) return;
+    inputArea.classList.add('disabled');
+    if (!inputArea.querySelector('.chat-blocked-notice')) {
+      var notice = document.createElement('div');
+      notice.className = 'chat-blocked-notice';
+      notice.textContent = 'Chat disabled \u2014 please consult admin for re-enablement';
+      inputArea.insertBefore(notice, inputArea.firstChild);
+    }
+    inputEl.disabled = true;
+    sendBtn.disabled = true;
+  }
+
+  function enableChatInput() {
+    if (!inputArea) return;
+    inputArea.classList.remove('disabled');
+    var notice = inputArea.querySelector('.chat-blocked-notice');
+    if (notice) notice.remove();
+    inputEl.disabled = false;
+    sendBtn.disabled = false;
+  }
+
+  // Check initial blocked state from server-rendered data
+  if (user.chat_blocked) {
+    disableChatInput();
+  }
+
+  // Receive block/unblock notifications from server
+  socket.on('chat-blocked', function () {
+    user.chat_blocked = true;
+    disableChatInput();
+  });
+
+  socket.on('chat-unblocked', function () {
+    user.chat_blocked = false;
+    enableChatInput();
   });
 
   // Load initial messages
@@ -58,16 +167,31 @@ document.addEventListener('DOMContentLoaded', function () {
     renderOnlineUsers(users);
   });
 
-  // --- Send message ---
+  // --- Send message with rate limiting ---
+  // Client-side rate limit: 500ms between messages. Button shows cooldown state.
+  // Server also enforces this limit; messages sent faster are silently dropped.
+  var RATE_LIMIT_MS = 500;
+  var sendCooldown = false;
 
   function sendMessage() {
+    if (user.chat_blocked) return;
+    if (sendCooldown) return;
     var text = inputEl.value.trim();
-    if (!text || text.length > 500) return;
+    if (!text || text.length > 250) return;
+
     socket.emit('chat-send', { message: text });
     inputEl.value = '';
     charCount.textContent = '0';
     charCount.style.color = '#888';
     autoResizeTextarea();
+
+    // Start cooldown
+    sendCooldown = true;
+    sendBtn.classList.add('cooldown');
+    setTimeout(function () {
+      sendCooldown = false;
+      sendBtn.classList.remove('cooldown');
+    }, RATE_LIMIT_MS);
   }
 
   // --- Event listeners ---
@@ -86,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function () {
   inputEl.addEventListener('input', function () {
     var len = inputEl.value.length;
     charCount.textContent = String(len);
-    charCount.style.color = len > 450 ? '#e94560' : '#888';
+    charCount.style.color = len > 200 ? '#e94560' : '#888';
     autoResizeTextarea();
   });
 
@@ -252,6 +376,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderOnlineUsers(users) {
     onlineList.innerHTML = '';
     onlineCountEl.textContent = String(users.length);
+    onlineCountTabEl.textContent = String(users.length);
 
     var sorted = users.slice().sort(function (a, b) {
       var nameA = (a.name || '').toLowerCase();
@@ -264,10 +389,15 @@ document.addEventListener('DOMContentLoaded', function () {
     for (var i = 0; i < sorted.length; i++) {
       var u = sorted[i];
       var div = document.createElement('div');
-      div.className = 'online-user';
+      div.className = 'online-user' + (u.chat_blocked ? ' is-blocked' : '');
 
       var indicator = document.createElement('div');
-      indicator.className = 'online-indicator' + (u.status === 'away' ? ' away' : '');
+      if (u.chat_blocked) {
+        indicator.className = 'blocked-indicator';
+        indicator.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#e94560" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
+      } else {
+        indicator.className = 'online-indicator' + (u.status === 'away' ? ' away' : '');
+      }
 
       var nameSpan = document.createElement('span');
       nameSpan.className = 'online-user-name';
@@ -280,6 +410,23 @@ document.addEventListener('DOMContentLoaded', function () {
       div.appendChild(indicator);
       div.appendChild(nameSpan);
       div.appendChild(roleSpan);
+
+      // Admin sees block/unblock button on non-admin users
+      if (user.role === 'admin' && u.role !== 'admin') {
+        var blockBtn = document.createElement('button');
+        blockBtn.className = 'block-btn' + (u.chat_blocked ? ' is-blocked' : '');
+        blockBtn.title = u.chat_blocked ? 'Unblock user' : 'Block user';
+        blockBtn.setAttribute('data-user-id', u.user_id);
+        blockBtn.innerHTML = u.chat_blocked
+          ? '<svg viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>'
+          : '<svg viewBox="0 0 24 24" fill="none" stroke="#e94560" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
+        blockBtn.addEventListener('click', (function (targetId, isBlocked) {
+          return function () {
+            socket.emit(isBlocked ? 'chat-unblock' : 'chat-block', { user_id: targetId });
+          };
+        })(u.user_id, u.chat_blocked));
+        div.appendChild(blockBtn);
+      }
 
       onlineList.appendChild(div);
     }

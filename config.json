@@ -1,4 +1,22 @@
 {
+  "port": 3001,
+  "database": {
+    "_comment": "Set 'engine' to 'sqlite' or 'mysql'. SQLite requires no setup. For MySQL: run setup_mysql_db.sql first, then update credentials below.",
+    "engine": "sqlite",
+    "sqlite": {
+      "filename": "carshow.db"
+    },
+    "mysql": {
+      "host": "localhost",
+      "port": 3306,
+      "database": "carshow",
+      "user": "carshow_app",
+      "password": "PASSWORD",
+      "connectionLimit": 10,
+      "waitForConnections": true,
+      "queueLimit": 0
+    }
+  },
   "appTitle": "Testing Car Show",
   "appSubtitle": "Sign in to your account",
   "judgeVotingStatus": "Close",
@@ -24,5 +42,6 @@
     "tintColor": "#1a1a2e",
     "tintOpacity": 0.5,
     "containerOpacity": 0.87
-  }
+  },
+  "chatEnabled": true
 }

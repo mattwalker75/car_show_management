@@ -34,17 +34,8 @@ module.exports = function (db, appConfig, upload) {
         flex-direction: column;
         height: calc(100vh - 220px);
         min-height: 400px;
-      }
-      @media (min-width: 768px) {
-        .chat-container {
-          flex-direction: row;
-        }
-        .chat-sidebar {
-          width: 220px;
-          margin-top: 0 !important;
-          margin-left: 12px;
-          max-height: none !important;
-        }
+        position: relative;
+        overflow-x: hidden;
       }
       .chat-messages {
         flex: 1;
@@ -137,15 +128,115 @@ module.exports = function (db, appConfig, upload) {
         font-size: 14px;
         cursor: pointer;
         min-height: 44px;
+        transition: opacity 0.15s, background 0.15s;
+      }
+      .chat-send-btn.cooldown {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: #888;
       }
       .chat-sidebar {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 260px;
+        max-width: 80vw;
         background: #f8f9fa;
-        border-radius: 12px;
-        padding: 12px;
-        margin-top: 12px;
-        border: 1px solid #e1e1e1;
-        max-height: 200px;
+        border-left: 1px solid #e1e1e1;
+        padding: 16px 12px;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 500;
+        box-shadow: none;
+      }
+      .chat-sidebar.open {
+        transform: translateX(0);
+        box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+      }
+      .chat-sidebar-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .chat-sidebar-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: #e1e1e1;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 16px;
+        color: #666;
+        flex-shrink: 0;
+        transition: background 0.2s;
+      }
+      .chat-sidebar-close:active {
+        background: #c0c0c0;
+      }
+      .chat-sidebar-backdrop {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.2);
+        z-index: 499;
+      }
+      .chat-sidebar-backdrop.visible {
+        display: block;
+      }
+      .chat-sidebar-tab {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 498;
+        background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%);
+        color: white;
+        border: none;
+        border-radius: 8px 0 0 8px;
+        padding: 12px 6px;
+        cursor: pointer;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+        transition: opacity 0.3s ease;
+        min-height: 80px;
+      }
+      .chat-sidebar-tab:active {
+        opacity: 0.8;
+      }
+      .chat-sidebar-tab .tab-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        width: 22px;
+        height: 22px;
+        font-size: 11px;
+        font-weight: 700;
+        writing-mode: horizontal-tb;
+      }
+      .chat-sidebar-tab .tab-label {
+        letter-spacing: 0.5px;
+      }
+      .chat-sidebar-tab.hidden {
+        opacity: 0;
+        pointer-events: none;
       }
       .online-user {
         display: flex;
@@ -216,16 +307,79 @@ module.exports = function (db, appConfig, upload) {
         padding: 40px 20px;
         font-size: 14px;
       }
+      .blocked-indicator {
+        width: 14px;
+        height: 14px;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .blocked-indicator svg {
+        width: 14px;
+        height: 14px;
+      }
+      .block-btn {
+        width: 20px;
+        height: 20px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        padding: 0;
+        margin-left: auto;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        opacity: 0.4;
+        transition: opacity 0.2s;
+      }
+      .block-btn:hover {
+        opacity: 1;
+      }
+      .block-btn.is-blocked {
+        opacity: 1;
+      }
+      .block-btn svg {
+        width: 16px;
+        height: 16px;
+      }
+      .chat-input-area.disabled textarea,
+      .chat-input-area.disabled button {
+        pointer-events: none;
+        opacity: 0.4;
+      }
+      .chat-blocked-notice {
+        text-align: center;
+        color: #e94560;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 8px;
+      }
+      .online-user.is-blocked .online-user-name {
+        color: #999;
+        text-decoration: line-through;
+      }
     </style>`;
 
   // ============================================================
   // GET / — Serve the chat page
   // ============================================================
-  router.get('/', requireChatAccess, (req, res) => {
+  router.get('/', requireChatAccess, async (req, res) => {
     const user = req.session.user;
     const role = user.role;
     const header = dashboardHeader(role, user, appConfig.appTitle || 'Car Show Manager');
     const nav = getNav(role, 'chat', (appConfig.chatEnabled !== false && user.chat_enabled));
+
+    // Fetch current chat_blocked status from DB (session may be stale)
+    let chatBlocked = false;
+    try {
+      const row = await db.getAsync('SELECT chat_blocked FROM users WHERE user_id = ?', [user.user_id]);
+      chatBlocked = row && row.chat_blocked === 1;
+    } catch (err) {
+      console.error('Error fetching chat_blocked status:', err.message);
+    }
 
     res.send(`
       <!DOCTYPE html>
@@ -244,22 +398,30 @@ module.exports = function (db, appConfig, upload) {
           ${nav}
 
           <div class="chat-container">
-            <div style="flex:1;display:flex;flex-direction:column;">
+            <div style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;">
               <div class="chat-messages" id="chatMessages">
                 <button class="btn-load-more" id="loadMore" onclick="loadOlderMessages()" style="display:none;">Load older messages</button>
               </div>
-              <div class="chat-input-area">
-                <div class="char-counter"><span id="charCount">0</span>/500</div>
+              <div class="chat-input-area" id="chatInputArea">
+                <div class="char-counter"><span id="charCount">0</span>/250</div>
                 <div class="chat-input-row">
-                  <textarea id="chatInput" maxlength="500" rows="1" placeholder="Type a message..."></textarea>
+                  <textarea id="chatInput" maxlength="250" rows="1" placeholder="Type a message..."></textarea>
                   <button class="chat-send-btn" id="chatSend">Send</button>
                 </div>
               </div>
             </div>
+            <div class="chat-sidebar-backdrop" id="chatSidebarBackdrop"></div>
             <div class="chat-sidebar" id="chatSidebar">
-              <strong>Online (<span id="onlineCount">0</span>)</strong>
+              <div class="chat-sidebar-header">
+                <strong>Online (<span id="onlineCount">0</span>)</strong>
+                <button class="chat-sidebar-close" id="chatSidebarClose" aria-label="Close panel">&times;</button>
+              </div>
               <div id="onlineUsersList"></div>
             </div>
+            <button class="chat-sidebar-tab" id="chatSidebarTab" aria-label="Show online users">
+              <span class="tab-count" id="onlineCountTab">0</span>
+              <span class="tab-label">Online</span>
+            </button>
           </div>
 
         </div>
@@ -269,7 +431,8 @@ module.exports = function (db, appConfig, upload) {
             user_id: ${user.user_id},
             name: "${escapeHtml(user.name)}",
             role: "${escapeHtml(role)}",
-            image_url: "${user.image_url ? escapeHtml(user.image_url) : ''}"
+            image_url: "${user.image_url ? escapeHtml(user.image_url) : ''}",
+            chat_blocked: ${chatBlocked ? 'true' : 'false'}
           };
         </script>
         <script src="/js/chat.js"></script>

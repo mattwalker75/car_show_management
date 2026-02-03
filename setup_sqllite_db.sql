@@ -10,8 +10,8 @@
 -- ============================================================================
 
 -- Run the following command to init the database
--- sqlite3 carshow.db < setup_db.sql
---   NOTE:  The database file will be called carshow.db
+-- sqlite3 carshow.db < setup_sqllite_db.sql
+--   NOTE:  The database file will be called carshow.db (or as configured in config.json)
 
 
 -- ============================================================================
@@ -382,3 +382,7 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 -- Chat message indexes
 CREATE INDEX IF NOT EXISTS idx_chat_messages_created ON chat_messages(created_at DESC);  -- Recent messages lookup
 CREATE INDEX IF NOT EXISTS idx_chat_messages_user ON chat_messages(user_id);              -- Messages by user
+
+-- Additional user indexes for chat features
+CREATE INDEX IF NOT EXISTS idx_users_chat_enabled ON users(chat_enabled);    -- Filter chat-enabled users
+CREATE INDEX IF NOT EXISTS idx_users_chat_blocked ON users(chat_blocked);    -- Filter chat-blocked users

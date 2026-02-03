@@ -8,8 +8,28 @@ const multer = require('multer');
 // Path to the config file
 const configPath = path.join(__dirname, '..', 'config.json');
 
+// Default database configuration
+const defaultDatabaseConfig = {
+  engine: 'sqlite',  // 'sqlite' or 'mysql'
+  sqlite: {
+    filename: 'carshow.db'
+  },
+  mysql: {
+    host: 'localhost',
+    port: 3306,
+    database: 'carshow',
+    user: 'carshow_app',
+    password: 'PASSWORD',
+    connectionLimit: 10,
+    waitForConnections: true,
+    queueLimit: 0
+  }
+};
+
 // Default configuration values
 let appConfig = {
+  port: 3001,
+  database: defaultDatabaseConfig,
   appTitle: 'Car Show Manager',
   appSubtitle: 'Sign in to your account',
   judgeVotingStatus: 'Close',
@@ -18,6 +38,7 @@ let appConfig = {
   defaultMinScore: 0,
   defaultMaxScore: 10,
   chatEnabled: true,
+  chatMessageLimit: 200,
   animatedLogin: true,
   loginBackground: {
     useImage: false,
@@ -67,6 +88,10 @@ function loadConfig() {
     if (fs.existsSync(configPath)) {
       const configData = fs.readFileSync(configPath, 'utf8');
       appConfig = JSON.parse(configData);
+      // Ensure database config exists with all defaults merged
+      appConfig.database = Object.assign({}, defaultDatabaseConfig, appConfig.database || {});
+      appConfig.database.sqlite = Object.assign({}, defaultDatabaseConfig.sqlite, appConfig.database.sqlite || {});
+      appConfig.database.mysql = Object.assign({}, defaultDatabaseConfig.mysql, appConfig.database.mysql || {});
       // Ensure loginBackground exists with all defaults merged
       appConfig.loginBackground = Object.assign({}, defaultLoginBackground, appConfig.loginBackground || {});
       // Ensure appBackground exists with all defaults merged

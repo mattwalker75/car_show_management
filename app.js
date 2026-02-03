@@ -7,6 +7,8 @@ const fs = require('fs');
 const cookieSession = require('cookie-session');
 const morgan = require('morgan');
 const { Server: SocketIOServer } = require('socket.io');
+const Filter = require('bad-words-plus');
+const profanityFilter = new Filter({ firstLetter: true });
 
 // Initialize database (creates tables on startup)
 const db = require('./db/database');
@@ -15,7 +17,7 @@ const db = require('./db/database');
 const { appConfig, saveConfig, upload } = require('./config/appConfig');
 
 const app = express();
-const port = 3001;
+const port = appConfig.port || 3001;
 
 // ── Middleware ─────────────────────────────────────────────────────────
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
@@ -67,7 +69,11 @@ const server = https.createServer(options, app);
 const io = new SocketIOServer(server);
 app.set('io', io);
 
-// Helper: broadcast presence list with active/away status
+// Rate limiting: track last message timestamp per user_id (500ms between messages)
+const chatRateLimit = new Map();
+const CHAT_RATE_LIMIT_MS = 500;
+
+// Helper: broadcast presence list with active/away/blocked status
 // 'active' = user has the chat page open, 'away' = user is in the app but on another page
 function broadcastPresence() {
   const appRoom = io.sockets.adapter.rooms.get('app');
@@ -87,7 +93,8 @@ function broadcastPresence() {
         name: s.appUser.name,
         role: s.appUser.role,
         image_url: s.appUser.image_url,
-        status: 'away'
+        status: 'away',
+        chat_blocked: false
       });
     }
   }
@@ -102,7 +109,27 @@ function broadcastPresence() {
     }
   }
 
-  io.to('chat').emit('chat-users-update', Array.from(users.values()));
+  // Fetch blocked status from DB for all online users
+  const userIds = Array.from(users.keys());
+  if (userIds.length === 0) {
+    io.to('chat').emit('chat-users-update', []);
+    return;
+  }
+  const placeholders = userIds.map(() => '?').join(',');
+  db.allAsync(
+    `SELECT user_id, chat_blocked FROM users WHERE user_id IN (${placeholders})`,
+    userIds
+  ).then((rows) => {
+    for (const row of rows) {
+      if (users.has(row.user_id)) {
+        users.get(row.user_id).chat_blocked = row.chat_blocked === 1;
+      }
+    }
+    io.to('chat').emit('chat-users-update', Array.from(users.values()));
+  }).catch((err) => {
+    console.error('broadcastPresence DB error:', err.message);
+    io.to('chat').emit('chat-users-update', Array.from(users.values()));
+  });
 }
 
 io.on('connection', (socket) => {
@@ -143,31 +170,121 @@ io.on('connection', (socket) => {
   // Chat: send a message
   socket.on('chat-send', (data) => {
     if (!socket.chatUser || !data || !data.message) return;
-    const message = String(data.message).trim().slice(0, 500);
-    if (!message) return;
 
-    db.runAsync(
-      'INSERT INTO chat_messages (user_id, message) VALUES (?, ?)',
-      [socket.chatUser.user_id, message]
-    ).then((result) => {
-      io.to('chat').emit('chat-message', {
-        message_id: result.lastID,
-        user_id: socket.chatUser.user_id,
-        name: socket.chatUser.name,
-        role: socket.chatUser.role,
-        image_url: socket.chatUser.image_url,
-        message: message,
-        created_at: new Date().toISOString()
+    // Rate limit: 1 message per second per user
+    // Messages sent faster than this are silently dropped (not queued/delayed).
+    // This is server-side only - no client feedback. If a user spams, extra
+    // messages simply won't appear. Consider adding client-side throttling
+    // with UI feedback if this causes confusion.
+    const userId = socket.chatUser.user_id;
+    const now = Date.now();
+    const lastSent = chatRateLimit.get(userId) || 0;
+    if (now - lastSent < CHAT_RATE_LIMIT_MS) {
+      return;
+    }
+    chatRateLimit.set(userId, now);
+
+    // Check if user is blocked before allowing message
+    db.getAsync(
+      'SELECT chat_blocked FROM users WHERE user_id = ?',
+      [socket.chatUser.user_id]
+    ).then((row) => {
+      if (!row || row.chat_blocked === 1) {
+        socket.emit('chat-blocked'); // Re-notify in case client state is stale
+        return;
+      }
+
+      const rawMessage = String(data.message).trim().slice(0, 250);
+      if (!rawMessage) return;
+      const message = profanityFilter.clean(rawMessage);
+
+      return db.runAsync(
+        'INSERT INTO chat_messages (user_id, message) VALUES (?, ?)',
+        [socket.chatUser.user_id, message]
+      ).then((result) => {
+        io.to('chat').emit('chat-message', {
+          message_id: result.lastID,
+          user_id: socket.chatUser.user_id,
+          name: socket.chatUser.name,
+          role: socket.chatUser.role,
+          image_url: socket.chatUser.image_url,
+          message: message,
+          created_at: new Date().toISOString()
+        });
+
+        // Cleanup: delete oldest messages if over the configured limit
+        const limit = appConfig.chatMessageLimit || 200;
+        return db.runAsync(
+          `DELETE FROM chat_messages WHERE message_id NOT IN (
+            SELECT message_id FROM chat_messages ORDER BY message_id DESC LIMIT ?
+          )`,
+          [limit]
+        );
       });
     }).catch((err) => {
-      console.error('Chat message insert error:', err.message);
+      console.error('Chat message error:', err.message);
     });
+  });
+
+  // Chat: admin blocks a user from posting (read-only mode)
+  socket.on('chat-block', (data) => {
+    if (!socket.chatUser || socket.chatUser.role !== 'admin') return;
+    if (!data || !data.user_id) return;
+    const targetUserId = parseInt(data.user_id, 10);
+    if (isNaN(targetUserId)) return;
+
+    db.getAsync('SELECT role FROM users WHERE user_id = ?', [targetUserId])
+      .then((row) => {
+        if (!row || row.role === 'admin') return;
+        return db.runAsync('UPDATE users SET chat_blocked = 1 WHERE user_id = ?', [targetUserId])
+          .then(() => {
+            // Notify the blocked user's socket(s) directly
+            const chatRoom = io.sockets.adapter.rooms.get('chat');
+            if (chatRoom) {
+              for (const sid of chatRoom) {
+                const s = io.sockets.sockets.get(sid);
+                if (s && s.chatUser && s.chatUser.user_id === targetUserId) {
+                  s.emit('chat-blocked');
+                }
+              }
+            }
+            broadcastPresence();
+          });
+      })
+      .catch((err) => { console.error('chat-block error:', err.message); });
+  });
+
+  // Chat: admin unblocks a user
+  socket.on('chat-unblock', (data) => {
+    if (!socket.chatUser || socket.chatUser.role !== 'admin') return;
+    if (!data || !data.user_id) return;
+    const targetUserId = parseInt(data.user_id, 10);
+    if (isNaN(targetUserId)) return;
+
+    db.runAsync('UPDATE users SET chat_blocked = 0 WHERE user_id = ?', [targetUserId])
+      .then(() => {
+        const chatRoom = io.sockets.adapter.rooms.get('chat');
+        if (chatRoom) {
+          for (const sid of chatRoom) {
+            const s = io.sockets.sockets.get(sid);
+            if (s && s.chatUser && s.chatUser.user_id === targetUserId) {
+              s.emit('chat-unblocked');
+            }
+          }
+        }
+        broadcastPresence();
+      })
+      .catch((err) => { console.error('chat-unblock error:', err.message); });
   });
 
   // Handle disconnect — delay to handle page refreshes
   socket.on('disconnect', () => {
     if (socket.appUser || socket.chatUser) {
       setTimeout(() => { broadcastPresence(); }, 500);
+    }
+    // Clean up rate limit tracking for this user
+    if (socket.chatUser) {
+      chatRateLimit.delete(socket.chatUser.user_id);
     }
   });
 });
