@@ -30,9 +30,12 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.static('public'));
 app.use('/images', express.static('images'));
 
+// Session keys from config.json - CHANGE THESE IN PRODUCTION!
+// Use long, random strings (32+ characters) for security.
+const sessionKeys = appConfig.sessionKeys || ['fallback-key-change-me', 'fallback-backup-key'];
 app.use(cookieSession({
   name: 'session',
-  keys: ['car-show-secret-key-2024', 'backup-secret-key'],
+  keys: sessionKeys,
   maxAge: 24 * 60 * 60 * 1000 // 24 hours
 }));
 

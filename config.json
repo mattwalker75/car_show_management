@@ -1,5 +1,6 @@
 {
   "port": 3001,
+  "sessionKeys": ["change-this-to-a-random-secret-key", "change-this-backup-key-too"],
   "database": {
     "_comment": "Set 'engine' to 'sqlite' or 'mysql'. SQLite requires no setup. For MySQL: run setup_mysql_db.sql first, then update credentials below.",
     "engine": "sqlite",

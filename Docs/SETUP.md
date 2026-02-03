@@ -43,6 +43,23 @@ All application settings are stored in `config.json` in the project root.
 
 Change the port number to run the application on a different port.
 
+### Session Keys (Security)
+
+**Important**: Change the default session keys before deploying to production!
+
+```json
+{
+  "sessionKeys": ["your-random-secret-key-here", "your-backup-key-here"]
+}
+```
+
+Generate secure random keys (32+ characters recommended):
+```bash
+openssl rand -base64 32
+```
+
+These keys sign session cookies. If someone knows your keys, they can forge valid sessions.
+
 ### Database Configuration
 
 The application supports two database engines: **SQLite** (default) and **MySQL**.

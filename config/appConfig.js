@@ -29,6 +29,7 @@ const defaultDatabaseConfig = {
 // Default configuration values
 let appConfig = {
   port: 3001,
+  sessionKeys: ['change-this-to-a-random-secret-key', 'change-this-backup-key-too'],
   database: defaultDatabaseConfig,
   appTitle: 'Car Show Manager',
   appSubtitle: 'Sign in to your account',
