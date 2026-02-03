@@ -16,9 +16,10 @@ This guide covers common issues and their solutions.
    chmod 755 /path/to/car_show_management
    ```
 
-2. **Corrupted database**: If the database file is corrupted, remove it and restart (data will be lost)
+2. **Corrupted database**: If the database file is corrupted, remove it and recreate (data will be lost). Use the filename from your `config.json` (default: `carshow.db`):
    ```bash
    rm carshow.db
+   sqlite3 carshow.db < setup_sqllite_db.sql
    node app.js
    ```
 
@@ -278,17 +279,16 @@ DEBUG=* node app.js
 
 **Warning**: This deletes all data!
 
-**SQLite**:
+**SQLite** (use the filename from your `config.json`):
 ```bash
 rm carshow.db
-node app.js  # Creates fresh database
+sqlite3 carshow.db < setup_sqllite_db.sql
+node app.js
 ```
 
 **MySQL**:
-```sql
-DROP DATABASE carshow;
-CREATE DATABASE carshow;
--- Re-run setup_mysql_db.sql
+```bash
+mysql -u root -p < setup_mysql_db.sql
 ```
 
 ### Backup Database

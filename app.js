@@ -19,6 +19,11 @@ const { appConfig, saveConfig, upload } = require('./config/appConfig');
 const app = express();
 const port = appConfig.port || 3001;
 
+// Trust proxy headers (X-Forwarded-For) for correct client IP logging when behind
+// a load balancer (e.g., AWS ALB). Safe to enable even without a proxy — Express
+// falls back to direct connection IP when X-Forwarded-For is not present.
+app.set('trust proxy', true);
+
 // ── Middleware ─────────────────────────────────────────────────────────
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(express.json({ limit: '10kb' }));

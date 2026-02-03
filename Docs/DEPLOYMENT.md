@@ -128,6 +128,9 @@ Users → Route53 (DNS) → ALB (HTTPS:443) → EC2 (HTTP:3001)
    git clone <your-repo-url> car_show_management
    cd car_show_management
    npm install
+
+   # Initialize SQLite database (if using SQLite)
+   sqlite3 carshow.db < setup_sqllite_db.sql
    ```
 
 5. **Configure for ALB** (HTTP mode):

@@ -12,8 +12,8 @@ car_show_management/
 ├── package.json           # Node.js dependencies and scripts
 ├── package-lock.json      # Dependency lock file
 ├── config.json            # Application configuration
-├── carshow.db             # SQLite database (auto-generated)
-├── setup_db.sql           # SQLite schema (reference)
+├── carshow.db             # SQLite database (created via setup_sqllite_db.sql)
+├── setup_sqllite_db.sql   # SQLite schema (required for fresh DB setup)
 ├── setup_mysql_db.sql     # MySQL schema and setup
 │
 ├── config/                # Configuration modules

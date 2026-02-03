@@ -15,14 +15,18 @@ This guide covers the initial setup and configuration of the Car Show Manager ap
    ```bash
    npm install
    ```
-3. Generate SSL certificates (see [SSL Certificates](#ssl-certificates))
-4. Start the application:
+3. Initialize the database (use the filename from `config.json`, default is `carshow.db`):
+   ```bash
+   sqlite3 carshow.db < setup_sqllite_db.sql
+   ```
+4. Generate SSL certificates (see [SSL Certificates](#ssl-certificates))
+5. Start the application:
    ```bash
    node app.js
    ```
-5. Open your browser to `https://localhost:3001`
-6. Accept the self-signed certificate warning
-7. Complete the initial admin setup via the web interface
+6. Open your browser to `https://localhost:3001`
+7. Accept the self-signed certificate warning
+8. Complete the initial admin setup via the web interface
 
 ## Configuration
 
@@ -43,9 +47,15 @@ Change the port number to run the application on a different port.
 
 The application supports two database engines: **SQLite** (default) and **MySQL**.
 
-#### SQLite (Default - No Setup Required)
+#### SQLite (Default)
 
-SQLite requires no additional setup. The database file is created automatically on first run.
+For a fresh SQLite database, you must initialize it with the schema file:
+
+```bash
+sqlite3 carshow.db < setup_sqllite_db.sql
+```
+
+The filename should match what's configured in `config.json`:
 
 ```json
 {
@@ -57,6 +67,8 @@ SQLite requires no additional setup. The database file is created automatically 
   }
 }
 ```
+
+After initialization, the application will automatically apply any schema migrations on startup (adding new columns, etc.).
 
 #### MySQL
 
