@@ -106,7 +106,7 @@ function loadConfig() {
 // Save current config to disk
 function saveConfig() {
   try {
-    fs.writeFileSync(configPath, JSON.stringify(appConfig, null, 2), 'utf8');
+    fs.writeFileSync(configPath, JSON.stringify(appConfig, null, 4), 'utf8');
   } catch (err) {
     console.error('Error saving config:', err.message);
   }
