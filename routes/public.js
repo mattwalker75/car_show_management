@@ -119,7 +119,7 @@ module.exports = function (db, appConfig, upload, port) {
   // ============================================================
   // Create Admin Account - POST /create-admin
   // ============================================================
-  router.post('/create-admin', (req, res) => {
+  router.post('/create-admin', async (req, res) => {
     const { username, name, email, password, confirm_password } = req.body;
 
     // Check if passwords match
@@ -170,7 +170,7 @@ module.exports = function (db, appConfig, upload, port) {
       return;
     }
 
-    const hashedPassword = hashPassword(password);
+    const hashedPassword = await hashPassword(password);
 
     db.run('INSERT INTO users (username, name, email, password_hash, role, chat_enabled) VALUES (?, ?, ?, ?, ?, 1)',
       [username, name, email, hashedPassword, 'admin'],
@@ -474,7 +474,7 @@ module.exports = function (db, appConfig, upload, port) {
   // ============================================================
   // Admin Account Recovery - POST /admin/recover
   // ============================================================
-  router.post('/admin/recover', (req, res) => {
+  router.post('/admin/recover', async (req, res) => {
     const { token, username, name, email, password, confirm_password } = req.body;
 
     // Verify token again
@@ -584,7 +584,7 @@ module.exports = function (db, appConfig, upload, port) {
       return;
     }
 
-    const hashedPassword = hashPassword(password);
+    const hashedPassword = await hashPassword(password);
 
     // Insert new admin user
     db.run('INSERT INTO users (username, name, email, password_hash, role, chat_enabled) VALUES (?, ?, ?, ?, ?, 1)',
@@ -824,7 +824,7 @@ module.exports = function (db, appConfig, upload, port) {
       </html>
     `;
 
-    db.get('SELECT * FROM users WHERE username = ? AND is_active = 1', [username], (err, user) => {
+    db.get('SELECT * FROM users WHERE username = ? AND is_active = 1', [username], async (err, user) => {
       if (err) {
         res.send(renderLoginError('Login error. Please try again.'));
         return;
@@ -835,7 +835,7 @@ module.exports = function (db, appConfig, upload, port) {
         return;
       }
 
-      if (verifyPassword(password, user.password_hash)) {
+      if (await verifyPassword(password, user.password_hash)) {
         // Successful login
         req.session = { user: user };
         // Determine redirect based on role
@@ -1085,7 +1085,7 @@ module.exports = function (db, appConfig, upload, port) {
   // ============================================================
   // Registration Handler - POST /register
   // ============================================================
-  router.post('/register', (req, res) => {
+  router.post('/register', async (req, res) => {
     const { username, name, email, phone, password, confirm_password } = req.body;
 
     const renderRegisterError = (message, formData = {}) => `
@@ -1146,7 +1146,7 @@ module.exports = function (db, appConfig, upload, port) {
       return;
     }
 
-    const hashedPassword = hashPassword(password);
+    const hashedPassword = await hashPassword(password);
 
     db.run('INSERT INTO users (username, name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, ?, ?)',
       [username, name, email, phone, hashedPassword, 'user'],

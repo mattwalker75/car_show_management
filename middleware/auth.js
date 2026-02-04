@@ -50,13 +50,15 @@ function requireVendor(req, res, next) {
 }
 
 // Hash a plaintext password using bcrypt (salt rounds = 10)
-function hashPassword(password) {
-  return bcrypt.hashSync(password, 10);
+// Returns a Promise - use with async/await
+async function hashPassword(password) {
+  return bcrypt.hash(password, 10);
 }
 
 // Compare a plaintext password against a bcrypt hash
-function verifyPassword(password, hash) {
-  return bcrypt.compareSync(password, hash);
+// Returns a Promise - use with async/await
+async function verifyPassword(password, hash) {
+  return bcrypt.compare(password, hash);
 }
 
 // Check if the users table is empty (first-run setup detection)

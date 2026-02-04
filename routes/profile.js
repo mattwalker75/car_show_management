@@ -294,12 +294,12 @@ module.exports = function (db, appConfig, upload) {
       const user = req.session.user;
       const { current_password, new_password, confirm_password } = req.body;
 
-      db.get('SELECT password_hash FROM users WHERE user_id = ?', [user.user_id], (err, row) => {
+      db.get('SELECT password_hash FROM users WHERE user_id = ?', [user.user_id], async (err, row) => {
         if (err || !row) {
           return res.send(errorPage('Error retrieving user data.', `/${role}/profile`, 'Try Again'));
         }
 
-        if (!verifyPassword(current_password, row.password_hash)) {
+        if (!await verifyPassword(current_password, row.password_hash)) {
           return res.send(errorPage('Current password is incorrect.', `/${role}/profile`, 'Try Again'));
         }
 
@@ -307,7 +307,7 @@ module.exports = function (db, appConfig, upload) {
           return res.send(errorPage('New passwords do not match.', `/${role}/profile`, 'Try Again'));
         }
 
-        const hashedPassword = hashPassword(new_password);
+        const hashedPassword = await hashPassword(new_password);
         db.run('UPDATE users SET password_hash = ? WHERE user_id = ?', [hashedPassword, user.user_id], function (err) {
           if (err) {
             console.error('Error updating password:', err.message);

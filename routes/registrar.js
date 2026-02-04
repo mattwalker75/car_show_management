@@ -309,12 +309,12 @@ module.exports = function (db, appConfig, upload) {
   });
 
   // ── Reset Password (POST handler) ─────────────────────────────────────
-  router.post('/reset-password/:id', requireRegistrar, (req, res) => {
+  router.post('/reset-password/:id', requireRegistrar, async (req, res) => {
     const userId = req.params.id;
     const { password, confirm_password } = req.body;
 
     // First verify the target user is not an admin or registrar
-    db.get('SELECT user_id as id, name, role FROM users WHERE user_id = ? AND role NOT IN (?, ?)', [userId, 'admin', 'registrar'], (err, targetUser) => {
+    db.get('SELECT user_id as id, name, role FROM users WHERE user_id = ? AND role NOT IN (?, ?)', [userId, 'admin', 'registrar'], async (err, targetUser) => {
       if (err || !targetUser) {
         res.redirect('/registrar/users');
         return;
@@ -346,7 +346,7 @@ module.exports = function (db, appConfig, upload) {
         return;
       }
 
-      const hashedPassword = hashPassword(password);
+      const hashedPassword = await hashPassword(password);
       db.run('UPDATE users SET password_hash = ? WHERE user_id = ? AND role NOT IN (?, ?)', [hashedPassword, userId, 'admin', 'registrar'], function(err) {
         if (err) {
           console.error('Error resetting password:', err.message);

@@ -349,12 +349,12 @@ module.exports = function (db, appConfig, upload) {
   // ============================================================
   // Reset Password - Process Form
   // ============================================================
-  router.post('/reset-password/:id', requireJudge, (req, res) => {
+  router.post('/reset-password/:id', requireJudge, async (req, res) => {
     const userId = req.params.id;
     const { password, confirm_password } = req.body;
 
     // First verify the target user is not an admin
-    db.get('SELECT user_id as id, name, role FROM users WHERE user_id = ? AND role != ?', [userId, 'admin'], (err, targetUser) => {
+    db.get('SELECT user_id as id, name, role FROM users WHERE user_id = ? AND role != ?', [userId, 'admin'], async (err, targetUser) => {
       if (err || !targetUser) {
         res.redirect('/judge/users');
         return;
@@ -386,7 +386,7 @@ module.exports = function (db, appConfig, upload) {
         return;
       }
 
-      const hashedPassword = hashPassword(password);
+      const hashedPassword = await hashPassword(password);
       db.run('UPDATE users SET password_hash = ? WHERE user_id = ? AND role != ?', [hashedPassword, userId, 'admin'], function(err) {
         if (err) {
           console.error('Error resetting password:', err.message);

@@ -34,17 +34,28 @@ function pageShell({ title, extraHead, body }) {
  * @param {Object} options
  * @param {string} options.title - Page <title>
  * @param {string} options.heading - Dashboard heading text (e.g. "Admin Dashboard")
- * @param {string} options.role - User role: 'admin', 'judge', 'registrar', 'user'
+ * @param {string} options.role - User role: 'admin', 'judge', 'registrar', 'user', 'vendor'
  * @param {Object} options.user - User session object
  * @param {string} options.activeTab - Active nav tab identifier
  * @param {string} options.content - Main content HTML
+ * @param {Object} [options.appConfig] - App config for background styles
+ * @param {Object} [options.req] - Express request for body tag data attributes
+ * @param {boolean} [options.chatEnabled] - Whether to show chat link in nav
  * @param {string} [options.extraHead] - Additional <head> content
  * @param {string} [options.extraScripts] - Scripts to add before </body>
  * @returns {string} Complete dashboard page HTML
  */
-function dashboardPage({ title, heading, role, user, activeTab, content, extraHead, extraScripts }) {
+function dashboardPage({ title, heading, role, user, activeTab, content, appConfig, req, chatEnabled, extraHead, extraScripts }) {
   const header = dashboardHeader(role, user, heading);
-  const nav = getNav(role, activeTab);
+  const nav = getNav(role, activeTab, chatEnabled);
+  const bgStyles = appConfig ? getAppBackgroundStyles(appConfig) : '';
+
+  // Build body tag with user data attributes if request provided
+  let bodyTag = '<body>';
+  if (req && req.session && req.session.user) {
+    const u = req.session.user;
+    bodyTag = `<body data-user-role="${u.role || ''}" data-user-id="${u.user_id || ''}" data-user-name="${u.name || ''}" data-user-image="${u.image_url || ''}">`;
+  }
 
   return `
     <!DOCTYPE html>
@@ -55,9 +66,12 @@ function dashboardPage({ title, heading, role, user, activeTab, content, extraHe
       <link rel="stylesheet" href="/css/styles.css">
       <link rel="stylesheet" href="/css/admin.css">
       <script src="/js/configSubnav.js"></script>
+      <script src="/socket.io/socket.io.js"></script>
+      <script src="/js/notifications.js"></script>
+      ${bgStyles}
       ${extraHead || ''}
     </head>
-    <body>
+    ${bodyTag}
       <div class="container dashboard-container">
         ${header}
         ${nav}
