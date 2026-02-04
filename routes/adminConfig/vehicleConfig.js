@@ -44,7 +44,7 @@ module.exports = function (db, appConfig, upload) {
                   <td><span class="status-badge ${v.is_active ? 'active' : 'inactive'}">${v.is_active ? 'Active' : 'Inactive'}</span></td>
                   <td>
                     <a href="/admin/edit-vehicle-type/${v.vehicle_id}" class="action-btn edit">Edit</a>
-                    ${!hasClasses ? `<a href="#" onclick="confirmDeleteVehicleType(${v.vehicle_id}, '${v.vehicle_name.replace(/'/g, "\\'")}'); return false;" class="action-btn" style="background:#e74c3c;">Delete</a>` : ''}
+                    ${!hasClasses ? `<a href="#" onclick="confirmDeleteVehicleType(${v.vehicle_id}, '${v.vehicle_name.replace(/'/g, "\\'")}'); return false;" class="action-btn" style="background:var(--btn-delete-bg);">Delete</a>` : ''}
                   </td>
                 </tr>
               `;
@@ -59,7 +59,7 @@ module.exports = function (db, appConfig, upload) {
                   <td><span class="status-badge ${c.is_active ? 'active' : 'inactive'}">${c.is_active ? 'Active' : 'Inactive'}</span></td>
                   <td>
                     <a href="/admin/edit-class/${c.class_id}" class="action-btn edit">Edit</a>
-                    ${!hasCars ? `<a href="#" onclick="confirmDeleteClass(${c.class_id}, '${c.class_name.replace(/'/g, "\\'")}'); return false;" class="action-btn" style="background:#e74c3c;">Delete</a>` : ''}
+                    ${!hasCars ? `<a href="#" onclick="confirmDeleteClass(${c.class_id}, '${c.class_name.replace(/'/g, "\\'")}'); return false;" class="action-btn" style="background:var(--btn-delete-bg);">Delete</a>` : ''}
                   </td>
                 </tr>
               `;
@@ -85,7 +85,7 @@ module.exports = function (db, appConfig, upload) {
                   ${getAdminNav('config', chatEnabled)}
 
                   <h3 class="section-title">Vehicle Types</h3>
-                  <p style="color:#666;margin-bottom:15px;">Define types like Car, Truck, Motorcycle, etc.</p>
+                  <p style="color:var(--text-secondary);margin-bottom:15px;">Define types like Car, Truck, Motorcycle, etc.</p>
 
                   <form method="POST" action="/admin/add-vehicle-type" style="margin-bottom:20px;">
                     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
@@ -101,7 +101,7 @@ module.exports = function (db, appConfig, upload) {
                     </div>
                   </form>
 
-                  <div class="table-wrapper">
+                  <div class="table-wrapper config-table">
                     <table class="user-table">
                       <thead>
                         <tr>
@@ -112,7 +112,7 @@ module.exports = function (db, appConfig, upload) {
                         </tr>
                       </thead>
                       <tbody>
-                        ${vehicleRows || '<tr><td colspan="4" style="text-align:center;color:#666;">No vehicle types defined yet.</td></tr>'}
+                        ${vehicleRows || '<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);">No vehicle types defined yet.</td></tr>'}
                       </tbody>
                     </table>
                   </div>
@@ -120,7 +120,7 @@ module.exports = function (db, appConfig, upload) {
                   <hr style="margin:30px 0;border:none;border-top:1px solid #ddd;">
 
                   <h3 class="section-title">Vehicle Classes</h3>
-                  <p style="color:#666;margin-bottom:15px;">Define classes like Street Rod, Muscle Car, Custom, etc.</p>
+                  <p style="color:var(--text-secondary);margin-bottom:15px;">Define classes like Street Rod, Muscle Car, Custom, etc.</p>
 
                   <form method="POST" action="/admin/add-class" style="margin-bottom:20px;">
                     <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -133,7 +133,7 @@ module.exports = function (db, appConfig, upload) {
                     </div>
                   </form>
 
-                  <div class="table-wrapper">
+                  <div class="table-wrapper config-table">
                     <table class="user-table">
                       <thead>
                         <tr>
@@ -144,7 +144,7 @@ module.exports = function (db, appConfig, upload) {
                         </tr>
                       </thead>
                       <tbody>
-                        ${classRows || '<tr><td colspan="4" style="text-align:center;color:#666;">No classes defined yet.</td></tr>'}
+                        ${classRows || '<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);">No classes defined yet.</td></tr>'}
                       </tbody>
                     </table>
                   </div>
@@ -227,7 +227,7 @@ module.exports = function (db, appConfig, upload) {
             ${getAdminNav('config', chatEnabled)}
 
             <h3 class="section-title">Vehicle Types</h3>
-            <p style="color:#666;margin-bottom:15px;">Define types like Car, Truck, Motorcycle, etc.</p>
+            <p style="color:var(--text-secondary);margin-bottom:15px;">Define types like Car, Truck, Motorcycle, etc.</p>
 
             <form method="POST" action="/admin/add-vehicle-type" style="margin-bottom:20px;">
               <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -236,7 +236,7 @@ module.exports = function (db, appConfig, upload) {
               </div>
             </form>
 
-            <div class="table-wrapper">
+            <div class="table-wrapper config-table">
               <table class="user-table">
                 <thead>
                   <tr>
@@ -246,7 +246,7 @@ module.exports = function (db, appConfig, upload) {
                   </tr>
                 </thead>
                 <tbody>
-                  ${rows || '<tr><td colspan="3" style="text-align:center;color:#666;">No vehicle types defined yet.</td></tr>'}
+                  ${rows || '<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);">No vehicle types defined yet.</td></tr>'}
                 </tbody>
               </table>
             </div>

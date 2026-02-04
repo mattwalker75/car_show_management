@@ -12,7 +12,7 @@ module.exports = function (db, appConfig, upload) {
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
   const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
   const appBgStyles = () => getAppBackgroundStyles(appConfig);
-  const bodyTag = (req) => { const u = req.session && req.session.user; return `<body data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
+  const bodyTag = (req) => { const u = req.session && req.session.user; const theme = appConfig.theme || 'light'; return `<body data-theme="${theme}" data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
 
   router.get('/', requireAuth, (req, res) => {
     const user = req.session.user;
@@ -55,7 +55,7 @@ module.exports = function (db, appConfig, upload) {
             <a href="/user/edit-vehicle/${car.car_id}" class="action-btn edit">Edit</a>
           </div>
         </div>
-      `).join('') : '<p style="color: #666; text-align: center; padding: 20px;">You haven\'t registered any vehicles yet.</p>';
+      `).join('') : '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">You haven\'t registered any vehicles yet.</p>';
 
       res.send(`
         <!DOCTYPE html>
@@ -68,11 +68,11 @@ module.exports = function (db, appConfig, upload) {
         ${appBgStyles()}
           <style>
             .vehicle-card {
-              background: #f8f9fa;
+              background: var(--card-bg);
               border-radius: 12px;
               padding: 12px;
               margin-bottom: 12px;
-              border: 1px solid #e1e1e1;
+              border: 1px solid var(--card-border);
               display: flex;
               flex-direction: row;
               gap: 12px;
@@ -83,7 +83,7 @@ module.exports = function (db, appConfig, upload) {
               height: 75px;
               border-radius: 8px;
               overflow: hidden;
-              background: #e1e1e1;
+              background: var(--card-border);
               flex-shrink: 0;
               cursor: pointer;
             }
@@ -108,7 +108,7 @@ module.exports = function (db, appConfig, upload) {
             .vehicle-title {
               font-size: 16px;
               font-weight: 700;
-              color: #1a1a2e;
+              color: var(--text-primary);
               margin-bottom: 6px;
             }
             .vehicle-class {
@@ -118,7 +118,7 @@ module.exports = function (db, appConfig, upload) {
               gap: 4px;
             }
             .type-badge {
-              background: #3498db;
+              background: var(--btn-edit-bg);
               color: white;
               padding: 3px 8px;
               border-radius: 20px;
@@ -149,7 +149,7 @@ module.exports = function (db, appConfig, upload) {
             }
             .vehicle-description {
               font-size: 12px;
-              color: #666;
+              color: var(--text-secondary);
               line-height: 1.3;
               display: -webkit-box;
               -webkit-line-clamp: 2;
@@ -392,46 +392,46 @@ module.exports = function (db, appConfig, upload) {
               .file-input-label {
                 display: block;
                 padding: 14px 16px;
-                background: #f8f9fa;
-                border: 2px dashed #e1e1e1;
+                background: var(--card-bg);
+                border: 2px dashed var(--card-border);
                 border-radius: 12px;
                 text-align: center;
-                color: #666;
+                color: var(--text-secondary);
                 font-size: 14px;
                 cursor: pointer;
                 transition: all 0.2s ease;
               }
               .file-input-wrapper:hover .file-input-label {
-                border-color: #e94560;
-                background: #fff5f7;
+                border-color: var(--accent-primary);
+                background: var(--error-bg);
               }
               .file-input-wrapper.has-file .file-input-label {
-                border-color: #27ae60;
+                border-color: var(--success-color);
                 background: rgba(39, 174, 96, 0.1);
-                color: #27ae60;
+                color: var(--success-color);
               }
               .file-name {
                 margin-top: 8px;
                 font-size: 13px;
-                color: #27ae60;
+                color: var(--success-color);
                 text-align: center;
                 font-weight: 600;
               }
               textarea {
                 width: 100%;
                 padding: 16px;
-                border: 2px solid #e1e1e1;
+                border: 2px solid var(--card-border);
                 border-radius: 12px;
                 font-size: 16px;
                 font-family: inherit;
                 resize: vertical;
                 min-height: 100px;
-                background: #f8f9fa;
+                background: var(--card-bg);
               }
               textarea:focus {
-                border-color: #e94560;
+                border-color: var(--accent-primary);
                 outline: none;
-                background: #fff;
+                background: var(--modal-content-bg);
                 box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.1);
               }
             </style>
@@ -465,8 +465,8 @@ module.exports = function (db, appConfig, upload) {
                   <div class="form-group" style="text-align:center;">
                     <label>Vehicle Photo (Optional)</label>
                     <div class="current-image-placeholder" id="vehiclePhotoDisplay" style="margin:10px auto;">🚗</div>
-                    <button type="button" id="vehiclePhotoBtn" style="background:#3498db;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;">Update Photo</button>
-                    <div style="margin-top:6px;color:#999;font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
+                    <button type="button" id="vehiclePhotoBtn" style="background:var(--btn-edit-bg);color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;">Update Photo</button>
+                    <div style="margin-top:6px;color:var(--text-muted);font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
                     <input type="file" name="vehicle_photo" id="vehiclePhotoInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
                   </div>
                   <div class="form-group">
@@ -502,12 +502,12 @@ module.exports = function (db, appConfig, upload) {
                 </div>
               </form>
               <div id="vehiclePhotoModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
-                <div style="background:white;border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
-                  <h4 style="margin:0 0 16px;color:#2c3e50;">Preview Vehicle Photo</h4>
-                  <img id="vehiclePhotoPreview" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid #e1e1e1;">
+                <div style="background:var(--modal-content-bg);border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
+                  <h4 style="margin:0 0 16px;color:var(--heading-alt);">Preview Vehicle Photo</h4>
+                  <img id="vehiclePhotoPreview" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid var(--card-border);">
                   <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
-                    <button type="button" id="vehiclePhotoSave" style="padding:10px 28px;background:#27ae60;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
-                    <button type="button" id="vehiclePhotoCancel" style="padding:10px 28px;background:#95a5a6;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
+                    <button type="button" id="vehiclePhotoSave" style="padding:10px 28px;background:var(--success-color);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
+                    <button type="button" id="vehiclePhotoCancel" style="padding:10px 28px;background:var(--btn-cancel-bg);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
                   </div>
                 </div>
               </div>
@@ -574,7 +574,7 @@ module.exports = function (db, appConfig, upload) {
                   });
                   saveBtn.addEventListener('click', function() {
                     if (!input.files || !input.files[0]) return;
-                    display.innerHTML = '<img src="' + preview.src + '" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid #e1e1e1;">';
+                    display.innerHTML = '<img src="' + preview.src + '" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid var(--card-border);">';
                     modal.style.display = 'none';
                   });
                 })();
@@ -710,53 +710,53 @@ module.exports = function (db, appConfig, upload) {
                 .file-input-label {
                   display: block;
                   padding: 14px 16px;
-                  background: #f8f9fa;
-                  border: 2px dashed #e1e1e1;
+                  background: var(--card-bg);
+                  border: 2px dashed var(--card-border);
                   border-radius: 12px;
                   text-align: center;
-                  color: #666;
+                  color: var(--text-secondary);
                   font-size: 14px;
                   cursor: pointer;
                   transition: all 0.2s ease;
                 }
                 .file-input-wrapper:hover .file-input-label {
-                  border-color: #e94560;
-                  background: #fff5f7;
+                  border-color: var(--accent-primary);
+                  background: var(--error-bg);
                 }
                 .file-input-wrapper.has-file .file-input-label {
-                  border-color: #27ae60;
+                  border-color: var(--success-color);
                   background: rgba(39, 174, 96, 0.1);
-                  color: #27ae60;
+                  color: var(--success-color);
                 }
                 .file-name {
                   margin-top: 8px;
                   font-size: 13px;
-                  color: #27ae60;
+                  color: var(--success-color);
                   text-align: center;
                   font-weight: 600;
                 }
                 textarea {
                   width: 100%;
                   padding: 16px;
-                  border: 2px solid #e1e1e1;
+                  border: 2px solid var(--card-border);
                   border-radius: 12px;
                   font-size: 16px;
                   font-family: inherit;
                   resize: vertical;
                   min-height: 100px;
-                  background: #f8f9fa;
+                  background: var(--card-bg);
                 }
                 textarea:focus {
-                  border-color: #e94560;
+                  border-color: var(--accent-primary);
                   outline: none;
-                  background: #fff;
+                  background: var(--modal-content-bg);
                   box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.1);
                 }
                 .delete-btn {
                   display: block;
                   width: 100%;
                   padding: 16px;
-                  background: #e74c3c;
+                  background: var(--btn-delete-bg);
                   color: white;
                   text-align: center;
                   text-decoration: none;
@@ -800,12 +800,12 @@ module.exports = function (db, appConfig, upload) {
                       <label>Vehicle Photo</label>
                       <div id="vehiclePhotoDisplay" style="margin:10px auto;">
                         ${car.image_url
-                          ? `<img src="${car.image_url}" alt="${car.make} ${car.model}" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid #e1e1e1;">`
+                          ? `<img src="${car.image_url}" alt="${car.make} ${car.model}" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid var(--card-border);">`
                           : `<div class="current-image-placeholder">🚗</div>`
                         }
                       </div>
-                      <button type="button" id="vehiclePhotoBtn" style="background:#3498db;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;">Update Photo</button>
-                      <div style="margin-top:6px;color:#999;font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
+                      <button type="button" id="vehiclePhotoBtn" style="background:var(--btn-edit-bg);color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;">Update Photo</button>
+                      <div style="margin-top:6px;color:var(--text-muted);font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
                       <input type="file" name="vehicle_photo" id="vehiclePhotoInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
                     </div>
                     <div class="form-group">
@@ -842,12 +842,12 @@ module.exports = function (db, appConfig, upload) {
                   </div>
                 </form>
                 <div id="vehiclePhotoModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
-                  <div style="background:white;border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
-                    <h4 style="margin:0 0 16px;color:#2c3e50;">Preview Vehicle Photo</h4>
-                    <img id="vehiclePhotoPreview" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid #e1e1e1;">
+                  <div style="background:var(--modal-content-bg);border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
+                    <h4 style="margin:0 0 16px;color:var(--heading-alt);">Preview Vehicle Photo</h4>
+                    <img id="vehiclePhotoPreview" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid var(--card-border);">
                     <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
-                      <button type="button" id="vehiclePhotoSave" style="padding:10px 28px;background:#27ae60;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
-                      <button type="button" id="vehiclePhotoCancel" style="padding:10px 28px;background:#95a5a6;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
+                      <button type="button" id="vehiclePhotoSave" style="padding:10px 28px;background:var(--success-color);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
+                      <button type="button" id="vehiclePhotoCancel" style="padding:10px 28px;background:var(--btn-cancel-bg);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
                     </div>
                   </div>
                 </div>
@@ -919,7 +919,7 @@ module.exports = function (db, appConfig, upload) {
                     });
                     saveBtn.addEventListener('click', function() {
                       if (!input.files || !input.files[0]) return;
-                      display.innerHTML = '<img src="' + preview.src + '" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid #e1e1e1;">';
+                      display.innerHTML = '<img src="' + preview.src + '" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid var(--card-border);">';
                       modal.style.display = 'none';
                     });
                   })();
@@ -1036,7 +1036,7 @@ module.exports = function (db, appConfig, upload) {
             <div class="vehicle-browse-owner">Owner: @${car.owner_username || 'N/A'}</div>
           </div>
         </a>
-      `).join('') : '<p style="color: #666; text-align: center; padding: 20px;">No registered vehicles yet.</p>';
+      `).join('') : '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No registered vehicles yet.</p>';
 
       res.send(`
         <!DOCTYPE html>
@@ -1049,11 +1049,11 @@ module.exports = function (db, appConfig, upload) {
         ${appBgStyles()}
           <style>
             .vehicle-browse-card {
-              background: #f8f9fa;
+              background: var(--card-bg);
               border-radius: 12px;
               padding: 12px;
               margin-bottom: 12px;
-              border: 1px solid #e1e1e1;
+              border: 1px solid var(--card-border);
               display: flex;
               flex-direction: row;
               gap: 12px;
@@ -1063,14 +1063,14 @@ module.exports = function (db, appConfig, upload) {
               transition: all 0.2s ease;
             }
             .vehicle-browse-card:active {
-              background: #eef;
+              background: var(--card-bg);
             }
             .vehicle-browse-image {
               width: 100px;
               height: 75px;
               border-radius: 8px;
               overflow: hidden;
-              background: #e1e1e1;
+              background: var(--card-border);
               flex-shrink: 0;
               cursor: pointer;
             }
@@ -1095,11 +1095,11 @@ module.exports = function (db, appConfig, upload) {
             .vehicle-browse-title {
               font-size: 16px;
               font-weight: 700;
-              color: #1a1a2e;
+              color: var(--text-primary);
             }
             .vehicle-browse-owner {
               font-size: 13px;
-              color: #888;
+              color: var(--text-muted);
               margin-top: 4px;
             }
             /* Fullscreen image modal */
@@ -1149,8 +1149,8 @@ module.exports = function (db, appConfig, upload) {
                 padding: 16px;
               }
               .vehicle-browse-card:hover {
-                border-color: #e94560;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+                border-color: var(--accent-primary);
+                box-shadow: 0 2px 10px var(--container-shadow);
               }
               .vehicle-browse-image {
                 width: 200px;
@@ -1245,7 +1245,7 @@ module.exports = function (db, appConfig, upload) {
               height: 250px;
               border-radius: 12px;
               overflow: hidden;
-              background: #e1e1e1;
+              background: var(--card-border);
               margin-bottom: 20px;
               cursor: pointer;
             }
@@ -1267,42 +1267,42 @@ module.exports = function (db, appConfig, upload) {
               margin-bottom: 20px;
             }
             .detail-card {
-              background: white;
+              background: var(--modal-content-bg);
               border-radius: 12px;
               padding: 20px;
-              box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+              box-shadow: 0 2px 10px var(--container-shadow);
               margin-bottom: 20px;
             }
             .detail-row {
               display: flex;
               justify-content: space-between;
               padding: 10px 0;
-              border-bottom: 1px solid #f0f0f0;
+              border-bottom: 1px solid var(--divider-color);
             }
             .detail-row:last-child {
               border-bottom: none;
             }
             .detail-label {
               font-weight: 600;
-              color: #555;
+              color: var(--text-secondary);
             }
             .detail-value {
-              color: #333;
+              color: var(--text-dark);
               text-align: right;
               max-width: 60%;
             }
             .description-section {
-              background: #f8f9fa;
+              background: var(--card-bg);
               padding: 16px;
               border-radius: 12px;
               margin-bottom: 20px;
             }
             .description-section h4 {
-              color: #1a1a2e;
+              color: var(--text-primary);
               margin-bottom: 8px;
             }
             .description-section p {
-              color: #666;
+              color: var(--text-secondary);
               font-size: 14px;
               line-height: 1.5;
             }
@@ -1480,7 +1480,7 @@ module.exports = function (db, appConfig, upload) {
         `).join('') : '';
 
         const completedList = alreadyVoted.length > 0 ? alreadyVoted.map(v => `
-          <div style="background:#d4edda;color:#155724;padding:10px;border-radius:8px;margin-bottom:8px;">
+          <div style="background:var(--status-active-bg);color:var(--success-dark-text);padding:10px;border-radius:8px;margin-bottom:8px;">
             <strong>${v.vote_name}</strong> - You have already voted
           </div>
         `).join('') : '';
@@ -1496,11 +1496,11 @@ module.exports = function (db, appConfig, upload) {
         ${appBgStyles()}
             <style>
               .vote-select-card {
-                background: #f8f9fa;
+                background: var(--card-bg);
                 border-radius: 12px;
                 padding: 20px;
                 margin-bottom: 20px;
-                border: 1px solid #e1e1e1;
+                border: 1px solid var(--card-border);
               }
               .vote-btn {
                 display: block;
@@ -1518,13 +1518,13 @@ module.exports = function (db, appConfig, upload) {
                 margin-top: 15px;
               }
               .vote-btn:disabled {
-                background: #ccc;
+                background: var(--card-border);
                 cursor: not-allowed;
               }
               .no-votes-message {
                 text-align: center;
                 padding: 40px 20px;
-                color: #666;
+                color: var(--text-secondary);
               }
               .no-votes-message .icon {
                 font-size: 48px;
@@ -1676,7 +1676,7 @@ module.exports = function (db, appConfig, upload) {
                 </div>
               </div>
             </label>
-          `).join('') : '<p style="text-align:center;color:#666;padding:20px;">No vehicles are currently registered.</p>';
+          `).join('') : '<p style="text-align:center;color:var(--text-secondary);padding:20px;">No vehicles are currently registered.</p>';
 
           res.send(`
             <!DOCTYPE html>
@@ -1702,26 +1702,26 @@ module.exports = function (db, appConfig, upload) {
                 }
                 .vehicle-vote-card {
                   display: block;
-                  background: #f8f9fa;
+                  background: var(--card-bg);
                   border-radius: 12px;
                   margin-bottom: 12px;
-                  border: 2px solid #e1e1e1;
+                  border: 2px solid var(--card-border);
                   cursor: pointer;
                   transition: all 0.2s ease;
                 }
                 .vehicle-vote-card:hover {
-                  border-color: #e94560;
+                  border-color: var(--accent-primary);
                 }
                 .vehicle-vote-card input[type="radio"] {
                   display: none;
                 }
                 .vehicle-vote-card input[type="radio"]:checked + .vehicle-vote-content {
-                  border-color: #e94560;
-                  background: #fff5f7;
+                  border-color: var(--accent-primary);
+                  background: var(--error-bg);
                 }
                 .vehicle-vote-card input[type="radio"]:checked + .vehicle-vote-content .checkmark {
                   background: #e94560;
-                  border-color: #e94560;
+                  border-color: var(--accent-primary);
                 }
                 .vehicle-vote-card input[type="radio"]:checked + .vehicle-vote-content .checkmark::after {
                   display: block;
@@ -1739,7 +1739,7 @@ module.exports = function (db, appConfig, upload) {
                   height: 60px;
                   border-radius: 8px;
                   overflow: hidden;
-                  background: #e1e1e1;
+                  background: var(--card-border);
                   flex-shrink: 0;
                 }
                 .vehicle-vote-image img {
@@ -1764,7 +1764,7 @@ module.exports = function (db, appConfig, upload) {
                 .vehicle-vote-title {
                   font-weight: 700;
                   font-size: 14px;
-                  color: #1a1a2e;
+                  color: var(--text-primary);
                   margin-bottom: 4px;
                 }
                 .vehicle-vote-details {
@@ -1775,7 +1775,7 @@ module.exports = function (db, appConfig, upload) {
                 }
                 .vehicle-vote-desc {
                   font-size: 11px;
-                  color: #666;
+                  color: var(--text-secondary);
                   display: -webkit-box;
                   -webkit-line-clamp: 1;
                   -webkit-box-orient: vertical;
@@ -1783,7 +1783,7 @@ module.exports = function (db, appConfig, upload) {
                 }
                 .vehicle-vote-owner {
                   font-size: 11px;
-                  color: #888;
+                  color: var(--text-muted);
                   margin-top: 2px;
                 }
                 .vehicle-vote-check {
@@ -1793,7 +1793,7 @@ module.exports = function (db, appConfig, upload) {
                   display: block;
                   width: 24px;
                   height: 24px;
-                  border: 2px solid #ccc;
+                  border: 2px solid var(--card-border);
                   border-radius: 50%;
                   position: relative;
                 }
@@ -1810,7 +1810,7 @@ module.exports = function (db, appConfig, upload) {
                   transform: rotate(45deg);
                 }
                 .voter-badge {
-                  background: #2c3e50;
+                  background: var(--btn-dark-bg);
                   color: white;
                   padding: 2px 6px;
                   border-radius: 4px;
@@ -1819,7 +1819,7 @@ module.exports = function (db, appConfig, upload) {
                   margin-right: 6px;
                 }
                 .type-badge {
-                  background: #3498db;
+                  background: var(--btn-edit-bg);
                   color: white;
                   padding: 2px 6px;
                   border-radius: 10px;
@@ -1858,7 +1858,7 @@ module.exports = function (db, appConfig, upload) {
                   display: block;
                   text-align: center;
                   margin-top: 15px;
-                  color: #666;
+                  color: var(--text-secondary);
                 }
                 /* Fullscreen image modal */
                 .image-modal {
@@ -1922,7 +1922,7 @@ module.exports = function (db, appConfig, upload) {
                   ${vote.description ? `<p>${vote.description}</p>` : ''}
                 </div>
 
-                <p style="color:#666;margin-bottom:15px;text-align:center;">Select the vehicle you want to vote for, then click Submit Vote.</p>
+                <p style="color:var(--text-secondary);margin-bottom:15px;text-align:center;">Select the vehicle you want to vote for, then click Submit Vote.</p>
 
                 <form action="/user/vote/${specialtyVoteId}/submit" method="POST">
                   ${vehicleCards}

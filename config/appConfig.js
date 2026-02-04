@@ -38,6 +38,7 @@ let appConfig = {
   defaultRegistrationPrice: 25.00,
   defaultMinScore: 0,
   defaultMaxScore: 10,
+  theme: 'light',
   chatEnabled: true,
   chatMessageLimit: 200,
   animatedLogin: true,

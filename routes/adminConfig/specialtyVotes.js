@@ -48,15 +48,14 @@ module.exports = function (db, appConfig, upload) {
           <td style="border-bottom:none;">${sv.description || '-'}</td>
           <td style="border-bottom:none;">${sv.allow_all_users ? 'All Users' : 'Specific Users'}</td>
           <td style="border-bottom:none;">${filterLabel}</td>
-          <td style="border-bottom:none;"><span style="background:#27ae60;color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">${sv.vote_count} votes</span></td>
+          <td style="border-bottom:none;"><span style="background:var(--success-color);color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">${sv.vote_count} votes</span></td>
           <td style="border-bottom:none;"><span class="status-badge ${sv.is_active ? 'active' : 'inactive'}">${sv.is_active ? 'Active' : 'Inactive'}</span></td>
         </tr>
         <tr>
           <td colspan="6" style="border-top:none;padding-top:0;text-align:center;">
-            <a href="/admin/specialty-vote-results/${sv.specialty_vote_id}" class="action-btn" style="background:#27ae60;">Results</a>
             <a href="/admin/edit-specialty-vote/${sv.specialty_vote_id}" class="action-btn edit">Edit</a>
-            <a href="/admin/specialty-vote-voters/${sv.specialty_vote_id}" class="action-btn" style="background:#3498db;">Voters</a>
-            <a href="#" onclick="confirmDeleteSpecialtyVote(${sv.specialty_vote_id}, '${sv.vote_name.replace(/'/g, "\\'")}'); return false;" class="action-btn" style="background:#e74c3c;">Delete</a>
+            <a href="/admin/specialty-vote-voters/${sv.specialty_vote_id}" class="action-btn" style="background:var(--btn-edit-bg);">Voters</a>
+            <a href="#" onclick="confirmDeleteSpecialtyVote(${sv.specialty_vote_id}, '${sv.vote_name.replace(/'/g, "\\'")}'); return false;" class="action-btn" style="background:var(--btn-delete-bg);">Delete</a>
           </td>
         </tr>
       `}).join('');
@@ -77,7 +76,7 @@ module.exports = function (db, appConfig, upload) {
             ${getAdminNav('config', chatEnabled)}
 
             <h3 class="section-title">Special Vote Config</h3>
-            <p style="color:#666;margin-bottom:15px;">Configure special voting categories like People's Choice, Best in Show, etc.</p>
+            <p style="color:var(--text-secondary);margin-bottom:15px;">Configure special voting categories like People's Choice, Best in Show, etc.</p>
 
             <form method="POST" action="/admin/add-specialty-vote" style="margin-bottom:20px;">
               <div class="profile-card">
@@ -113,7 +112,7 @@ module.exports = function (db, appConfig, upload) {
               </div>
             </form>
 
-            <div class="table-wrapper">
+            <div class="table-wrapper config-table">
               <table class="user-table">
                 <thead>
                   <tr>
@@ -126,7 +125,7 @@ module.exports = function (db, appConfig, upload) {
                   </tr>
                 </thead>
                 <tbody>
-                  ${rows || '<tr><td colspan="6" style="text-align:center;color:#666;">No specialty votes defined yet.</td></tr>'}
+                  ${rows || '<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);">No specialty votes defined yet.</td></tr>'}
                 </tbody>
               </table>
             </div>
@@ -356,17 +355,17 @@ module.exports = function (db, appConfig, upload) {
           const isWinner = r.vote_count === maxVotes && maxVotes > 0;
           const percentage = totalVotes > 0 ? Math.round((r.vote_count / totalVotes) * 100) : 0;
           return `
-            <tr style="${isWinner ? 'background:#d4edda;' : ''}">
+            <tr style="${isWinner ? 'background:var(--status-active-bg);' : ''}">
               <td style="font-weight:700;font-size:18px;">${index + 1}</td>
               <td>
                 <div style="display:flex;align-items:center;gap:10px;">
                   ${r.image_url ? `<img src="${r.image_url}" style="width:60px;height:45px;object-fit:cover;border-radius:6px;">` : ''}
                   <div>
                     <div style="font-weight:600;">
-                      ${r.voter_id ? `<span style="background:#2c3e50;color:white;padding:2px 6px;border-radius:4px;font-size:11px;margin-right:6px;">#${r.voter_id}</span>` : ''}
+                      ${r.voter_id ? `<span style="background:var(--btn-dark-bg);color:white;padding:2px 6px;border-radius:4px;font-size:11px;margin-right:6px;">#${r.voter_id}</span>` : ''}
                       ${r.year || ''} ${r.make} ${r.model}
                     </div>
-                    <div style="font-size:12px;color:#666;">${r.owner_name || 'Unknown'}</div>
+                    <div style="font-size:12px;color:var(--text-secondary);">${r.owner_name || 'Unknown'}</div>
                   </div>
                 </div>
               </td>
@@ -374,12 +373,12 @@ module.exports = function (db, appConfig, upload) {
               <td>${r.class_name || '-'}</td>
               <td style="font-weight:700;font-size:16px;">${r.vote_count}</td>
               <td>
-                <div style="background:#e1e1e1;border-radius:10px;height:20px;overflow:hidden;">
+                <div style="background:var(--card-border);border-radius:10px;height:20px;overflow:hidden;">
                   <div style="background:${isWinner ? '#27ae60' : '#3498db'};height:100%;width:${percentage}%;"></div>
                 </div>
-                <span style="font-size:12px;color:#666;">${percentage}%</span>
+                <span style="font-size:12px;color:var(--text-secondary);">${percentage}%</span>
               </td>
-              <td>${isWinner ? '<span style="background:#27ae60;color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">WINNER</span>' : ''}</td>
+              <td>${isWinner ? '<span style="background:var(--success-color);color:white;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;">WINNER</span>' : ''}</td>
             </tr>
           `;
         }).join('');
@@ -415,25 +414,25 @@ module.exports = function (db, appConfig, upload) {
               .stat-card {
                 flex: 1;
                 min-width: 120px;
-                background: #f8f9fa;
+                background: var(--card-bg);
                 padding: 15px;
                 border-radius: 12px;
                 text-align: center;
-                border: 1px solid #e1e1e1;
+                border: 1px solid var(--card-border);
               }
               .stat-card .number {
                 font-size: 28px;
                 font-weight: 700;
-                color: #1a1a2e;
+                color: var(--text-primary);
               }
               .stat-card .label {
                 font-size: 12px;
-                color: #666;
+                color: var(--text-secondary);
                 margin-top: 5px;
               }
               .winner-card {
                 background: linear-gradient(135deg, #f39c12 0%, #f1c40f 100%);
-                color: #1a1a2e;
+                color: var(--text-primary);
                 padding: 20px;
                 border-radius: 12px;
                 margin-bottom: 20px;
@@ -480,11 +479,11 @@ module.exports = function (db, appConfig, upload) {
                     <div style="font-size:14px;">Owner: ${w.owner_name || 'Unknown'} | ${w.vote_count} votes</div>
                   `).join('<hr style="margin:10px 0;border:none;border-top:1px solid rgba(0,0,0,0.1);">')}
                 </div>
-              ` : '<p style="text-align:center;color:#666;padding:20px;">No votes have been cast yet.</p>'}
+              ` : '<p style="text-align:center;color:var(--text-secondary);padding:20px;">No votes have been cast yet.</p>'}
 
               ${results.length > 0 ? `
                 <h3 class="section-title">Full Results</h3>
-                <div class="table-wrapper">
+                <div class="table-wrapper config-table">
                   <table class="user-table">
                     <thead>
                       <tr>
@@ -539,7 +538,7 @@ module.exports = function (db, appConfig, upload) {
           const assignedIds = new Set((assignedVoters || []).map(v => v.user_id));
 
           const userCheckboxes = allUsers.map(u => `
-            <label class="voter-item" data-search="${u.name.toLowerCase()} ${u.username.toLowerCase()} ${u.user_id} ${u.role.toLowerCase()}" style="display:flex;align-items:center;gap:8px;padding:8px;background:#f8f9fa;border-radius:8px;margin-bottom:8px;cursor:pointer;">
+            <label class="voter-item" data-search="${u.name.toLowerCase()} ${u.username.toLowerCase()} ${u.user_id} ${u.role.toLowerCase()}" style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--card-bg);border-radius:8px;margin-bottom:8px;cursor:pointer;">
               <input type="checkbox" name="user_ids" value="${u.user_id}" ${assignedIds.has(u.user_id) ? 'checked' : ''} style="width:18px;height:18px;">
               <span><strong>${u.name}</strong> (${u.username}) - ${u.role}</span>
             </label>
@@ -562,28 +561,28 @@ module.exports = function (db, appConfig, upload) {
 
                 <h3 class="section-title">Voters: ${vote.vote_name}</h3>
                 ${saved ? '<div class="success-message" style="margin-bottom:15px;">Voter assignments saved successfully!</div>' : ''}
-                ${error ? '<div style="background:#f8d7da;color:#721c24;padding:12px;border-radius:8px;margin-bottom:15px;font-weight:600;">Failed to save voter assignments. Please try again.</div>' : ''}
+                ${error ? '<div style="background:var(--status-inactive-bg);color:var(--status-inactive-text);padding:12px;border-radius:8px;margin-bottom:15px;font-weight:600;">Failed to save voter assignments. Please try again.</div>' : ''}
                 ${vote.allow_all_users
                   ? `<div class="profile-card">
-                      <div style="background:#d4edda;color:#155724;padding:16px;border-radius:8px;text-align:center;">
+                      <div style="background:var(--status-active-bg);color:#155724;padding:16px;border-radius:8px;text-align:center;">
                         <strong>All Users</strong><br>
                         <span style="font-size:14px;">This vote is configured to allow all users to participate. No individual voter assignments are needed.</span>
                       </div>
                     </div>`
                   : `<form method="POST" action="/admin/update-specialty-vote-voters/${vote.specialty_vote_id}" id="voterForm">
                   <div class="profile-card">
-                    <p style="color:#666;margin-bottom:15px;">Select which users can participate in this vote.</p>
+                    <p style="color:var(--text-secondary);margin-bottom:15px;">Select which users can participate in this vote.</p>
                     <div style="display:flex;gap:10px;margin-bottom:15px;">
                       <button type="button" onclick="selectAll()" style="flex:1;">Select All</button>
-                      <button type="button" onclick="selectNone()" style="flex:1;background:#6c757d;">Select None</button>
+                      <button type="button" onclick="selectNone()" style="flex:1;background:var(--btn-secondary-bg);">Select None</button>
                     </div>
 
                     <div class="form-group" style="margin-bottom:15px;">
-                      <input type="text" id="voterSearch" placeholder="Search by name, email, or user ID..." oninput="filterVoters()" style="width:100%;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+                      <input type="text" id="voterSearch" placeholder="Search by name, email, or user ID..." oninput="filterVoters()" style="width:100%;padding:10px 14px;border:2px solid var(--card-border);border-radius:8px;font-size:14px;">
                     </div>
 
                     <div id="voterList" style="max-height:400px;overflow-y:auto;">
-                      ${userCheckboxes || '<p style="color:#666;">No users found.</p>'}
+                      ${userCheckboxes || '<p style="color:var(--text-secondary);">No users found.</p>'}
                     </div>
 
                     <button type="submit" style="margin-top:15px;">Save Voter Assignments</button>

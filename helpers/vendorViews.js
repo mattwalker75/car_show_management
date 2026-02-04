@@ -3,6 +3,7 @@
 // used across admin, judge, registrar, user, and vendor route files.
 
 const { getAppBackgroundStyles } = require('../views/layout');
+const { appConfig: appConfigRef } = require('../config/appConfig');
 
 // ── Shared constants ────────────────────────────────────────────
 const styles = '<link rel="stylesheet" href="/css/styles.css">';
@@ -14,7 +15,8 @@ const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/
  * @returns {string} Opening <body> tag with data attributes
  */
 function buildBodyTag(user) {
-  return `<body data-user-role="${user ? user.role : ''}" data-user-id="${user ? user.user_id : ''}" data-user-name="${user ? user.name : ''}" data-user-image="${user && user.image_url ? user.image_url : ''}">`;
+  const theme = appConfigRef.theme || 'light';
+  return `<body data-theme="${theme}" data-user-role="${user ? user.role : ''}" data-user-id="${user ? user.user_id : ''}" data-user-name="${user ? user.name : ''}" data-user-image="${user && user.image_url ? user.image_url : ''}">`;
 }
 
 /**
@@ -93,14 +95,14 @@ function vendorBrowseStyles() {
   return `
     <style>
       .vendor-section {
-        background: #f8f9fa;
+        background: var(--card-bg);
         border-radius: 12px;
         padding: 20px;
         margin-bottom: 16px;
-        border: 1px solid #e1e1e1;
+        border: 1px solid var(--card-border);
       }
       .vendor-section h4 {
-        color: #1a1a2e;
+        color: var(--text-primary);
         margin-bottom: 12px;
         font-size: 16px;
         display: flex;
@@ -115,21 +117,21 @@ function vendorBrowseStyles() {
       }
       .vendor-detail-label {
         font-weight: 600;
-        color: #555;
+        color: var(--text-secondary);
         min-width: 100px;
       }
       .vendor-detail-value {
-        color: #333;
+        color: var(--text-dark);
       }
       .vendor-empty {
-        color: #999;
+        color: var(--text-muted);
         font-style: italic;
         font-size: 13px;
         padding: 10px 0;
       }
       .product-card {
-        background: white;
-        border: 1px solid #e1e1e1;
+        background: var(--container-bg);
+        border: 1px solid var(--card-border);
         border-radius: 10px;
         padding: 14px;
         margin-bottom: 10px;
@@ -142,23 +144,23 @@ function vendorBrowseStyles() {
         height: 60px;
         object-fit: cover;
         border-radius: 6px;
-        border: 1px solid #e1e1e1;
+        border: 1px solid var(--card-border);
         flex-shrink: 0;
       }
       .product-info { flex: 1; }
       .product-info h5 {
         margin: 0 0 4px 0;
         font-size: 15px;
-        color: #1a1a2e;
+        color: var(--text-primary);
       }
       .product-info p {
         margin: 0;
         font-size: 13px;
-        color: #666;
+        color: var(--text-secondary);
       }
       .product-price {
         font-weight: 600;
-        color: #27ae60;
+        color: var(--success-color);
         font-size: 14px;
       }
       .product-actions {
@@ -177,23 +179,23 @@ function vendorBrowseStyles() {
         text-decoration: none;
         display: inline-block;
       }
-      .btn-edit { background: #3498db; color: white; }
-      .btn-delete { background: #e74c3c; color: white; }
-      .btn-deactivate { background: #f39c12; color: white; }
-      .btn-activate { background: #27ae60; color: white; }
-      .btn-disable { background: #e74c3c; color: white; padding: 6px 14px; font-size: 13px; border-radius: 6px; }
-      .btn-enable { background: #27ae60; color: white; padding: 6px 14px; font-size: 13px; border-radius: 6px; }
+      .btn-edit { background: var(--btn-edit-bg); color: white; }
+      .btn-delete { background: var(--btn-delete-bg); color: white; }
+      .btn-deactivate { background: var(--warning-color); color: white; }
+      .btn-activate { background: var(--success-color); color: white; }
+      .btn-disable { background: var(--btn-delete-bg); color: white; padding: 6px 14px; font-size: 13px; border-radius: 6px; }
+      .btn-enable { background: var(--success-color); color: white; padding: 6px 14px; font-size: 13px; border-radius: 6px; }
       .product-card.sold-out { opacity: 0.7; }
-      .product-card.sold-out h5 { color: #e74c3c; }
-      .product-card.deactivated { opacity: 0.5; border-color: #f39c12; }
-      .product-card.deactivated h5 { color: #f39c12; }
+      .product-card.sold-out h5 { color: var(--btn-delete-bg); }
+      .product-card.deactivated { opacity: 0.5; border-color: var(--deactivated-border); }
+      .product-card.deactivated h5 { color: var(--deactivated-border); }
       .price-sold-out { text-decoration: line-through; }
       .vendor-browse-card {
-        background: #f8f9fa;
+        background: var(--card-bg);
         border-radius: 12px;
         padding: 12px;
         margin-bottom: 12px;
-        border: 1px solid #e1e1e1;
+        border: 1px solid var(--card-border);
         display: flex;
         flex-direction: row;
         gap: 12px;
@@ -203,18 +205,18 @@ function vendorBrowseStyles() {
         transition: all 0.2s ease;
       }
       .vendor-browse-card:active {
-        background: #eef;
+        background: var(--input-bg);
       }
       .vendor-browse-card.store-disabled {
         opacity: 0.6;
-        border-color: #e74c3c;
+        border-color: var(--btn-delete-bg);
       }
       .vendor-browse-image {
         width: 80px;
         height: 80px;
         border-radius: 8px;
         overflow: hidden;
-        background: #e1e1e1;
+        background: var(--card-border);
         flex-shrink: 0;
       }
       .vendor-browse-image img {
@@ -229,7 +231,7 @@ function vendorBrowseStyles() {
         align-items: center;
         justify-content: center;
         font-size: 32px;
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        background: var(--welcome-bg);
       }
       .vendor-browse-info {
         flex: 1;
@@ -238,17 +240,17 @@ function vendorBrowseStyles() {
       .vendor-browse-name {
         font-size: 16px;
         font-weight: 700;
-        color: #1a1a2e;
+        color: var(--text-primary);
         margin-bottom: 4px;
       }
       .vendor-browse-detail {
         font-size: 13px;
-        color: #555;
+        color: var(--text-secondary);
         line-height: 1.4;
       }
       .vendor-browse-desc {
         font-size: 12px;
-        color: #888;
+        color: var(--text-muted);
         font-style: italic;
         margin-top: 4px;
         display: -webkit-box;
@@ -258,7 +260,7 @@ function vendorBrowseStyles() {
       }
       .disabled-badge {
         display: inline-block;
-        background: #e74c3c;
+        background: var(--btn-delete-bg);
         color: white;
         font-size: 11px;
         font-weight: 700;
@@ -268,7 +270,7 @@ function vendorBrowseStyles() {
       }
       .deactivated-badge {
         display: inline-block;
-        background: #f39c12;
+        background: var(--warning-color);
         color: white;
         font-size: 10px;
         font-weight: 700;
@@ -291,7 +293,7 @@ function vendorBrowseStyles() {
       .products-scroll::-webkit-scrollbar { display: none; }
       .custom-scrollbar-track {
         width: 8px;
-        background: #e0e0e0;
+        background: var(--card-border);
         border-radius: 4px;
         margin-left: 6px;
         position: relative;
@@ -299,7 +301,7 @@ function vendorBrowseStyles() {
       }
       .custom-scrollbar-thumb {
         width: 8px;
-        background: #888;
+        background: var(--text-muted);
         border-radius: 4px;
         position: absolute;
         top: 0;
@@ -307,14 +309,14 @@ function vendorBrowseStyles() {
         cursor: pointer;
       }
       .product-card-link { text-decoration: none; color: inherit; display: block; }
-      .product-card-link:active .product-card { background: #eef; }
+      .product-card-link:active .product-card { background: var(--input-bg); }
       @media (min-width: 768px) {
         .vendor-browse-card {
           padding: 16px;
         }
         .vendor-browse-card:hover {
-          border-color: #e94560;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+          border-color: var(--accent-primary);
+          box-shadow: 0 2px 10px var(--container-shadow);
         }
         .vendor-browse-image {
           width: 100px;
@@ -323,7 +325,7 @@ function vendorBrowseStyles() {
         .vendor-browse-name {
           font-size: 18px;
         }
-        .product-card-link:hover .product-card { border-color: #e94560; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .product-card-link:hover .product-card { border-color: var(--accent-primary); box-shadow: 0 2px 8px var(--container-shadow); }
       }
     </style>`;
 }
@@ -341,18 +343,18 @@ function vendorDetailStyles(isAdmin) {
         display: flex;
         gap: 16px;
         align-items: flex-start;
-        background: #f8f9fa;
+        background: var(--card-bg);
         border-radius: 12px;
         padding: 16px;
         margin-bottom: 20px;
-        border: 1px solid #e1e1e1;
+        border: 1px solid var(--card-border);
       }
       .vendor-detail-image {
         width: 100px;
         height: 100px;
         border-radius: 8px;
         overflow: hidden;
-        background: #e1e1e1;
+        background: var(--card-border);
         flex-shrink: 0;
       }
       .vendor-detail-image img {
@@ -367,7 +369,7 @@ function vendorDetailStyles(isAdmin) {
         align-items: center;
         justify-content: center;
         font-size: 40px;
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        background: var(--welcome-bg);
       }
       .vendor-detail-info {
         flex: 1;
@@ -376,16 +378,16 @@ function vendorDetailStyles(isAdmin) {
       .vendor-detail-info h3 {
         margin: 0 0 8px 0;
         font-size: 20px;
-        color: #1a1a2e;
+        color: var(--text-primary);
       }
       .vendor-detail-info p {
         margin: 2px 0;
         font-size: 14px;
-        color: #555;
+        color: var(--text-secondary);
       }
       .booth-info {
         font-size: 16px;
-        color: #333;
+        color: var(--text-dark);
         font-weight: 600;
       }
       .image-modal {
@@ -439,14 +441,14 @@ function vendorDetailStyles(isAdmin) {
         font-size: 14px;
       }
       .store-status-banner.disabled {
-        background: #fde8e8;
-        color: #e74c3c;
-        border: 1px solid #e74c3c;
+        background: var(--error-bg);
+        color: var(--btn-delete-bg);
+        border: 1px solid var(--btn-delete-bg);
       }
       .store-status-banner.active {
-        background: #e8f5e9;
-        color: #27ae60;
-        border: 1px solid #27ae60;
+        background: var(--success-bg);
+        color: var(--success-color);
+        border: 1px solid var(--success-color);
       }` : ''}
       @media (min-width: 768px) {
         .vendor-detail-image {
@@ -468,26 +470,26 @@ function vendorDetailStyles(isAdmin) {
 function productDetailStyles(isAdmin) {
   return `
     <style>
-      .product-detail-image { width: 100%; max-width: 500px; border-radius: 12px; overflow: hidden; margin: 0 auto 20px; border: 2px solid #e1e1e1; }
+      .product-detail-image { width: 100%; max-width: 500px; border-radius: 12px; overflow: hidden; margin: 0 auto 20px; border: 2px solid var(--card-border); }
       .product-detail-image img { width: 100%; display: block; }
-      .product-detail-name { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-bottom: 8px; }
-      .product-detail-name.sold-out { color: #e74c3c; }
-      ${isAdmin ? `.product-detail-name.deactivated { color: #f39c12; }` : ''}
-      .product-detail-vendor { font-size: 14px; color: #888; margin-bottom: 16px; }
-      .product-detail-desc { font-size: 15px; color: #555; line-height: 1.6; margin-bottom: 16px; }
-      .product-detail-price { font-size: 20px; font-weight: 700; color: #e94560; margin-bottom: 8px; }
+      .product-detail-name { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+      .product-detail-name.sold-out { color: var(--btn-delete-bg); }
+      ${isAdmin ? `.product-detail-name.deactivated { color: var(--deactivated-border); }` : ''}
+      .product-detail-vendor { font-size: 14px; color: var(--text-muted); margin-bottom: 16px; }
+      .product-detail-desc { font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px; }
+      .product-detail-price { font-size: 20px; font-weight: 700; color: var(--accent-primary); margin-bottom: 8px; }
       .product-detail-price.sold-out { text-decoration: line-through; }
       .product-detail-status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 20px; }
-      .product-detail-status.available { background: #e8f5e9; color: #27ae60; }
-      .product-detail-status.sold-out { background: #fde8e8; color: #e74c3c; }
-      ${isAdmin ? `.product-detail-status.deactivated { background: #fff3cd; color: #856404; }
+      .product-detail-status.available { background: var(--success-bg); color: var(--success-color); }
+      .product-detail-status.sold-out { background: var(--error-bg); color: var(--btn-delete-bg); }
+      ${isAdmin ? `.product-detail-status.deactivated { background: var(--warning-bg); color: var(--warning-text); }
       .admin-actions {
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
         margin-top: 16px;
         padding-top: 16px;
-        border-top: 1px solid #e1e1e1;
+        border-top: 1px solid var(--card-border);
       }` : ''}
       @media (min-width: 768px) {
         .product-detail-name { font-size: 26px; }
@@ -535,7 +537,7 @@ function renderVendorListPage({ vendors, user, role, appConfig, nav, header, isA
               ${isDisabled ? `<div class="disabled-badge">Store Disabled</div>` : ''}
             </div>
           </a>`;
-  }).join('') : '<p style="color: #666; text-align: center; padding: 20px;">No vendors have registered yet.</p>';
+  }).join('') : '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No vendors have registered yet.</p>';
 
   const appBg = getAppBackgroundStyles(appConfig);
   const pageTitle = appConfig.appTitle || 'Car Show Manager';
@@ -608,8 +610,8 @@ function renderVendorDetailPage({ business, products, user, role, appConfig, nav
               <h5>${p.product_name}${deactivated ? ' - DEACTIVATED' : (soldOut ? ' - SOLD OUT' : '')}${deactivated ? '<span class="deactivated-badge">Admin Deactivated</span>' : ''}</h5>
               ${p.description ? `<p>${p.description}</p>` : ''}
               ${p.price ? (p.discount_price
-                ? `<p style="font-weight:600;color:#e94560;"><span style="text-decoration:line-through;color:#999;">$${p.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${p.discount_price}</span></p>`
-                : `<p style="font-weight:600;color:#e94560;${soldOut ? 'text-decoration:line-through;' : ''}">$${p.price}</p>`
+                ? `<p style="font-weight:600;color:var(--accent-primary);"><span style="text-decoration:line-through;color:var(--text-muted);">$${p.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${p.discount_price}</span></p>`
+                : `<p style="font-weight:600;color:var(--accent-primary);${soldOut ? 'text-decoration:line-through;' : ''}">$${p.price}</p>`
               ) : ''}
               <div class="product-actions">
                 ${deactivated
@@ -633,14 +635,14 @@ function renderVendorDetailPage({ business, products, user, role, appConfig, nav
               <h5>${p.product_name}${soldOut ? ' - SOLD OUT' : ''}</h5>
               ${p.description ? `<p>${p.description}</p>` : ''}
               ${p.price ? (p.discount_price
-                ? `<p style="font-weight:600;color:#e94560;"><span style="text-decoration:line-through;color:#999;">$${p.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${p.discount_price}</span></p>`
-                : `<p style="font-weight:600;color:#e94560;${soldOut ? 'text-decoration:line-through;' : ''}">$${p.price}</p>`
+                ? `<p style="font-weight:600;color:var(--accent-primary);"><span style="text-decoration:line-through;color:var(--text-muted);">$${p.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${p.discount_price}</span></p>`
+                : `<p style="font-weight:600;color:var(--accent-primary);${soldOut ? 'text-decoration:line-through;' : ''}">$${p.price}</p>`
               ) : ''}
             </div>
           </div>
           </a>`;
     }
-  }).join('') : '<p style="color:#888;font-style:italic;">No products or services listed yet.</p>';
+  }).join('') : '<p style="color:var(--text-muted);font-style:italic;">No products or services listed yet.</p>';
 
   const appBg = getAppBackgroundStyles(appConfig);
   const productsTitle = isAdmin ? `Products &amp; Services (${products.length})` : 'Products &amp; Services';
@@ -695,7 +697,7 @@ function renderVendorDetailPage({ business, products, user, role, appConfig, nav
                 ${business.business_email ? `<p>${business.business_email}</p>` : ''}
                 ${business.business_phone ? `<p>${business.business_phone}</p>` : ''}
                 ${addressLine ? `<p>${addressLine}</p>` : ''}
-                ${business.business_description ? `<p style="margin-top:6px;color:#888;font-style:italic;">${business.business_description}</p>` : ''}
+                ${business.business_description ? `<p style="margin-top:6px;color:var(--text-muted);font-style:italic;">${business.business_description}</p>` : ''}
               </div>
             </div>
 
@@ -703,7 +705,7 @@ function renderVendorDetailPage({ business, products, user, role, appConfig, nav
               <h4>Booth Information</h4>
               ${business.booth_location
                 ? `<p class="booth-info">${business.booth_location}</p>`
-                : `<p style="color:#888;font-style:italic;">Booth location not set yet.</p>`
+                : `<p style="color:var(--text-muted);font-style:italic;">Booth location not set yet.</p>`
               }
             </div>
 
@@ -838,7 +840,7 @@ function renderProductDetailPage({ product, business, user, role, appConfig, nav
 
             ${product.description ? `<div class="product-detail-desc">${product.description}</div>` : ''}
             ${product.price ? (product.discount_price
-              ? `<div class="product-detail-price"><span style="text-decoration:line-through;color:#999;font-size:0.8em;">$${product.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${product.discount_price}</span></div>`
+              ? `<div class="product-detail-price"><span style="text-decoration:line-through;color:var(--text-muted);font-size:0.8em;">$${product.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${product.discount_price}</span></div>`
               : `<div class="product-detail-price${soldOut ? ' sold-out' : ''}">$${product.price}</div>`
             ) : ''}
 

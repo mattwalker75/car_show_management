@@ -54,7 +54,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <tr>
               <td><strong>${sv.vote_name}</strong></td>
               <td>${sv.description || '-'}</td>
-              <td><span style="background:#27ae60;color:white;padding:4px 12px;border-radius:20px;font-weight:600;">${sv.total_votes}</span></td>
+              <td><span style="background:var(--success-color);color:white;padding:4px 12px;border-radius:20px;font-weight:600;">${sv.total_votes}</span></td>
               <td>${leaderInfo}</td>
               <td>
                 <a href="/admin/edit-vote-results/${sv.specialty_vote_id}" class="action-btn edit">View/Edit</a>
@@ -82,17 +82,17 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               <h3 class="section-title">Specialty Vote Status</h3>
 
               <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-                <span style="padding: 8px 16px; border-radius: 20px; font-weight: 600; ${appConfig.specialtyVotingStatus === 'Lock' ? 'background:#e74c3c;color:white;' : appConfig.specialtyVotingStatus === 'Open' ? 'background:#27ae60;color:white;' : 'background:#95a5a6;color:white;'}">
+                <span style="padding: 8px 16px; border-radius: 20px; font-weight: 600; ${appConfig.specialtyVotingStatus === 'Lock' ? 'background:var(--btn-delete-bg);color:white;' : appConfig.specialtyVotingStatus === 'Open' ? 'background:var(--success-color);color:white;' : 'background:var(--btn-cancel-bg);color:white;'}">
                   ${appConfig.specialtyVotingStatus === 'Lock' ? '🔒 Voting LOCKED' : appConfig.specialtyVotingStatus === 'Open' ? '🔓 Voting OPEN' : '🚫 Voting CLOSED'}
                 </span>
-                <a href="/admin/preview-vote-results" class="action-btn" style="background:#3498db;">Preview Results</a>
+                <a href="/admin/preview-vote-results" class="action-btn" style="background:var(--btn-edit-bg);">Preview Results</a>
                 ${appConfig.specialtyVotingStatus === 'Close' ? `
-                  <a href="/admin/open-specialty-voting" class="action-btn" style="background:#27ae60;" onclick="return confirm('Open voting? Users will be able to vote.')">Open Voting</a>
+                  <a href="/admin/open-specialty-voting" class="action-btn" style="background:var(--success-color);" onclick="return confirm('Open voting? Users will be able to vote.')">Open Voting</a>
                 ` : appConfig.specialtyVotingStatus === 'Open' ? `
-                  <a href="/admin/close-specialty-voting" class="action-btn" style="background:#95a5a6;" onclick="return confirm('Close voting? Users will no longer be able to vote.')">Close Voting</a>
-                  <a href="/admin/lock-specialty-voting" class="action-btn" style="background:#e74c3c;" onclick="return confirm('Lock voting and publish results? Users will no longer be able to vote.')">Lock & Publish Results</a>
+                  <a href="/admin/close-specialty-voting" class="action-btn" style="background:var(--btn-cancel-bg);" onclick="return confirm('Close voting? Users will no longer be able to vote.')">Close Voting</a>
+                  <a href="/admin/lock-specialty-voting" class="action-btn" style="background:var(--btn-delete-bg);" onclick="return confirm('Lock voting and publish results? Users will no longer be able to vote.')">Lock & Publish Results</a>
                 ` : `
-                  <a href="/admin/open-specialty-voting" class="action-btn" style="background:#27ae60;" onclick="return confirm('Open voting? Users will be able to vote again.')">Open Voting</a>
+                  <a href="/admin/open-specialty-voting" class="action-btn" style="background:var(--success-color);" onclick="return confirm('Open voting? Users will be able to vote again.')">Open Voting</a>
                 `}
               </div>
 
@@ -108,7 +108,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${voteRows || '<tr><td colspan="5" style="text-align:center;color:#999;">No specialty votes configured</td></tr>'}
+                    ${voteRows || '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No specialty votes configured</td></tr>'}
                   </tbody>
                 </table>
               </div>
@@ -153,7 +153,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <td>${r.year || ''} ${r.make} ${r.model} (ID: ${r.car_voter_id || 'N/A'})</td>
             <td>${new Date(r.voted_at).toLocaleString()}</td>
             <td>
-              <a href="/admin/delete-vote-result/${r.id}?voteId=${voteId}" class="action-btn" style="background:#e74c3c;" onclick="return confirm('Delete this vote?')">Delete</a>
+              <a href="/admin/delete-vote-result/${r.id}?voteId=${voteId}" class="action-btn" style="background:var(--btn-delete-bg);" onclick="return confirm('Delete this vote?')">Delete</a>
             </td>
           </tr>
         `).join('');
@@ -175,7 +175,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               ${getAdminNav('voting', chatEnabled)}
 
               <h3 class="section-title">${vote.vote_name} - All Votes</h3>
-              <p style="color:#666;margin-bottom:20px;">Total votes: ${results.length}</p>
+              <p style="color:var(--text-secondary);margin-bottom:20px;">Total votes: ${results.length}</p>
 
               <div style="overflow-x: auto;">
                 <table class="data-table">
@@ -188,13 +188,13 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${resultRows || '<tr><td colspan="4" style="text-align:center;color:#999;">No votes cast</td></tr>'}
+                    ${resultRows || '<tr><td colspan="4" style="text-align:center;color:var(--text-muted);">No votes cast</td></tr>'}
                   </tbody>
                 </table>
               </div>
 
               <div style="margin-top:20px;">
-                <a href="/admin/vote-status" class="action-btn" style="background:#666;">Back to Vote Status</a>
+                <a href="/admin/vote-status" class="action-btn" style="background:var(--text-secondary);">Back to Vote Status</a>
               </div>
             </div>
           </body>
@@ -252,18 +252,18 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
           const winnerDisplay = winner
             ? `
-              <div style="background:#fff9e6;border:2px solid #f1c40f;border-radius:8px;padding:15px;text-align:center;">
+              <div style="background:var(--gold-bg);border:2px solid var(--gold-border);border-radius:8px;padding:15px;text-align:center;">
                 <div style="font-size:36px;margin-bottom:10px;">🏆</div>
-                <div style="font-size:18px;font-weight:bold;color:#2c3e50;">${winner.year || ''} ${winner.make} ${winner.model}</div>
-                <div style="color:#666;margin-top:5px;">Voter ID: ${winner.voter_id || 'N/A'}</div>
-                <div style="margin-top:10px;background:#27ae60;color:white;padding:6px 16px;border-radius:20px;display:inline-block;font-weight:600;">${winner.vote_count} votes</div>
+                <div style="font-size:18px;font-weight:bold;color:var(--heading-alt);">${winner.year || ''} ${winner.make} ${winner.model}</div>
+                <div style="color:var(--text-secondary);margin-top:5px;">Voter ID: ${winner.voter_id || 'N/A'}</div>
+                <div style="margin-top:10px;background:var(--success-color);color:white;padding:6px 16px;border-radius:20px;display:inline-block;font-weight:600;">${winner.vote_count} votes</div>
               </div>
             `
-            : '<p style="color:#999;text-align:center;">No votes cast yet</p>';
+            : '<p style="color:var(--text-muted);text-align:center;">No votes cast yet</p>';
 
           return `
-            <div style="background:white;border:1px solid #ddd;border-radius:8px;padding:20px;margin-bottom:20px;">
-              <h4 style="margin:0 0 15px 0;color:#2c3e50;border-bottom:2px solid #9b59b6;padding-bottom:10px;">${sv.vote_name}</h4>
+            <div style="background:var(--modal-content-bg);border:1px solid var(--card-border);border-radius:8px;padding:20px;margin-bottom:20px;">
+              <h4 style="margin:0 0 15px 0;color:var(--heading-alt);border-bottom:2px solid var(--badge-purple-bg);padding-bottom:10px;">${sv.vote_name}</h4>
               ${winnerDisplay}
             </div>
           `;
@@ -286,14 +286,14 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               ${getAdminNav('voting', chatEnabled)}
 
               <h3 class="section-title">Preview Specialty Vote Winners</h3>
-              <p style="color:#666;margin-bottom:20px;">This is a preview. Results are not yet published.</p>
+              <p style="color:var(--text-secondary);margin-bottom:20px;">This is a preview. Results are not yet published.</p>
 
               ${voteCards || '<p>No specialty votes configured</p>'}
 
               <div style="margin-top:20px;">
-                <a href="/admin/vote-status" class="action-btn" style="background:#666;">Back to Vote Status</a>
+                <a href="/admin/vote-status" class="action-btn" style="background:var(--text-secondary);">Back to Vote Status</a>
                 ${appConfig.specialtyVotingStatus !== 'Lock'
-                  ? `<a href="/admin/lock-specialty-voting" class="action-btn" style="background:#e74c3c;" onclick="return confirm('Lock voting and publish these results?')">Lock & Publish Results</a>`
+                  ? `<a href="/admin/lock-specialty-voting" class="action-btn" style="background:var(--btn-delete-bg);" onclick="return confirm('Lock voting and publish these results?')">Lock & Publish Results</a>`
                   : ''
                 }
               </div>

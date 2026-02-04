@@ -1,6 +1,7 @@
 /* admin.css - Dashboard and admin-specific styles
  * Navigation bars, tables, card views, modals, badges, forms,
  * profile cards, and responsive breakpoints for admin/judge/registrar/user dashboards.
+ * All colors reference CSS custom properties from styles.css for theme support.
  */
 
 /* Mobile-first admin navigation */
@@ -15,11 +16,11 @@
   flex: 1;
   min-width: calc(50% - 4px);
   padding: 14px 16px;
-  background: #f8f9fa;
-  border: 2px solid #e1e1e1;
+  background: var(--nav-bg);
+  border: 2px solid var(--nav-border);
   border-radius: 10px;
   text-decoration: none;
-  color: #333;
+  color: var(--nav-text);
   font-weight: 600;
   font-size: 14px;
   text-align: center;
@@ -30,9 +31,9 @@
 }
 
 .admin-nav a.active {
-  background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
-  color: white;
-  border-color: #e94560;
+  background: var(--nav-active-gradient);
+  color: var(--nav-active-text);
+  border-color: var(--nav-active-border);
 }
 
 .admin-nav a:active {
@@ -43,13 +44,13 @@
 .config-subnav {
   margin-top: -12px;
   margin-bottom: 20px;
-  background: #f0f0f5;
+  background: var(--subnav-bg);
   border-radius: 10px;
   padding: 8px;
 }
 
 .config-subnav a {
-  background: white;
+  background: var(--subnav-item-bg);
   min-width: calc(50% - 12px);
 }
 
@@ -60,7 +61,7 @@
   -webkit-overflow-scrolling: touch;
   margin-top: 15px;
   border-radius: 10px;
-  border: 1px solid #e1e1e1;
+  border: 1px solid var(--table-border);
 }
 
 .user-table {
@@ -72,36 +73,36 @@
 .user-table th, .user-table td {
   padding: 12px 10px;
   text-align: left;
-  border-bottom: 1px solid #e1e1e1;
+  border-bottom: 1px solid var(--table-border);
   white-space: nowrap;
   font-size: 14px;
 }
 
 .user-table th {
-  background: #f8f9fa;
+  background: var(--table-header-bg);
   font-weight: 600;
-  color: #333;
+  color: var(--text-dark);
   position: sticky;
   top: 0;
 }
 
 
 .user-row-actions td {
-  border-bottom: 1px solid #d0d0d0 !important;
+  border-bottom: 1px solid var(--divider-color) !important;
   padding-bottom: 10px !important;
 }
 
-/* Mobile card view for users (alternative to table) */
+/* Card view for users (always visible) */
 .user-cards {
-  display: none;
+  display: block;
 }
 
 .user-card {
-  background: #f8f9fa;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 12px;
-  border: 1px solid #e1e1e1;
+  border: 1px solid var(--card-border);
 }
 
 .user-card-header {
@@ -114,17 +115,17 @@
 .user-card-name {
   font-weight: 600;
   font-size: 16px;
-  color: #1a1a2e;
+  color: var(--text-primary);
 }
 
 .user-card-username {
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .user-card-details {
   font-size: 14px;
-  color: #555;
+  color: var(--text-dark);
   margin-bottom: 12px;
 }
 
@@ -160,12 +161,12 @@
 }
 
 .action-btn.edit {
-  background: #3498db;
+  background: var(--btn-edit-bg);
   color: white;
 }
 
 .action-btn.delete {
-  background: #e74c3c;
+  background: var(--btn-delete-bg);
   color: white;
 }
 
@@ -186,7 +187,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--modal-overlay);
   justify-content: center;
   align-items: center;
   z-index: 1000;
@@ -195,7 +196,7 @@
 }
 
 .modal {
-  background: white;
+  background: var(--modal-bg);
   padding: 24px;
   border-radius: 15px;
   max-width: 500px;
@@ -207,7 +208,7 @@
 
 .modal h3 {
   margin-bottom: 20px;
-  color: #1a1a2e;
+  color: var(--text-primary);
   font-size: 18px;
 }
 
@@ -221,27 +222,27 @@
 }
 
 .role-badge.admin {
-  background: #e94560;
+  background: var(--role-admin);
   color: white;
 }
 
 .role-badge.judge {
-  background: #3498db;
+  background: var(--role-judge);
   color: white;
 }
 
 .role-badge.registrar {
-  background: #9b59b6;
+  background: var(--role-registrar);
   color: white;
 }
 
 .role-badge.user {
-  background: #27ae60;
+  background: var(--role-user);
   color: white;
 }
 
 .role-badge.vendor {
-  background: #e67e22;
+  background: var(--role-vendor);
   color: white;
 }
 
@@ -254,22 +255,23 @@
 }
 
 .status-badge.active {
-  background: #d4edda;
-  color: #155724;
+  background: var(--status-active-bg);
+  color: var(--status-active-text);
 }
 
 .status-badge.inactive {
-  background: #f8d7da;
-  color: #721c24;
+  background: var(--status-inactive-bg);
+  color: var(--status-inactive-text);
 }
 
 select {
   width: 100%;
   padding: 14px 16px;
-  border: 2px solid #e1e1e1;
+  border: 2px solid var(--input-border);
   border-radius: 10px;
   font-size: 16px;
-  background: #f8f9fa;
+  background: var(--input-bg);
+  color: var(--input-text);
   cursor: pointer;
   min-height: 50px;
   -webkit-appearance: none;
@@ -280,13 +282,13 @@ select {
 }
 
 select:focus {
-  border-color: #e94560;
+  border-color: var(--input-focus-border);
   outline: none;
-  background-color: #fff;
+  background-color: var(--input-bg-focus);
 }
 
 .btn-secondary {
-  background: #6c757d;
+  background: var(--btn-secondary-bg);
   color: white;
   padding: 14px 24px;
   border: none;
@@ -306,14 +308,14 @@ select:focus {
 
 .section-title {
   font-size: 18px;
-  color: #1a1a2e;
+  color: var(--text-primary);
   margin-bottom: 15px;
   padding-bottom: 10px;
-  border-bottom: 2px solid #e1e1e1;
+  border-bottom: 2px solid var(--divider-color);
 }
 
 .profile-card {
-  background: #f8f9fa;
+  background: var(--card-bg);
   padding: 20px;
   border-radius: 15px;
   margin-bottom: 16px;
@@ -321,7 +323,7 @@ select:focus {
 
 .profile-card h3 {
   margin-bottom: 15px;
-  color: #1a1a2e;
+  color: var(--text-primary);
   font-size: 16px;
 }
 
@@ -343,7 +345,7 @@ select:focus {
 .scroll-hint {
   display: block;
   text-align: center;
-  color: #888;
+  color: var(--text-muted);
   font-size: 12px;
   margin-top: 8px;
   padding: 8px;
@@ -353,8 +355,24 @@ select:focus {
   content: "\2190 Scroll to see more \2192";
 }
 
-/* Tablet and up - hide card view, show table */
+/* Tablet and up */
 @media (min-width: 768px) {
+  .user-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+  }
+
+  .user-card {
+    margin-bottom: 0;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .user-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 2px 10px var(--container-shadow);
+  }
+
   .admin-nav a {
     flex: 0 0 auto;
     min-width: auto;
@@ -362,9 +380,9 @@ select:focus {
   }
 
   .admin-nav a:hover {
-    background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
-    color: white;
-    border-color: #e94560;
+    background: var(--nav-active-gradient);
+    color: var(--nav-active-text);
+    border-color: var(--nav-active-border);
   }
 
   .table-wrapper {
@@ -427,7 +445,8 @@ select:focus {
     display: none;
   }
 
-  .table-wrapper.report-table {
+  .table-wrapper.report-table,
+  .table-wrapper.config-table {
     display: block;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -435,10 +454,6 @@ select:focus {
 
   .scroll-hint {
     display: none;
-  }
-
-  .user-cards {
-    display: block;
   }
 
   .section-title {

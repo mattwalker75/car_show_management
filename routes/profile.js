@@ -65,7 +65,7 @@ module.exports = function (db, appConfig, upload) {
         border-radius: 50%;
         object-fit: cover;
         margin-bottom: 15px;
-        border: 4px solid #e94560;
+        border: 4px solid var(--accent-primary);
       }
       .profile-image-placeholder {
         background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
@@ -77,7 +77,7 @@ module.exports = function (db, appConfig, upload) {
         font-weight: 700;
       }
       #updatePhotoBtn:hover {
-        background: #d63851;
+        background: var(--accent-primary);
       }
     </style>`;
 
@@ -121,7 +121,7 @@ module.exports = function (db, appConfig, upload) {
         ${getAppBackgroundStyles(appConfig)}
             ${profileStyles}
           </head>
-          <body data-user-role="${role}" data-user-id="${user.user_id}" data-user-name="${user.name}" data-user-image="${user.image_url || ''}">
+          <body data-theme="${appConfig.theme || 'light'}" data-user-role="${role}" data-user-id="${user.user_id}" data-user-name="${user.name}" data-user-image="${user.image_url || ''}">
             <div class="container dashboard-container">
               <div class="dashboard-header">
                 <h1>🏎️ ${config.heading}</h1>
@@ -139,16 +139,16 @@ module.exports = function (db, appConfig, upload) {
                 <div class="profile-image-container">
                   ${profileImageHtml}
                 </div>
-                <button type="button" id="updatePhotoBtn" style="display:block;width:100%;padding:12px;background:#e94560;color:white;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;">Update Photo</button>
-                <div style="text-align:center;margin-top:6px;color:#999;font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
+                <button type="button" id="updatePhotoBtn" style="display:block;width:100%;padding:12px;background:var(--accent-primary);color:white;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;">Update Photo</button>
+                <div style="text-align:center;margin-top:6px;color:var(--text-muted);font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
                 <input type="file" id="profilePhotoInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
                 <div id="photoPreviewModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
-                  <div style="background:white;border-radius:12px;padding:24px;max-width:320px;width:90%;text-align:center;">
-                    <h4 style="margin:0 0 16px;color:#2c3e50;">Preview</h4>
-                    <img id="photoPreviewImg" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid #e1e1e1;">
+                  <div style="background:var(--modal-content-bg);border-radius:12px;padding:24px;max-width:320px;width:90%;text-align:center;">
+                    <h4 style="margin:0 0 16px;color:var(--heading-alt);">Preview</h4>
+                    <img id="photoPreviewImg" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid var(--card-border);">
                     <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
-                      <button type="button" id="photoSaveBtn" style="padding:10px 28px;background:#27ae60;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
-                      <button type="button" id="photoCancelBtn" style="padding:10px 28px;background:#95a5a6;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
+                      <button type="button" id="photoSaveBtn" style="padding:10px 28px;background:var(--success-color);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
+                      <button type="button" id="photoCancelBtn" style="padding:10px 28px;background:var(--btn-cancel-bg);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
                     </div>
                   </div>
                 </div>

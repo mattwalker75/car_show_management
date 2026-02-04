@@ -116,25 +116,38 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <div class="form-group">
               <label>Application Title</label>
               <input type="text" name="appTitle" value="${appConfig.appTitle || ''}" required placeholder="Enter application title">
-              <small style="color: #666; display: block; margin-top: 5px;">This appears on the login page</small>
+              <small style="color: var(--text-secondary); display: block; margin-top: 5px;">This appears on the login page</small>
             </div>
             <div class="form-group">
               <label>Login Subtitle</label>
               <input type="text" name="appSubtitle" value="${appConfig.appSubtitle || ''}" placeholder="Enter subtitle (optional)">
-              <small style="color: #666; display: block; margin-top: 5px;">Appears below the title on the login page</small>
+              <small style="color: var(--text-secondary); display: block; margin-top: 5px;">Appears below the title on the login page</small>
             </div>
-            <div style="border-top:3px solid #000;margin:20px 0;"></div>
+            <div style="border-top:3px solid var(--divider-heavy);margin:20px 0;"></div>
+            <div style="margin-bottom:10px;">
+              <label style="font-weight:600;margin-bottom:8px;display:block;">App Theme</label>
+              <small style="color: var(--text-secondary); display: block; margin-bottom: 12px;">Set the visual theme for the entire application</small>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <label class="toggle-switch" style="position:relative;display:inline-block;width:50px;height:26px;margin:0;cursor:pointer;">
+                  <input type="hidden" name="theme" value="${appConfig.theme || 'light'}" id="themeInput">
+                  <div id="themeToggleTrack" style="position:absolute;top:0;left:0;right:0;bottom:0;background:${appConfig.theme === 'dark' ? '#6b7280' : '#f59e0b'};border-radius:26px;transition:0.3s;" onclick="toggleTheme()"></div>
+                  <div id="themeToggleThumb" style="position:absolute;height:20px;width:20px;left:${appConfig.theme === 'dark' ? '27px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.3s;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
+                </label>
+                <span style="font-size:14px;color:var(--text-dark);" id="themeToggleLabel">${appConfig.theme === 'dark' ? '🌙 Dark Mode' : '☀️ Light Mode'}</span>
+              </div>
+            </div>
+            <div style="border-top:3px solid var(--divider-heavy);margin:20px 0;"></div>
             <div class="form-group">
               <label>Default Registration Price</label>
               <div style="display:flex;align-items:center;gap:4px;">
                 <span style="font-weight:600;font-size:16px;">$</span>
                 <input type="text" name="defaultRegistrationPrice" value="${parseFloat(appConfig.defaultRegistrationPrice || 25).toFixed(2)}" required style="flex:1;" oninput="validatePriceInput(this)" onblur="formatPriceBlur(this)">
               </div>
-              <small style="color: #666; display: block; margin-top: 5px;">Default price when creating new vehicle types</small>
+              <small style="color: var(--text-secondary); display: block; margin-top: 5px;">Default price when creating new vehicle types</small>
             </div>
             <div style="margin-bottom:10px;">
               <label style="font-weight:600;margin-bottom:8px;display:block;">Default Judging Points</label>
-              <small style="color: #666; display: block; margin-bottom: 10px;">Default min and max score values when adding new judging questions</small>
+              <small style="color: var(--text-secondary); display: block; margin-bottom: 10px;">Default min and max score values when adding new judging questions</small>
               <div style="display:flex;gap:15px;flex-wrap:wrap;">
                 <div class="form-group" style="flex:0;min-width:80px;">
                   <label>Min Score</label>
@@ -146,41 +159,41 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 </div>
               </div>
             </div>
-            <div style="border-top:3px solid #000;margin:20px 0;"></div>
+            <div style="border-top:3px solid var(--divider-heavy);margin:20px 0;"></div>
             <div style="margin-bottom:10px;">
               <label style="font-weight:600;margin-bottom:8px;display:block;">Group Chat</label>
-              <small style="color: #666; display: block; margin-bottom: 12px;">Enable or disable the group chat feature for all users</small>
+              <small style="color: var(--text-secondary); display: block; margin-bottom: 12px;">Enable or disable the group chat feature for all users</small>
               <div style="display:flex;align-items:center;gap:12px;">
                 <label class="toggle-switch" style="position:relative;display:inline-block;width:50px;height:26px;margin:0;cursor:pointer;">
                   <input type="hidden" name="chatEnabled" value="${appConfig.chatEnabled !== false ? 'true' : 'false'}" id="chatEnabledInput">
                   <div id="chatToggleTrack" style="position:absolute;top:0;left:0;right:0;bottom:0;background:${appConfig.chatEnabled !== false ? '#27ae60' : '#ccc'};border-radius:26px;transition:0.3s;" onclick="toggleChat()"></div>
                   <div id="chatToggleThumb" style="position:absolute;height:20px;width:20px;left:${appConfig.chatEnabled !== false ? '27px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.3s;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
                 </label>
-                <span style="font-size:14px;color:#333;" id="chatToggleLabel">${appConfig.chatEnabled !== false ? 'Enabled' : 'Disabled'} Group Chat</span>
+                <span style="font-size:14px;color:var(--text-dark);" id="chatToggleLabel">${appConfig.chatEnabled !== false ? 'Enabled' : 'Disabled'} Group Chat</span>
               </div>
               <div style="margin-top:15px;">
-                <label style="font-size:14px;color:#333;">Chat Message Limit</label>
-                <small style="color: #666; display: block; margin-bottom: 8px;">Maximum number of messages to keep in chat history (older messages are automatically deleted)</small>
-                <input type="number" name="chatMessageLimit" value="${appConfig.chatMessageLimit || 200}" min="50" max="10000" style="width:120px;padding:8px 12px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+                <label style="font-size:14px;color:var(--text-dark);">Chat Message Limit</label>
+                <small style="color: var(--text-secondary); display: block; margin-bottom: 8px;">Maximum number of messages to keep in chat history (older messages are automatically deleted)</small>
+                <input type="number" name="chatMessageLimit" value="${appConfig.chatMessageLimit || 200}" min="50" max="10000" style="width:120px;padding:8px 12px;border:2px solid var(--card-border);border-radius:8px;font-size:14px;">
               </div>
             </div>
-            <div style="border-top:3px solid #000;margin:20px 0;"></div>
+            <div style="border-top:3px solid var(--divider-heavy);margin:20px 0;"></div>
             <div style="margin-bottom:10px;">
               <label style="font-weight:600;margin-bottom:8px;display:block;">Login Configuration</label>
-              <small style="color: #666; display: block; margin-bottom: 12px;">Control the login experience for all users</small>
+              <small style="color: var(--text-secondary); display: block; margin-bottom: 12px;">Control the login experience for all users</small>
               <div style="display:flex;align-items:center;gap:12px;">
                 <label class="toggle-switch" style="position:relative;display:inline-block;width:50px;height:26px;margin:0;cursor:pointer;">
                   <input type="hidden" name="animatedLogin" value="${appConfig.animatedLogin ? 'true' : 'false'}" id="animatedLoginInput">
                   <div id="toggleTrack" style="position:absolute;top:0;left:0;right:0;bottom:0;background:${appConfig.animatedLogin ? '#27ae60' : '#ccc'};border-radius:26px;transition:0.3s;" onclick="toggleAnimatedLogin()"></div>
                   <div id="toggleThumb" style="position:absolute;height:20px;width:20px;left:${appConfig.animatedLogin ? '27px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.3s;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
                 </label>
-                <span style="font-size:14px;color:#333;" id="toggleLabel">${appConfig.animatedLogin ? 'Enabled' : 'Disabled'} Animated Login Experience</span>
+                <span style="font-size:14px;color:var(--text-dark);" id="toggleLabel">${appConfig.animatedLogin ? 'Enabled' : 'Disabled'} Animated Login Experience</span>
               </div>
             </div>
 
-            <div style="margin-top:10px;margin-bottom:10px;border-top:1px solid #e1e1e1;padding-top:15px;">
+            <div style="margin-top:10px;margin-bottom:10px;border-top:1px solid var(--divider-color);padding-top:15px;">
               <label style="font-weight:600;margin-bottom:8px;display:block;">Login Background Customization</label>
-              <small style="color: #666; display: block; margin-bottom: 15px;">Customize the appearance of the login page</small>
+              <small style="color: var(--text-secondary); display: block; margin-bottom: 15px;">Customize the appearance of the login page</small>
 
               <!-- Background Type Selector -->
               <div class="form-group" style="margin-bottom:15px;">
@@ -203,8 +216,8 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <label>Background Color</label>
                 <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
                   <input type="color" name="loginBgColor" id="loginBgColor" value="${bg.backgroundColor || '#1a1a2e'}"
-                    style="width:60px;height:40px;border:2px solid #e1e1e1;border-radius:8px;cursor:pointer;padding:2px;">
-                  <span id="loginBgColorHex" style="font-family:monospace;color:#666;">${bg.backgroundColor || '#1a1a2e'}</span>
+                    style="width:60px;height:40px;border:2px solid var(--card-border);border-radius:8px;cursor:pointer;padding:2px;">
+                  <span id="loginBgColorHex" style="font-family:monospace;color:var(--text-secondary);">${bg.backgroundColor || '#1a1a2e'}</span>
                 </div>
               </div>
 
@@ -213,63 +226,63 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 ${bg.imageUrl ? `
                 <div style="margin-bottom:12px;">
                   <label>Current Background</label>
-                  <div style="position:relative;width:200px;height:120px;border-radius:8px;overflow:hidden;border:2px solid #e1e1e1;margin-top:6px;">
+                  <div style="position:relative;width:200px;height:120px;border-radius:8px;overflow:hidden;border:2px solid var(--card-border);margin-top:6px;">
                     <img src="${bg.imageUrl}" style="width:100%;height:100%;object-fit:cover;">
                   </div>
                 </div>
                 ` : ''}
                 <label>${bg.imageUrl ? 'Replace' : 'Upload'} Background Image</label>
-                <small style="color:#666;display:block;margin-bottom:8px;">Recommended: 1920x1080 or larger. JPEG, PNG, GIF, or WebP.</small>
+                <small style="color:var(--text-secondary);display:block;margin-bottom:8px;">Recommended: 1920x1080 or larger. JPEG, PNG, GIF, or WebP.</small>
                 <!-- Placeholder - upload forms will be moved here by JS -->
                 <div id="bgImageUploadArea" style="margin-top:8px;"></div>
               </div>
             </div>
 
             <!-- Tint Overlay (only when image mode) -->
-            <div id="tintSection" style="display:${bg.useImage ? 'block' : 'none'};margin-bottom:15px;border-top:1px solid #e1e1e1;padding-top:15px;">
+            <div id="tintSection" style="display:${bg.useImage ? 'block' : 'none'};margin-bottom:15px;border-top:1px solid var(--divider-color);padding-top:15px;">
               <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
                 <label class="toggle-switch" style="position:relative;display:inline-block;width:50px;height:26px;margin:0;cursor:pointer;">
                   <input type="hidden" name="loginBgUseTint" value="${bg.useTint ? 'true' : 'false'}" id="loginBgUseTintInput">
                   <div id="tintToggleTrack" style="position:absolute;top:0;left:0;right:0;bottom:0;background:${bg.useTint ? '#27ae60' : '#ccc'};border-radius:26px;transition:0.3s;" onclick="toggleTint()"></div>
                   <div id="tintToggleThumb" style="position:absolute;height:20px;width:20px;left:${bg.useTint ? '27px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.3s;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
                 </label>
-                <span style="font-size:14px;color:#333;font-weight:600;">Color Tint Overlay</span>
+                <span style="font-size:14px;color:var(--text-dark);font-weight:600;">Color Tint Overlay</span>
               </div>
               <div id="tintControls" style="display:${bg.useTint ? 'block' : 'none'};">
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
                   <label style="margin-bottom:0;min-width:70px;">Tint Color</label>
                   <input type="color" name="loginBgTintColor" id="loginBgTintColor" value="${bg.tintColor || '#1a1a2e'}"
-                    style="width:60px;height:40px;border:2px solid #e1e1e1;border-radius:8px;cursor:pointer;padding:2px;">
-                  <span id="tintColorHex" style="font-family:monospace;color:#666;">${bg.tintColor || '#1a1a2e'}</span>
+                    style="width:60px;height:40px;border:2px solid var(--card-border);border-radius:8px;cursor:pointer;padding:2px;">
+                  <span id="tintColorHex" style="font-family:monospace;color:var(--text-secondary);">${bg.tintColor || '#1a1a2e'}</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:12px;">
                   <label style="margin-bottom:0;min-width:70px;">Opacity</label>
                   <input type="range" name="loginBgTintOpacity" id="loginBgTintOpacity" min="0" max="100" value="${Math.round((bg.tintOpacity ?? 0.5) * 100)}"
                     style="flex:1;" oninput="document.getElementById('tintOpacityValue').textContent=this.value+'%'; updatePreview();">
-                  <span id="tintOpacityValue" style="font-family:monospace;color:#666;min-width:40px;">${Math.round((bg.tintOpacity ?? 0.5) * 100)}%</span>
+                  <span id="tintOpacityValue" style="font-family:monospace;color:var(--text-secondary);min-width:40px;">${Math.round((bg.tintOpacity ?? 0.5) * 100)}%</span>
                 </div>
               </div>
             </div>
 
             <!-- Card Transparency -->
-            <div style="margin-bottom:15px;border-top:1px solid #e1e1e1;padding-top:15px;">
+            <div style="margin-bottom:15px;border-top:1px solid var(--divider-color);padding-top:15px;">
               <label style="font-weight:600;margin-bottom:8px;display:block;">Login Card Transparency</label>
-              <small style="color:#666;display:block;margin-bottom:10px;">Controls how see-through the login card is (100% = fully solid, 0% = fully transparent)</small>
+              <small style="color:var(--text-secondary);display:block;margin-bottom:10px;">Controls how see-through the login card is (100% = fully solid, 0% = fully transparent)</small>
               <div style="display:flex;align-items:center;gap:12px;">
                 <input type="range" name="loginBgCardOpacity" id="loginBgCardOpacity" min="0" max="100" value="${Math.round((bg.cardOpacity ?? 0.98) * 100)}"
                   style="flex:1;" oninput="document.getElementById('cardOpacityValue').textContent=this.value+'%'; updatePreview();">
-                <span id="cardOpacityValue" style="font-family:monospace;color:#666;min-width:40px;">${Math.round((bg.cardOpacity ?? 0.98) * 100)}%</span>
+                <span id="cardOpacityValue" style="font-family:monospace;color:var(--text-secondary);min-width:40px;">${Math.round((bg.cardOpacity ?? 0.98) * 100)}%</span>
               </div>
             </div>
 
             <!-- Live Preview -->
-            <div style="margin-bottom:20px;border-top:1px solid #e1e1e1;padding-top:15px;">
+            <div style="margin-bottom:20px;border-top:1px solid var(--divider-color);padding-top:15px;">
               <label style="font-weight:600;margin-bottom:8px;display:block;">Live Preview</label>
-              <div id="previewPanel" data-has-image="${bg.useImage && bg.imageUrl ? 'true' : 'false'}" style="position:relative;width:100%;max-width:400px;height:250px;border-radius:12px;overflow:hidden;border:2px solid #e1e1e1;${bg.useImage && bg.imageUrl ? `background:url('${bg.imageUrl}') center/cover no-repeat` : `background:${bg.backgroundColor || '#1a1a2e'}`};">
+              <div id="previewPanel" data-has-image="${bg.useImage && bg.imageUrl ? 'true' : 'false'}" style="position:relative;width:100%;max-width:400px;height:250px;border-radius:12px;overflow:hidden;border:2px solid var(--card-border);${bg.useImage && bg.imageUrl ? `background:url('${bg.imageUrl}') center/cover no-repeat` : `background:${bg.backgroundColor || '#1a1a2e'}`};">
                 <div id="previewTint" style="position:absolute;top:0;left:0;width:100%;height:100%;background:${bg.tintColor || '#1a1a2e'};opacity:${bg.useImage && bg.useTint ? (bg.tintOpacity ?? 0.5) : 0};pointer-events:none;"></div>
                 <div id="previewCard" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:60%;background:rgba(255,255,255,${bg.cardOpacity ?? 0.98});border-radius:10px;padding:15px;text-align:center;box-shadow:0 4px 15px rgba(0,0,0,0.2);">
                   <div style="font-size:28px;margin-bottom:4px;">🏎️</div>
-                  <div style="font-size:11px;font-weight:700;color:#1a1a2e;margin-bottom:8px;">${appConfig.appTitle || 'Car Show'}</div>
+                  <div style="font-size:11px;font-weight:700;color:var(--text-primary);margin-bottom:8px;">${appConfig.appTitle || 'Car Show'}</div>
                   <div style="width:80%;height:6px;background:#e1e1e1;border-radius:3px;margin:4px auto;"></div>
                   <div style="width:80%;height:6px;background:#e1e1e1;border-radius:3px;margin:4px auto;"></div>
                   <div style="width:50%;height:8px;background:linear-gradient(135deg,#e94560,#ff6b6b);border-radius:4px;margin:8px auto 0;"></div>
@@ -277,12 +290,12 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               </div>
             </div>
 
-            <div style="border-top:3px solid #000;margin:20px 0;"></div>
+            <div style="border-top:3px solid var(--divider-heavy);margin:20px 0;"></div>
 
             <!-- App Background Customization -->
             <div style="margin-bottom:10px;">
               <label style="font-weight:600;margin-bottom:8px;display:block;">App Background Customization</label>
-              <small style="color: #666; display: block; margin-bottom: 15px;">Customize the background appearance of the app after login</small>
+              <small style="color: var(--text-secondary); display: block; margin-bottom: 15px;">Customize the background appearance of the app after login</small>
 
               <!-- Background Type Selector -->
               <div class="form-group" style="margin-bottom:15px;">
@@ -305,8 +318,8 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <label>Background Color</label>
                 <div style="display:flex;align-items:center;gap:12px;margin-top:6px;">
                   <input type="color" name="appBgColor" id="appBgColor" value="${abg.backgroundColor || '#1a1a2e'}"
-                    style="width:60px;height:40px;border:2px solid #e1e1e1;border-radius:8px;cursor:pointer;padding:2px;">
-                  <span id="appBgColorHex" style="font-family:monospace;color:#666;">${abg.backgroundColor || '#1a1a2e'}</span>
+                    style="width:60px;height:40px;border:2px solid var(--card-border);border-radius:8px;cursor:pointer;padding:2px;">
+                  <span id="appBgColorHex" style="font-family:monospace;color:var(--text-secondary);">${abg.backgroundColor || '#1a1a2e'}</span>
                 </div>
               </div>
 
@@ -315,63 +328,63 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 ${abg.imageUrl ? `
                 <div style="margin-bottom:12px;">
                   <label>Current Background</label>
-                  <div style="position:relative;width:200px;height:120px;border-radius:8px;overflow:hidden;border:2px solid #e1e1e1;margin-top:6px;">
+                  <div style="position:relative;width:200px;height:120px;border-radius:8px;overflow:hidden;border:2px solid var(--card-border);margin-top:6px;">
                     <img src="${abg.imageUrl}" style="width:100%;height:100%;object-fit:cover;">
                   </div>
                 </div>
                 ` : ''}
                 <label>${abg.imageUrl ? 'Replace' : 'Upload'} Background Image</label>
-                <small style="color:#666;display:block;margin-bottom:8px;">Recommended: 1920x1080 or larger. JPEG, PNG, GIF, or WebP.</small>
+                <small style="color:var(--text-secondary);display:block;margin-bottom:8px;">Recommended: 1920x1080 or larger. JPEG, PNG, GIF, or WebP.</small>
                 <div id="appBgImageUploadArea" style="margin-top:8px;"></div>
               </div>
             </div>
 
             <!-- App Tint Overlay (only when image mode) -->
-            <div id="appTintSection" style="display:${abg.useImage ? 'block' : 'none'};margin-bottom:15px;border-top:1px solid #e1e1e1;padding-top:15px;">
+            <div id="appTintSection" style="display:${abg.useImage ? 'block' : 'none'};margin-bottom:15px;border-top:1px solid var(--divider-color);padding-top:15px;">
               <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
                 <label class="toggle-switch" style="position:relative;display:inline-block;width:50px;height:26px;margin:0;cursor:pointer;">
                   <input type="hidden" name="appBgUseTint" value="${abg.useTint ? 'true' : 'false'}" id="appBgUseTintInput">
                   <div id="appTintToggleTrack" style="position:absolute;top:0;left:0;right:0;bottom:0;background:${abg.useTint ? '#27ae60' : '#ccc'};border-radius:26px;transition:0.3s;" onclick="toggleAppTint()"></div>
                   <div id="appTintToggleThumb" style="position:absolute;height:20px;width:20px;left:${abg.useTint ? '27px' : '3px'};bottom:3px;background:white;border-radius:50%;transition:0.3s;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,0.2);"></div>
                 </label>
-                <span style="font-size:14px;color:#333;font-weight:600;">Color Tint Overlay</span>
+                <span style="font-size:14px;color:var(--text-dark);font-weight:600;">Color Tint Overlay</span>
               </div>
               <div id="appTintControls" style="display:${abg.useTint ? 'block' : 'none'};">
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
                   <label style="margin-bottom:0;min-width:70px;">Tint Color</label>
                   <input type="color" name="appBgTintColor" id="appBgTintColor" value="${abg.tintColor || '#1a1a2e'}"
-                    style="width:60px;height:40px;border:2px solid #e1e1e1;border-radius:8px;cursor:pointer;padding:2px;">
-                  <span id="appTintColorHex" style="font-family:monospace;color:#666;">${abg.tintColor || '#1a1a2e'}</span>
+                    style="width:60px;height:40px;border:2px solid var(--card-border);border-radius:8px;cursor:pointer;padding:2px;">
+                  <span id="appTintColorHex" style="font-family:monospace;color:var(--text-secondary);">${abg.tintColor || '#1a1a2e'}</span>
                 </div>
                 <div style="display:flex;align-items:center;gap:12px;">
                   <label style="margin-bottom:0;min-width:70px;">Opacity</label>
                   <input type="range" name="appBgTintOpacity" id="appBgTintOpacity" min="0" max="100" value="${Math.round((abg.tintOpacity ?? 0.5) * 100)}"
                     style="flex:1;" oninput="document.getElementById('appTintOpacityValue').textContent=this.value+'%'; updateAppPreview();">
-                  <span id="appTintOpacityValue" style="font-family:monospace;color:#666;min-width:40px;">${Math.round((abg.tintOpacity ?? 0.5) * 100)}%</span>
+                  <span id="appTintOpacityValue" style="font-family:monospace;color:var(--text-secondary);min-width:40px;">${Math.round((abg.tintOpacity ?? 0.5) * 100)}%</span>
                 </div>
               </div>
             </div>
 
             <!-- App Container Transparency -->
-            <div style="margin-bottom:15px;border-top:1px solid #e1e1e1;padding-top:15px;">
+            <div style="margin-bottom:15px;border-top:1px solid var(--divider-color);padding-top:15px;">
               <label style="font-weight:600;margin-bottom:8px;display:block;">App Window Transparency</label>
-              <small style="color:#666;display:block;margin-bottom:10px;">Controls how see-through the app window is (100% = fully solid, 0% = fully transparent)</small>
+              <small style="color:var(--text-secondary);display:block;margin-bottom:10px;">Controls how see-through the app window is (100% = fully solid, 0% = fully transparent)</small>
               <div style="display:flex;align-items:center;gap:12px;">
                 <input type="range" name="appBgContainerOpacity" id="appBgContainerOpacity" min="0" max="100" value="${Math.round((abg.containerOpacity ?? 0.98) * 100)}"
                   style="flex:1;" oninput="document.getElementById('appContainerOpacityValue').textContent=this.value+'%'; updateAppPreview();">
-                <span id="appContainerOpacityValue" style="font-family:monospace;color:#666;min-width:40px;">${Math.round((abg.containerOpacity ?? 0.98) * 100)}%</span>
+                <span id="appContainerOpacityValue" style="font-family:monospace;color:var(--text-secondary);min-width:40px;">${Math.round((abg.containerOpacity ?? 0.98) * 100)}%</span>
               </div>
             </div>
 
             <!-- App Live Preview -->
-            <div style="margin-bottom:20px;border-top:1px solid #e1e1e1;padding-top:15px;">
+            <div style="margin-bottom:20px;border-top:1px solid var(--divider-color);padding-top:15px;">
               <label style="font-weight:600;margin-bottom:8px;display:block;">Live Preview</label>
-              <div id="appPreviewPanel" data-has-image="${abg.useImage && abg.imageUrl ? 'true' : 'false'}" style="position:relative;width:100%;max-width:400px;height:250px;border-radius:12px;overflow:hidden;border:2px solid #e1e1e1;${abg.useImage && abg.imageUrl ? `background:url('${abg.imageUrl}') center/cover no-repeat` : `background:${abg.backgroundColor || '#1a1a2e'}`};">
+              <div id="appPreviewPanel" data-has-image="${abg.useImage && abg.imageUrl ? 'true' : 'false'}" style="position:relative;width:100%;max-width:400px;height:250px;border-radius:12px;overflow:hidden;border:2px solid var(--card-border);${abg.useImage && abg.imageUrl ? `background:url('${abg.imageUrl}') center/cover no-repeat` : `background:${abg.backgroundColor || '#1a1a2e'}`};">
                 <div id="appPreviewTint" style="position:absolute;top:0;left:0;width:100%;height:100%;background:${abg.tintColor || '#1a1a2e'};opacity:${abg.useImage && abg.useTint ? (abg.tintOpacity ?? 0.5) : 0};pointer-events:none;"></div>
                 <div id="appPreviewCard" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;background:rgba(255,255,255,${abg.containerOpacity ?? 0.98});border-radius:10px;padding:15px;box-shadow:0 4px 15px rgba(0,0,0,0.2);">
                   <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
                     <div style="font-size:16px;">🏎️</div>
-                    <div style="font-size:11px;font-weight:700;color:#1a1a2e;">Dashboard</div>
+                    <div style="font-size:11px;font-weight:700;color:var(--text-primary);">Dashboard</div>
                     <div style="margin-left:auto;width:20px;height:20px;background:#e1e1e1;border-radius:50%;"></div>
                   </div>
                   <div style="display:flex;gap:6px;margin-bottom:10px;">
@@ -379,34 +392,34 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                     <div style="flex:1;height:6px;background:#e1e1e1;border-radius:3px;"></div>
                     <div style="flex:1;height:6px;background:#e1e1e1;border-radius:3px;"></div>
                   </div>
-                  <div style="width:100%;height:8px;background:#f0f0f0;border-radius:3px;margin:4px 0;"></div>
-                  <div style="width:70%;height:8px;background:#f0f0f0;border-radius:3px;margin:4px 0;"></div>
+                  <div style="width:100%;height:8px;background:var(--card-bg);border-radius:3px;margin:4px 0;"></div>
+                  <div style="width:70%;height:8px;background:var(--card-bg);border-radius:3px;margin:4px 0;"></div>
                 </div>
               </div>
             </div>
 
-            <button type="submit" style="background: #27ae60; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px;">Save Configuration</button>
+            <button type="submit" style="background: var(--success-color); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px;">Save Configuration</button>
           </form>
 
           <!-- Login background image upload/remove (outside main form to avoid nesting) -->
           <div id="bgImageUploadForm" style="display:${bg.useImage ? 'block' : 'none'};max-width:600px;margin-top:15px;">
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-              <button type="button" id="loginBgUploadBtn" style="background:#3498db;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;font-size:14px;">Update Image</button>
+              <button type="button" id="loginBgUploadBtn" style="background:var(--btn-edit-bg);color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;font-size:14px;">Update Image</button>
               ${bg.imageUrl ? `
               <form method="POST" action="/admin/remove-login-background" style="margin:0;">
-                <button type="submit" style="background:#e74c3c;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;text-transform:none;letter-spacing:normal;font-size:14px;min-height:auto;">Remove Image</button>
+                <button type="submit" style="background:var(--btn-delete-bg);color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;text-transform:none;letter-spacing:normal;font-size:14px;min-height:auto;">Remove Image</button>
               </form>
               ` : ''}
             </div>
-            <div style="margin-top:4px;color:#999;font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
+            <div style="margin-top:4px;color:var(--text-muted);font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
             <input type="file" id="loginBgFileInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
             <div id="loginBgPreviewModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
-              <div style="background:white;border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
-                <h4 style="margin:0 0 16px;color:#2c3e50;">Preview Login Background</h4>
-                <img id="loginBgPreviewImg" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid #e1e1e1;">
+              <div style="background:var(--modal-content-bg);border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
+                <h4 style="margin:0 0 16px;color:var(--heading-alt);">Preview Login Background</h4>
+                <img id="loginBgPreviewImg" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid var(--card-border);">
                 <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
-                  <button type="button" id="loginBgSaveBtn" style="padding:10px 28px;background:#27ae60;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
-                  <button type="button" id="loginBgCancelBtn" style="padding:10px 28px;background:#95a5a6;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
+                  <button type="button" id="loginBgSaveBtn" style="padding:10px 28px;background:var(--success-color);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
+                  <button type="button" id="loginBgCancelBtn" style="padding:10px 28px;background:var(--btn-cancel-bg);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
                 </div>
               </div>
             </div>
@@ -415,22 +428,22 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           <!-- App background image upload/remove (outside main form to avoid nesting) -->
           <div id="appBgImageUploadForm" style="display:${abg.useImage ? 'block' : 'none'};max-width:600px;margin-top:15px;">
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-              <button type="button" id="appBgUploadBtn" style="background:#3498db;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;font-size:14px;">Update Image</button>
+              <button type="button" id="appBgUploadBtn" style="background:var(--btn-edit-bg);color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;font-size:14px;">Update Image</button>
               ${abg.imageUrl ? `
               <form method="POST" action="/admin/remove-app-background" style="margin:0;">
-                <button type="submit" style="background:#e74c3c;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;text-transform:none;letter-spacing:normal;font-size:14px;min-height:auto;">Remove Image</button>
+                <button type="submit" style="background:var(--btn-delete-bg);color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;text-transform:none;letter-spacing:normal;font-size:14px;min-height:auto;">Remove Image</button>
               </form>
               ` : ''}
             </div>
-            <div style="margin-top:4px;color:#999;font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
+            <div style="margin-top:4px;color:var(--text-muted);font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
             <input type="file" id="appBgFileInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
             <div id="appBgPreviewModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
-              <div style="background:white;border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
-                <h4 style="margin:0 0 16px;color:#2c3e50;">Preview App Background</h4>
-                <img id="appBgPreviewImg" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid #e1e1e1;">
+              <div style="background:var(--modal-content-bg);border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
+                <h4 style="margin:0 0 16px;color:var(--heading-alt);">Preview App Background</h4>
+                <img id="appBgPreviewImg" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid var(--card-border);">
                 <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
-                  <button type="button" id="appBgSaveBtn" style="padding:10px 28px;background:#27ae60;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
-                  <button type="button" id="appBgCancelBtn" style="padding:10px 28px;background:#95a5a6;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
+                  <button type="button" id="appBgSaveBtn" style="padding:10px 28px;background:var(--success-color);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
+                  <button type="button" id="appBgCancelBtn" style="padding:10px 28px;background:var(--btn-cancel-bg);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
                 </div>
               </div>
             </div>
@@ -455,6 +468,17 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             } else if (el.value === '') {
               el.value = '0.00';
             }
+          }
+          function toggleTheme() {
+            var input = document.getElementById('themeInput');
+            var track = document.getElementById('themeToggleTrack');
+            var thumb = document.getElementById('themeToggleThumb');
+            var label = document.getElementById('themeToggleLabel');
+            var isDark = input.value === 'dark';
+            input.value = isDark ? 'light' : 'dark';
+            track.style.background = isDark ? '#f59e0b' : '#6b7280';
+            thumb.style.left = isDark ? '3px' : '27px';
+            label.textContent = isDark ? '☀️ Light Mode' : '🌙 Dark Mode';
           }
           function toggleAnimatedLogin() {
             var input = document.getElementById('animatedLoginInput');
@@ -753,7 +777,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
 
   // Save app config
   router.post('/app-config', requireAdmin, (req, res) => {
-    const { appTitle, appSubtitle, defaultRegistrationPrice, defaultMinScore, defaultMaxScore, animatedLogin, chatEnabled, chatMessageLimit,
+    const { appTitle, appSubtitle, defaultRegistrationPrice, defaultMinScore, defaultMaxScore, theme, animatedLogin, chatEnabled, chatMessageLimit,
             loginBgUseImage, loginBgColor, loginBgUseTint, loginBgTintColor, loginBgTintOpacity, loginBgCardOpacity,
             appBgUseImage, appBgColor, appBgUseTint, appBgTintColor, appBgTintOpacity, appBgContainerOpacity } = req.body;
 
@@ -771,6 +795,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
     appConfig.defaultMinScore = parseInt(defaultMinScore) || 0;
     appConfig.defaultMaxScore = parseInt(defaultMaxScore) || 10;
     appConfig.animatedLogin = animatedLogin === 'true';
+    appConfig.theme = (theme === 'dark') ? 'dark' : 'light';
     appConfig.chatEnabled = chatEnabled === 'true';
     appConfig.chatMessageLimit = Math.max(50, Math.min(10000, parseInt(chatMessageLimit) || 200));
 

@@ -55,7 +55,7 @@ module.exports = function (db, appConfig, upload) {
               ${getAdminNav('config', chatEnabled)}
 
               <h3 class="section-title">Vehicle Classes</h3>
-              <p style="color:#666;margin-bottom:15px;">Define classes like Street Rod, Muscle Car, Custom, etc.</p>
+              <p style="color:var(--text-secondary);margin-bottom:15px;">Define classes like Street Rod, Muscle Car, Custom, etc.</p>
 
               <form method="POST" action="/admin/add-class" style="margin-bottom:20px;">
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -68,7 +68,7 @@ module.exports = function (db, appConfig, upload) {
                 </div>
               </form>
 
-              <div class="table-wrapper">
+              <div class="table-wrapper config-table">
                 <table class="user-table">
                   <thead>
                     <tr>
@@ -79,7 +79,7 @@ module.exports = function (db, appConfig, upload) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${rows || '<tr><td colspan="4" style="text-align:center;color:#666;">No classes defined yet.</td></tr>'}
+                    ${rows || '<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);">No classes defined yet.</td></tr>'}
                   </tbody>
                 </table>
               </div>

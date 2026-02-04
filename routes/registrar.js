@@ -11,7 +11,7 @@ module.exports = function (db, appConfig, upload) {
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
   const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
   const appBgStyles = () => getAppBackgroundStyles(appConfig);
-  const bodyTag = (req) => { const u = req.session && req.session.user; return `<body data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
+  const bodyTag = (req) => { const u = req.session && req.session.user; const theme = appConfig.theme || 'light'; return `<body data-theme="${theme}" data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
 
   // ── Registrar Dashboard ───────────────────────────────────────────────
   router.get('/', requireRegistrar, (req, res) => {
@@ -104,23 +104,6 @@ module.exports = function (db, appConfig, upload) {
         users = [];
       }
 
-      const userRows = users.map(u => `
-        <tr class="user-row" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}" style="border-bottom:none;">
-          <td style="border-bottom:none;">${u.username}</td>
-          <td style="border-bottom:none;">${u.name}</td>
-          <td style="border-bottom:none;">${u.email}</td>
-          <td style="border-bottom:none;">${u.phone || '-'}</td>
-          <td style="border-bottom:none;"><span class="role-badge ${u.role}">${u.role}</span></td>
-          <td style="border-bottom:none;"><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
-        </tr>
-        <tr class="user-row-actions" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}">
-          <td colspan="6" style="border-top:none;padding-top:0;text-align:center;">
-            <a href="/registrar/reset-password/${u.id}" class="action-btn edit">Reset Password</a>
-          </td>
-        </tr>
-      `).join('');
-
-      // Mobile card view
       const userCards = users.map(u => `
         <div class="user-card" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}">
           <div class="user-card-header">
@@ -174,37 +157,16 @@ module.exports = function (db, appConfig, upload) {
             </div>
 
             <h3 class="section-title">Users & Judges</h3>
-            <p style="color: #666; margin-bottom: 15px; font-size: 14px;">You can reset passwords for users and judges.</p>
+            <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 14px;">You can reset passwords for users and judges.</p>
 
             <div style="margin-bottom:16px;">
-              <input type="text" id="userSearch" placeholder="Search by name, login ID, email, or phone..." oninput="filterUsers()" style="width:100%;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#e94560'" onblur="this.style.borderColor='#e1e1e1'">
+              <input type="text" id="userSearch" placeholder="Search by name, login ID, email, or phone..." oninput="filterUsers()" style="width:100%;padding:10px 14px;border:2px solid var(--card-border);border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-primary)'" onblur="this.style.borderColor='var(--card-border)'">
             </div>
-            <div id="noResults" style="display:none;text-align:center;color:#666;padding:20px;font-size:14px;">No users match your search.</div>
+            <div id="noResults" style="display:none;text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">No users match your search.</div>
 
-            <!-- Mobile card view -->
             <div class="user-cards">
               ${userCards}
             </div>
-
-            <!-- Table view for larger screens -->
-            <div class="table-wrapper">
-              <table class="user-table">
-                <thead>
-                  <tr>
-                    <th>Username</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${userRows}
-                </tbody>
-              </table>
-            </div>
-            <div class="scroll-hint"></div>
 
             <div class="links" style="margin-top:20px;">
               <a href="/registrar">&larr; Back to Dashboard</a>
@@ -214,20 +176,12 @@ module.exports = function (db, appConfig, upload) {
             function filterUsers() {
               var query = document.getElementById('userSearch').value.toLowerCase().trim();
               var cards = document.querySelectorAll('.user-card');
-              var rows = document.querySelectorAll('.user-row');
-              var actionRows = document.querySelectorAll('.user-row-actions');
               var visibleCount = 0;
 
               cards.forEach(function(card) {
                 var match = !query || card.dataset.username.indexOf(query) !== -1 || card.dataset.name.indexOf(query) !== -1 || card.dataset.email.indexOf(query) !== -1 || card.dataset.phone.indexOf(query) !== -1;
                 card.style.display = match ? '' : 'none';
                 if (match) visibleCount++;
-              });
-
-              rows.forEach(function(row, i) {
-                var match = !query || row.dataset.username.indexOf(query) !== -1 || row.dataset.name.indexOf(query) !== -1 || row.dataset.email.indexOf(query) !== -1 || row.dataset.phone.indexOf(query) !== -1;
-                row.style.display = match ? '' : 'none';
-                if (actionRows[i]) actionRows[i].style.display = match ? '' : 'none';
               });
 
               document.getElementById('noResults').style.display = (query && visibleCount === 0) ? '' : 'none';
@@ -301,6 +255,9 @@ module.exports = function (db, appConfig, upload) {
                 </div>
                 <button type="submit">Reset Password</button>
               </form>
+            </div>
+            <div class="links" style="margin-top:20px;">
+              <a href="/registrar/users">&larr; Back to Users</a>
             </div>
           </div>
         </body>
@@ -466,25 +423,25 @@ module.exports = function (db, appConfig, upload) {
         ${appBgStyles()}
           <style>
             .vehicle-card {
-              background: #f8f9fa;
+              background: var(--card-bg);
               border-radius: 12px;
               padding: 16px;
               margin-bottom: 12px;
-              border: 1px solid #e1e1e1;
+              border: 1px solid var(--card-border);
               display: flex;
               flex-direction: column;
               gap: 12px;
             }
             .vehicle-card.pending {
-              border: 2px dashed #f39c12;
-              background: #fffbf0;
+              border: 2px dashed var(--deactivated-border);
+              background: var(--warning-bg);
             }
             .vehicle-image {
               width: 100%;
               height: 120px;
               border-radius: 8px;
               overflow: hidden;
-              background: #e1e1e1;
+              background: var(--card-border);
             }
             .vehicle-image img {
               width: 100%;
@@ -506,12 +463,12 @@ module.exports = function (db, appConfig, upload) {
             .vehicle-title {
               font-size: 16px;
               font-weight: 700;
-              color: #1a1a2e;
+              color: var(--text-primary);
               margin-bottom: 4px;
             }
             .vehicle-meta {
               font-size: 12px;
-              color: #888;
+              color: var(--text-muted);
               margin-bottom: 8px;
             }
             .vehicle-class {
@@ -520,7 +477,7 @@ module.exports = function (db, appConfig, upload) {
               gap: 6px;
             }
             .type-badge {
-              background: #3498db;
+              background: var(--btn-edit-bg);
               color: white;
               padding: 3px 10px;
               border-radius: 20px;
@@ -536,7 +493,7 @@ module.exports = function (db, appConfig, upload) {
               font-weight: 600;
             }
             .status-badge.active {
-              background: #27ae60;
+              background: var(--success-color);
               color: white;
               padding: 3px 10px;
               border-radius: 20px;
@@ -544,7 +501,7 @@ module.exports = function (db, appConfig, upload) {
               font-weight: 600;
             }
             .status-badge.pending {
-              background: #f39c12;
+              background: var(--warning-color);
               color: white;
               padding: 3px 10px;
               border-radius: 20px;
@@ -572,14 +529,14 @@ module.exports = function (db, appConfig, upload) {
               width: 20px;
               height: 20px;
               cursor: pointer;
-              accent-color: #3498db;
+              accent-color: var(--checkbox-accent);
             }
             .vehicle-card.selected {
-              border-color: #3498db !important;
-              background: #eaf6ff !important;
+              border-color: var(--checkbox-accent) !important;
+              background: var(--info-highlight-bg) !important;
             }
             .price-badge {
-              background: #27ae60;
+              background: var(--success-color);
               color: white;
               padding: 3px 10px;
               border-radius: 20px;
@@ -593,23 +550,23 @@ module.exports = function (db, appConfig, upload) {
               margin-bottom: 20px;
             }
             .summary-card {
-              background: #f8f9fa;
+              background: var(--card-bg);
               padding: 16px;
               border-radius: 12px;
               text-align: center;
             }
             .summary-card.pending-bg {
-              background: #fffbf0;
-              border: 1px solid #f39c12;
+              background: var(--warning-bg);
+              border: 1px solid var(--deactivated-border);
             }
             .summary-number {
               font-size: 28px;
               font-weight: 700;
-              color: #1a1a2e;
+              color: var(--text-primary);
             }
             .summary-label {
               font-size: 12px;
-              color: #666;
+              color: var(--text-secondary);
             }
             @media (min-width: 768px) {
               .vehicle-card {
@@ -671,10 +628,10 @@ module.exports = function (db, appConfig, upload) {
                 <option value="active">Active</option>
               </select>
             </div>
-            <div id="noResults" style="display:none;color:#666;text-align:center;padding:20px;">No vehicles match your filter.</div>
+            <div id="noResults" style="display:none;color:var(--text-secondary);text-align:center;padding:20px;">No vehicles match your filter.</div>
 
             <div id="vehicleList">
-              ${cars.length > 0 ? vehicleCards : '<p style="color: #666; text-align: center; padding: 20px;">No vehicles registered yet.</p>'}
+              ${cars.length > 0 ? vehicleCards : '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No vehicles registered yet.</p>'}
             </div>
 
             <div id="selectionBar" style="display:none;position:sticky;bottom:0;left:0;right:0;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);color:white;padding:16px 20px;border-radius:12px;margin-top:16px;box-shadow:0 -4px 20px rgba(0,0,0,0.15);z-index:100;">
@@ -803,7 +760,7 @@ module.exports = function (db, appConfig, upload) {
               height: 200px;
               border-radius: 12px;
               overflow: hidden;
-              background: #e1e1e1;
+              background: var(--card-border);
             }
             .vehicle-preview-image img {
               width: 100%;
@@ -824,49 +781,49 @@ module.exports = function (db, appConfig, upload) {
             .vehicle-preview-info h4 {
               font-size: 20px;
               margin-bottom: 8px;
-              color: #1a1a2e;
+              color: var(--text-primary);
             }
             .vehicle-preview-info p {
-              color: #666;
+              color: var(--text-secondary);
               margin-bottom: 4px;
               font-size: 14px;
             }
             .owner-details {
-              background: #e8f4fd;
+              background: var(--info-highlight-bg);
               padding: 16px;
               border-radius: 12px;
               margin-bottom: 20px;
             }
             .owner-details h4 {
-              color: #2980b9;
+              color: var(--info-highlight-text);
               margin-bottom: 10px;
             }
             .owner-details p {
               margin: 4px 0;
-              color: #333;
+              color: var(--text-dark);
             }
             .detail-card {
-              background: white;
+              background: var(--modal-content-bg);
               border-radius: 12px;
               padding: 20px;
-              box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+              box-shadow: 0 2px 10px var(--container-shadow);
               margin-bottom: 20px;
             }
             .detail-row {
               display: flex;
               justify-content: space-between;
               padding: 10px 0;
-              border-bottom: 1px solid #f0f0f0;
+              border-bottom: 1px solid var(--divider-color);
             }
             .detail-row:last-child {
               border-bottom: none;
             }
             .detail-label {
               font-weight: 600;
-              color: #555;
+              color: var(--text-secondary);
             }
             .detail-value {
-              color: #333;
+              color: var(--text-dark);
             }
           </style>
         </head>
@@ -925,7 +882,7 @@ module.exports = function (db, appConfig, upload) {
             </div>
 
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <a href="/registrar/vehicles" class="action-btn" style="background:#6c757d;">Back to Vehicles</a>
+              <a href="/registrar/vehicles" class="action-btn" style="background:var(--btn-secondary-bg);">Back to Vehicles</a>
               <a href="/registrar/edit-vehicle/${car.car_id}" class="action-btn edit">${car.is_active ? 'Edit' : 'Activate'}</a>
             </div>
           </div>
@@ -982,7 +939,7 @@ module.exports = function (db, appConfig, upload) {
               height: 200px;
               border-radius: 12px;
               overflow: hidden;
-              background: #e1e1e1;
+              background: var(--card-border);
             }
             .vehicle-preview-image img {
               width: 100%;
@@ -1003,26 +960,26 @@ module.exports = function (db, appConfig, upload) {
             .vehicle-preview-info h4 {
               font-size: 20px;
               margin-bottom: 8px;
-              color: #1a1a2e;
+              color: var(--text-primary);
             }
             .vehicle-preview-info p {
-              color: #666;
+              color: var(--text-secondary);
               margin-bottom: 4px;
               font-size: 14px;
             }
             .owner-details {
-              background: #e8f4fd;
+              background: var(--info-highlight-bg);
               padding: 16px;
               border-radius: 12px;
               margin-bottom: 20px;
             }
             .owner-details h4 {
-              color: #2980b9;
+              color: var(--info-highlight-text);
               margin-bottom: 10px;
             }
             .owner-details p {
               margin: 4px 0;
-              color: #333;
+              color: var(--text-dark);
             }
           </style>
         </head>
@@ -1075,7 +1032,7 @@ module.exports = function (db, appConfig, upload) {
                   <label>Voter ID Number</label>
                   <div style="display:flex;gap:8px;align-items:center;">
                     <input type="text" name="voter_id" id="voterIdInput" value="${car.voter_id || ''}" placeholder="Assign a voter number" inputmode="numeric" style="flex:1;" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-                    <button type="button" onclick="document.getElementById('voterIdInput').value='${nextVoterId}'" style="white-space:nowrap;background:#3498db;color:#000;padding:10px 16px;">Auto-Assign (#${nextVoterId})</button>
+                    <button type="button" onclick="document.getElementById('voterIdInput').value='${nextVoterId}'" style="white-space:nowrap;background:var(--btn-edit-bg);color:var(--text-dark);padding:10px 16px;">Auto-Assign (#${nextVoterId})</button>
                   </div>
                 </div>
                 <div class="form-group">

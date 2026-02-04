@@ -3,6 +3,7 @@
 // error/success pages, and other standard layouts.
 
 const { dashboardHeader, getNav } = require('./components');
+const { appConfig: appConfigRef } = require('../config/appConfig');
 
 /**
  * Full HTML page shell — wraps content in a complete HTML document.
@@ -22,7 +23,7 @@ function pageShell({ title, extraHead, body }) {
       <link rel="stylesheet" href="/css/styles.css">
       ${extraHead || ''}
     </head>
-    <body>
+    <body data-theme="${appConfigRef.theme || 'light'}">
       ${body}
     </body>
     </html>`;
@@ -51,10 +52,11 @@ function dashboardPage({ title, heading, role, user, activeTab, content, appConf
   const bgStyles = appConfig ? getAppBackgroundStyles(appConfig) : '';
 
   // Build body tag with user data attributes if request provided
-  let bodyTag = '<body>';
+  const theme = (appConfig || appConfigRef).theme || 'light';
+  let bodyTag = `<body data-theme="${theme}">`;
   if (req && req.session && req.session.user) {
     const u = req.session.user;
-    bodyTag = `<body data-user-role="${u.role || ''}" data-user-id="${u.user_id || ''}" data-user-name="${u.name || ''}" data-user-image="${u.image_url || ''}">`;
+    bodyTag = `<body data-theme="${theme}" data-user-role="${u.role || ''}" data-user-id="${u.user_id || ''}" data-user-name="${u.name || ''}" data-user-image="${u.image_url || ''}">`;
   }
 
   return `
@@ -100,7 +102,7 @@ function formPage({ title, body, extraHead }) {
       <link rel="stylesheet" href="/css/styles.css">
       ${extraHead || ''}
     </head>
-    <body>
+    <body data-theme="${appConfigRef.theme || 'light'}">
       <div class="container">
         <div class="logo">
           <div class="logo-icon">🏎️</div>
@@ -162,10 +164,11 @@ function getAppBackgroundStyles(appConfig) {
   const useTint = bg.useTint;
   const tintColor = bg.tintColor || '#1a1a2e';
   const tintOpacity = bg.tintOpacity ?? 0.5;
+  const isDark = (appConfig && appConfig.theme) === 'dark';
 
   let bodyBg;
   if (useImage) {
-    bodyBg = `background: url('${bg.imageUrl}') center/cover no-repeat fixed; background-color: #1a1a2e;`;
+    bodyBg = `background: url('${bg.imageUrl}') center/cover no-repeat fixed; background-color: ${isDark ? '#0d0d14' : '#1a1a2e'};`;
   } else {
     bodyBg = `background: ${bgColor};`;
   }
@@ -187,10 +190,15 @@ function getAppBackgroundStyles(appConfig) {
     `;
   }
 
+  // Use theme-aware container background colors
+  const containerBgLight = `rgba(255, 255, 255, ${containerOpacity})`;
+  const containerBgDark = `rgba(30, 30, 45, ${containerOpacity})`;
+
   return `
     <style>
       body { ${bodyBg} }
-      .dashboard-container { background: rgba(255, 255, 255, ${containerOpacity}); }
+      .dashboard-container { background: ${containerBgLight}; }
+      [data-theme="dark"] .dashboard-container { background: ${containerBgDark}; }
       ${tintStyles}
     </style>
   `;

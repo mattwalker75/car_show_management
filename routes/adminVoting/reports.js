@@ -57,12 +57,12 @@ module.exports = function (db, appConfig, upload) {
                   <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
                     <div style="flex:1;min-width:200px;">
                       <h4 style="margin:0 0 5px 0;">${r.title}</h4>
-                      <p style="color:#666;margin:0 0 8px 0;font-size:14px;">${r.description}</p>
-                      <span style="background:#3498db;color:white;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">${r.count}</span>
+                      <p style="color:var(--text-secondary);margin:0 0 8px 0;font-size:14px;">${r.description}</p>
+                      <span style="background:var(--btn-edit-bg);color:white;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">${r.count}</span>
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                      <a href="/admin/reports/view/${r.id}" class="action-btn" style="background:#27ae60;">View</a>
-                      <a href="/admin/reports/export/${r.id}" class="action-btn" style="background:#3498db;">Export CSV</a>
+                      <a href="/admin/reports/view/${r.id}" class="action-btn" style="background:var(--success-color);">View</a>
+                      <a href="/admin/reports/export/${r.id}" class="action-btn" style="background:var(--btn-edit-bg);">Export CSV</a>
                     </div>
                   </div>
                 </div>
@@ -85,7 +85,7 @@ module.exports = function (db, appConfig, upload) {
                     ${getAdminNav('reports', chatEnabled)}
 
                     <h3 class="section-title">Reports</h3>
-                    <p style="color:#666;margin-bottom:15px;">View and export reports as CSV files.</p>
+                    <p style="color:var(--text-secondary);margin-bottom:15px;">View and export reports as CSV files.</p>
 
                     ${reportCards}
                     <div class="links" style="margin-top:20px;">
@@ -113,7 +113,7 @@ module.exports = function (db, appConfig, upload) {
       const headerHtml = headers.map(h => `<th>${h}</th>`).join('');
       const rowHtml = rows.length > 0
         ? rows.join('')
-        : `<tr><td colspan="${colSpan}" style="text-align:center;color:#666;">No data found.</td></tr>`;
+        : `<tr><td colspan="${colSpan}" style="text-align:center;color:var(--text-secondary);">No data found.</td></tr>`;
 
       return `
         <!DOCTYPE html>
@@ -133,8 +133,8 @@ module.exports = function (db, appConfig, upload) {
 
             <h3 class="section-title">${title}</h3>
             <div style="margin-bottom:15px;">
-              <a href="/admin/reports/export/${reportId}" class="action-btn" style="background:#3498db;">Export CSV</a>
-              <a href="/admin/reports" class="action-btn" style="background:#6c757d;">Back to Reports</a>
+              <a href="/admin/reports/export/${reportId}" class="action-btn" style="background:var(--btn-edit-bg);">Export CSV</a>
+              <a href="/admin/reports" class="action-btn" style="background:var(--btn-secondary-bg);">Back to Reports</a>
             </div>
 
             <div class="table-wrapper report-table">
@@ -293,7 +293,7 @@ module.exports = function (db, appConfig, upload) {
             <td>${d.catagory_name}</td>
             <td>${d.cat_order}</td>
             <td><span class="status-badge ${d.cat_active ? 'active' : 'inactive'}">${d.cat_active ? 'Active' : 'Inactive'}</span></td>
-            <td style="white-space:normal;">${d.question || '<em style="color:#999;">No questions</em>'}</td>
+            <td style="white-space:normal;">${d.question || '<em style="color:var(--text-muted);">No questions</em>'}</td>
             <td>${d.min_score != null ? d.min_score : '-'}</td>
             <td>${d.max_score != null ? d.max_score : '-'}</td>
             <td>${d.q_order != null ? d.q_order : '-'}</td>

@@ -25,14 +25,14 @@ module.exports = function (db, appConfig, upload) {
   const vendorStyles = `
     <style>
       .vendor-section {
-        background: #f8f9fa;
+        background: var(--card-bg);
         border-radius: 12px;
         padding: 20px;
         margin-bottom: 16px;
-        border: 1px solid #e1e1e1;
+        border: 1px solid var(--card-border);
       }
       .vendor-section h4 {
-        color: #1a1a2e;
+        color: var(--text-primary);
         margin-bottom: 12px;
         font-size: 16px;
         display: flex;
@@ -47,21 +47,21 @@ module.exports = function (db, appConfig, upload) {
       }
       .vendor-detail-label {
         font-weight: 600;
-        color: #555;
+        color: var(--text-dark);
         min-width: 100px;
       }
       .vendor-detail-value {
-        color: #333;
+        color: var(--text-dark);
       }
       .vendor-empty {
-        color: #999;
+        color: var(--text-muted);
         font-style: italic;
         font-size: 13px;
         padding: 10px 0;
       }
       .product-card {
-        background: white;
-        border: 1px solid #e1e1e1;
+        background: var(--modal-content-bg);
+        border: 1px solid var(--card-border);
         border-radius: 10px;
         padding: 14px;
         margin-bottom: 10px;
@@ -74,23 +74,23 @@ module.exports = function (db, appConfig, upload) {
         height: 60px;
         object-fit: cover;
         border-radius: 6px;
-        border: 1px solid #e1e1e1;
+        border: 1px solid var(--card-border);
         flex-shrink: 0;
       }
       .product-info { flex: 1; }
       .product-info h5 {
         margin: 0 0 4px 0;
         font-size: 15px;
-        color: #1a1a2e;
+        color: var(--text-primary);
       }
       .product-info p {
         margin: 0;
         font-size: 13px;
-        color: #666;
+        color: var(--text-secondary);
       }
       .product-price {
         font-weight: 600;
-        color: #27ae60;
+        color: var(--success-color);
         font-size: 14px;
       }
       .product-actions {
@@ -109,23 +109,23 @@ module.exports = function (db, appConfig, upload) {
         text-decoration: none;
         display: inline-block;
       }
-      .btn-edit { background: #3498db; color: white; }
-      .btn-delete { background: #e74c3c; color: white; }
-      .btn-deactivate { background: #f39c12; color: white; }
-      .btn-activate { background: #27ae60; color: white; }
-      .btn-disable { background: #e74c3c; color: white; padding: 6px 14px; font-size: 13px; border-radius: 6px; }
-      .btn-enable { background: #27ae60; color: white; padding: 6px 14px; font-size: 13px; border-radius: 6px; }
+      .btn-edit { background: var(--btn-edit-bg); color: white; }
+      .btn-delete { background: var(--btn-delete-bg); color: white; }
+      .btn-deactivate { background: var(--warning-color); color: white; }
+      .btn-activate { background: var(--success-color); color: white; }
+      .btn-disable { background: var(--btn-delete-bg); color: white; padding: 6px 14px; font-size: 13px; border-radius: 6px; }
+      .btn-enable { background: var(--success-color); color: white; padding: 6px 14px; font-size: 13px; border-radius: 6px; }
       .product-card.sold-out { opacity: 0.7; }
-      .product-card.sold-out h5 { color: #e74c3c; }
-      .product-card.deactivated { opacity: 0.5; border-color: #f39c12; }
-      .product-card.deactivated h5 { color: #f39c12; }
+      .product-card.sold-out h5 { color: var(--error-color); }
+      .product-card.deactivated { opacity: 0.5; border-color: var(--deactivated-border); }
+      .product-card.deactivated h5 { color: var(--deactivated-border); }
       .price-sold-out { text-decoration: line-through; }
       .vendor-browse-card {
-        background: #f8f9fa;
+        background: var(--card-bg);
         border-radius: 12px;
         padding: 12px;
         margin-bottom: 12px;
-        border: 1px solid #e1e1e1;
+        border: 1px solid var(--card-border);
         display: flex;
         flex-direction: row;
         gap: 12px;
@@ -135,18 +135,18 @@ module.exports = function (db, appConfig, upload) {
         transition: all 0.2s ease;
       }
       .vendor-browse-card:active {
-        background: #eef;
+        background: var(--card-bg);
       }
       .vendor-browse-card.store-disabled {
         opacity: 0.6;
-        border-color: #e74c3c;
+        border-color: var(--error-color);
       }
       .vendor-browse-image {
         width: 80px;
         height: 80px;
         border-radius: 8px;
         overflow: hidden;
-        background: #e1e1e1;
+        background: var(--card-border);
         flex-shrink: 0;
       }
       .vendor-browse-image img {
@@ -161,17 +161,17 @@ module.exports = function (db, appConfig, upload) {
       .vendor-browse-name {
         font-size: 16px;
         font-weight: 700;
-        color: #1a1a2e;
+        color: var(--text-primary);
         margin-bottom: 4px;
       }
       .vendor-browse-detail {
         font-size: 13px;
-        color: #555;
+        color: var(--text-dark);
         line-height: 1.4;
       }
       .vendor-browse-desc {
         font-size: 12px;
-        color: #888;
+        color: var(--text-muted);
         font-style: italic;
         margin-top: 4px;
         display: -webkit-box;
@@ -181,7 +181,7 @@ module.exports = function (db, appConfig, upload) {
       }
       .disabled-badge {
         display: inline-block;
-        background: #e74c3c;
+        background: var(--btn-delete-bg);
         color: white;
         font-size: 11px;
         font-weight: 700;
@@ -191,7 +191,7 @@ module.exports = function (db, appConfig, upload) {
       }
       .deactivated-badge {
         display: inline-block;
-        background: #f39c12;
+        background: var(--warning-color);
         color: white;
         font-size: 10px;
         font-weight: 700;
@@ -214,7 +214,7 @@ module.exports = function (db, appConfig, upload) {
       .products-scroll::-webkit-scrollbar { display: none; }
       .custom-scrollbar-track {
         width: 8px;
-        background: #e0e0e0;
+        background: var(--card-border);
         border-radius: 4px;
         margin-left: 6px;
         position: relative;
@@ -222,7 +222,7 @@ module.exports = function (db, appConfig, upload) {
       }
       .custom-scrollbar-thumb {
         width: 8px;
-        background: #888;
+        background: var(--text-muted);
         border-radius: 4px;
         position: absolute;
         top: 0;
@@ -234,8 +234,8 @@ module.exports = function (db, appConfig, upload) {
           padding: 16px;
         }
         .vendor-browse-card:hover {
-          border-color: #e94560;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+          border-color: var(--accent-primary);
+          box-shadow: 0 2px 10px var(--container-shadow);
         }
         .vendor-browse-image {
           width: 100px;
@@ -286,7 +286,7 @@ module.exports = function (db, appConfig, upload) {
               ${isDisabled ? `<div class="disabled-badge">Store Disabled</div>` : ''}
             </div>
           </a>`;
-      }).join('') : '<p style="color: #666; text-align: center; padding: 20px;">No vendors have registered yet.</p>';
+      }).join('') : '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No vendors have registered yet.</p>';
 
       res.send(`
         <!DOCTYPE html>
@@ -360,8 +360,8 @@ module.exports = function (db, appConfig, upload) {
               <h5>${p.product_name}${deactivated ? ' - DEACTIVATED' : (soldOut ? ' - SOLD OUT' : '')}${deactivated ? '<span class="deactivated-badge">Admin Deactivated</span>' : ''}</h5>
               ${p.description ? `<p>${p.description}</p>` : ''}
               ${p.price ? (p.discount_price
-                ? `<p style="font-weight:600;color:#e94560;"><span style="text-decoration:line-through;color:#999;">$${p.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${p.discount_price}</span></p>`
-                : `<p style="font-weight:600;color:#e94560;${soldOut ? 'text-decoration:line-through;' : ''}">$${p.price}</p>`
+                ? `<p style="font-weight:600;color:var(--accent-primary);"><span style="text-decoration:line-through;color:var(--text-muted);">$${p.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${p.discount_price}</span></p>`
+                : `<p style="font-weight:600;color:var(--accent-primary);${soldOut ? 'text-decoration:line-through;' : ''}">$${p.price}</p>`
               ) : ''}
               <div class="product-actions">
                 ${deactivated
@@ -376,7 +376,7 @@ module.exports = function (db, appConfig, upload) {
             </div>
           </div>
         </a>`;
-      }).join('') : '<p style="color:#888;font-style:italic;">No products or services listed yet.</p>';
+      }).join('') : '<p style="color:var(--text-muted);font-style:italic;">No products or services listed yet.</p>';
 
       res.send(`
         <!DOCTYPE html>
@@ -393,18 +393,18 @@ module.exports = function (db, appConfig, upload) {
               display: flex;
               gap: 16px;
               align-items: flex-start;
-              background: #f8f9fa;
+              background: var(--card-bg);
               border-radius: 12px;
               padding: 16px;
               margin-bottom: 20px;
-              border: 1px solid #e1e1e1;
+              border: 1px solid var(--card-border);
             }
             .vendor-detail-image {
               width: 100px;
               height: 100px;
               border-radius: 8px;
               overflow: hidden;
-              background: #e1e1e1;
+              background: var(--card-border);
               flex-shrink: 0;
             }
             .vendor-detail-image img {
@@ -428,16 +428,16 @@ module.exports = function (db, appConfig, upload) {
             .vendor-detail-info h3 {
               margin: 0 0 8px 0;
               font-size: 20px;
-              color: #1a1a2e;
+              color: var(--text-primary);
             }
             .vendor-detail-info p {
               margin: 2px 0;
               font-size: 14px;
-              color: #555;
+              color: var(--text-dark);
             }
             .booth-info {
               font-size: 16px;
-              color: #333;
+              color: var(--text-dark);
               font-weight: 600;
             }
             .store-status-banner {
@@ -449,19 +449,19 @@ module.exports = function (db, appConfig, upload) {
               font-size: 14px;
             }
             .store-status-banner.disabled {
-              background: #fde8e8;
-              color: #e74c3c;
-              border: 1px solid #e74c3c;
+              background: var(--error-bg);
+              color: var(--error-color);
+              border: 1px solid var(--btn-delete-bg);
             }
             .store-status-banner.active {
-              background: #e8f5e9;
-              color: #27ae60;
-              border: 1px solid #27ae60;
+              background: var(--success-bg);
+              color: var(--success-color);
+              border: 1px solid var(--success-color);
             }
             .product-card-link { text-decoration: none; color: inherit; display: block; }
-            .product-card-link:active .product-card { background: #eef; }
+            .product-card-link:active .product-card { background: var(--card-bg); }
             @media (min-width: 768px) {
-              .product-card-link:hover .product-card { border-color: #e94560; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+              .product-card-link:hover .product-card { border-color: var(--accent-primary); box-shadow: 0 2px 8px var(--container-shadow); }
               .vendor-detail-image {
                 width: 120px;
                 height: 120px;
@@ -546,7 +546,7 @@ module.exports = function (db, appConfig, upload) {
                 ${business.business_email ? `<p>${business.business_email}</p>` : ''}
                 ${business.business_phone ? `<p>${business.business_phone}</p>` : ''}
                 ${addressLine ? `<p>${addressLine}</p>` : ''}
-                ${business.business_description ? `<p style="margin-top:6px;color:#888;font-style:italic;">${business.business_description}</p>` : ''}
+                ${business.business_description ? `<p style="margin-top:6px;color:var(--text-muted);font-style:italic;">${business.business_description}</p>` : ''}
               </div>
             </div>
 
@@ -554,7 +554,7 @@ module.exports = function (db, appConfig, upload) {
               <h4>Booth Information</h4>
               ${business.booth_location
                 ? `<p class="booth-info">${business.booth_location}</p>`
-                : `<p style="color:#888;font-style:italic;">Booth location not set yet.</p>`
+                : `<p style="color:var(--text-muted);font-style:italic;">Booth location not set yet.</p>`
               }
             </div>
 
@@ -686,7 +686,7 @@ module.exports = function (db, appConfig, upload) {
               border-radius: 12px;
               overflow: hidden;
               margin: 0 auto 20px;
-              border: 2px solid #e1e1e1;
+              border: 2px solid var(--card-border);
             }
             .product-detail-image img {
               width: 100%;
@@ -695,30 +695,30 @@ module.exports = function (db, appConfig, upload) {
             .product-detail-name {
               font-size: 22px;
               font-weight: 700;
-              color: #1a1a2e;
+              color: var(--text-primary);
               margin-bottom: 8px;
             }
             .product-detail-name.sold-out {
-              color: #e74c3c;
+              color: var(--error-color);
             }
             .product-detail-name.deactivated {
-              color: #f39c12;
+              color: var(--deactivated-border);
             }
             .product-detail-vendor {
               font-size: 14px;
-              color: #888;
+              color: var(--text-muted);
               margin-bottom: 16px;
             }
             .product-detail-desc {
               font-size: 15px;
-              color: #555;
+              color: var(--text-dark);
               line-height: 1.6;
               margin-bottom: 16px;
             }
             .product-detail-price {
               font-size: 20px;
               font-weight: 700;
-              color: #e94560;
+              color: var(--accent-primary);
               margin-bottom: 8px;
             }
             .product-detail-price.sold-out {
@@ -733,16 +733,16 @@ module.exports = function (db, appConfig, upload) {
               margin-bottom: 20px;
             }
             .product-detail-status.available {
-              background: #e8f5e9;
-              color: #27ae60;
+              background: var(--success-bg);
+              color: var(--success-color);
             }
             .product-detail-status.sold-out {
-              background: #fde8e8;
-              color: #e74c3c;
+              background: var(--error-bg);
+              color: var(--error-color);
             }
             .product-detail-status.deactivated {
-              background: #fff3cd;
-              color: #856404;
+              background: var(--warning-bg);
+              color: var(--warning-text);
             }
             .admin-actions {
               display: flex;
@@ -750,7 +750,7 @@ module.exports = function (db, appConfig, upload) {
               flex-wrap: wrap;
               margin-top: 16px;
               padding-top: 16px;
-              border-top: 1px solid #e1e1e1;
+              border-top: 1px solid var(--divider-color);
             }
             @media (min-width: 768px) {
               .product-detail-name { font-size: 26px; }
@@ -779,7 +779,7 @@ module.exports = function (db, appConfig, upload) {
 
             ${product.description ? `<div class="product-detail-desc">${product.description}</div>` : ''}
             ${product.price ? (product.discount_price
-              ? `<div class="product-detail-price"><span style="text-decoration:line-through;color:#999;font-size:0.8em;">$${product.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${product.discount_price}</span></div>`
+              ? `<div class="product-detail-price"><span style="text-decoration:line-through;color:var(--text-muted);font-size:0.8em;">$${product.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${product.discount_price}</span></div>`
               : `<div class="product-detail-price${soldOut ? ' sold-out' : ''}">$${product.price}</div>`
             ) : ''}
 

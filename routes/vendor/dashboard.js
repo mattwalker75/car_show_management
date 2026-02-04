@@ -32,7 +32,7 @@ module.exports = function (db, appConfig, upload) {
                 const line = parts.length > 0 ? (business.business_street ? business.business_street + (business.business_city || business.business_state ? ', ' : '') : '') + (business.business_city ? business.business_city + (business.business_state ? ', ' : '') : '') + (business.business_state || '') + (business.business_zip ? ' ' + business.business_zip : '') : '';
                 return line ? `<p>${line}</p>` : '';
               })()}
-              ${business.business_description ? `<p style="margin-top:4px;color:#555;font-style:italic;">${business.business_description}</p>` : ''}
+              ${business.business_description ? `<p style="margin-top:4px;color:var(--text-dark);font-style:italic;">${business.business_description}</p>` : ''}
             </div>
           </div>
         ` : `<p class="vendor-empty">No business information yet. Click "Edit" to add your business details.</p>`;
@@ -42,14 +42,14 @@ module.exports = function (db, appConfig, upload) {
           const soldOut = !p.available;
           const deactivated = p.admin_deactivated;
           return `
-          <div class="product-card${deactivated ? '' : (soldOut ? ' sold-out' : '')}"${deactivated ? ' style="opacity:0.6;border-color:#f39c12;"' : ''}>
+          <div class="product-card${deactivated ? '' : (soldOut ? ' sold-out' : '')}"${deactivated ? ' style="opacity:0.6;border-color:var(--deactivated-border);"' : ''}>
             ${p.image_url ? `<img src="${p.image_url}" alt="${p.product_name}">` : ''}
             <div class="product-info">
               <h5>${p.product_name}${soldOut ? ' - SOLD OUT' : ''}</h5>
-              ${deactivated ? `<p style="color:#e74c3c;font-weight:700;font-size:12px;margin-bottom:4px;">Product deactivated by Admin</p>` : ''}
+              ${deactivated ? `<p style="color:var(--error-color);font-weight:700;font-size:12px;margin-bottom:4px;">Product deactivated by Admin</p>` : ''}
               ${p.description ? `<p>${p.description}</p>` : ''}
               ${p.price ? (p.discount_price
-                ? `<p class="product-price"><span style="text-decoration:line-through;color:#999;">$${p.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${p.discount_price}</span></p>`
+                ? `<p class="product-price"><span style="text-decoration:line-through;color:var(--text-muted);">$${p.price}</span> <span${soldOut ? ' style="text-decoration:line-through;"' : ''}>$${p.discount_price}</span></p>`
                 : `<p class="product-price${soldOut ? ' price-sold-out' : ''}">$${p.price}</p>`
               ) : ''}
               <div class="product-actions">
@@ -100,9 +100,9 @@ module.exports = function (db, appConfig, upload) {
               </div>
 
               ${business && business.admin_disabled ? `
-              <div style="background:#fde8e8;border:2px solid #e74c3c;border-radius:10px;padding:16px;margin-bottom:16px;text-align:center;">
-                <div style="font-size:20px;font-weight:700;color:#e74c3c;margin-bottom:4px;">Vendor Store deactivated by Admin</div>
-                <div style="font-size:13px;color:#c0392b;">Your store is currently hidden from other users. Please contact an administrator for more information.</div>
+              <div style="background:var(--error-bg);border:2px solid var(--btn-delete-bg);border-radius:10px;padding:16px;margin-bottom:16px;text-align:center;">
+                <div style="font-size:20px;font-weight:700;color:var(--error-color);margin-bottom:4px;">Vendor Store deactivated by Admin</div>
+                <div style="font-size:13px;color:var(--error-color);">Your store is currently hidden from other users. Please contact an administrator for more information.</div>
               </div>
               ` : ''}
 

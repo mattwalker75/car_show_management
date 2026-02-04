@@ -11,7 +11,7 @@ module.exports = function (db, appConfig, upload) {
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
   const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
   const appBgStyles = () => getAppBackgroundStyles(appConfig);
-  const bodyTag = (req) => { const u = req.session && req.session.user; return `<body data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
+  const bodyTag = (req) => { const u = req.session && req.session.user; const theme = appConfig.theme || 'light'; return `<body data-theme="${theme}" data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
 
   // ============================================================
   // Judge Dashboard
@@ -99,11 +99,11 @@ module.exports = function (db, appConfig, upload) {
                 </div>
 
                 ${appConfig.judgeVotingStatus === 'Lock' ? `
-                  <div style="margin-top:20px;padding:15px;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;text-align:center;">
+                  <div style="margin-top:20px;padding:15px;background:var(--warning-bg);border:1px solid var(--warning-border);border-radius:8px;text-align:center;">
                     <strong>🔒 Voting is Locked</strong> - Results have been published. <a href="/judge/results">View Results</a>
                   </div>
                 ` : appConfig.judgeVotingStatus === 'Close' ? `
-                  <div style="margin-top:20px;padding:15px;background:#f0f0f5;border:1px solid #ccc;border-radius:8px;text-align:center;">
+                  <div style="margin-top:20px;padding:15px;background:var(--subnav-bg);border:1px solid #ccc;border-radius:8px;text-align:center;">
                     <strong>🚫 Voting is Closed</strong> - Contact administrator to Open Voting.
                   </div>
                 ` : carsToJudgeCount > 0 ? `
@@ -136,23 +136,6 @@ module.exports = function (db, appConfig, upload) {
         users = [];
       }
 
-      const userRows = users.map(u => `
-        <tr class="user-row" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}" style="border-bottom:none;">
-          <td style="border-bottom:none;">${u.username}</td>
-          <td style="border-bottom:none;">${u.name}</td>
-          <td style="border-bottom:none;">${u.email}</td>
-          <td style="border-bottom:none;">${u.phone || '-'}</td>
-          <td style="border-bottom:none;"><span class="role-badge ${u.role}">${u.role}</span></td>
-          <td style="border-bottom:none;"><span class="status-badge ${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
-        </tr>
-        <tr class="user-row-actions" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}">
-          <td colspan="6" style="border-top:none;padding-top:0;text-align:center;">
-            <a href="/judge/reset-password/${u.id}" class="action-btn edit">Reset Password</a>
-          </td>
-        </tr>
-      `).join('');
-
-      // Mobile card view
       const userCards = users.map(u => `
         <div class="user-card" data-username="${(u.username || '').toLowerCase()}" data-name="${(u.name || '').toLowerCase()}" data-email="${(u.email || '').toLowerCase()}" data-phone="${(u.phone || '').toLowerCase()}">
           <div class="user-card-header">
@@ -208,37 +191,16 @@ module.exports = function (db, appConfig, upload) {
             </div>
 
             <h3 class="section-title">Users & Judges</h3>
-            <p style="color: #666; margin-bottom: 15px; font-size: 14px;">You can reset passwords for users and other judges. Admin accounts are not shown.</p>
+            <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 14px;">You can reset passwords for users and other judges. Admin accounts are not shown.</p>
 
             <div style="margin-bottom:16px;">
-              <input type="text" id="userSearch" placeholder="Search by name, login ID, email, or phone..." oninput="filterUsers()" style="width:100%;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#e94560'" onblur="this.style.borderColor='#e1e1e1'">
+              <input type="text" id="userSearch" placeholder="Search by name, login ID, email, or phone..." oninput="filterUsers()" style="width:100%;padding:10px 14px;border:2px solid var(--card-border);border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-primary)'" onblur="this.style.borderColor='var(--card-border)'">
             </div>
-            <div id="noResults" style="display:none;text-align:center;color:#666;padding:20px;font-size:14px;">No users match your search.</div>
+            <div id="noResults" style="display:none;text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">No users match your search.</div>
 
-            <!-- Mobile card view -->
             <div class="user-cards">
               ${userCards}
             </div>
-
-            <!-- Table view for larger screens -->
-            <div class="table-wrapper">
-              <table class="user-table">
-                <thead>
-                  <tr>
-                    <th>Username</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Phone</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${userRows}
-                </tbody>
-              </table>
-            </div>
-            <div class="scroll-hint"></div>
 
             <div class="links" style="margin-top:20px;">
               <a href="/judge">&larr; Back to Dashboard</a>
@@ -248,20 +210,12 @@ module.exports = function (db, appConfig, upload) {
             function filterUsers() {
               var query = document.getElementById('userSearch').value.toLowerCase().trim();
               var cards = document.querySelectorAll('.user-card');
-              var rows = document.querySelectorAll('.user-row');
-              var actionRows = document.querySelectorAll('.user-row-actions');
               var visibleCount = 0;
 
               cards.forEach(function(card) {
                 var match = !query || card.dataset.username.indexOf(query) !== -1 || card.dataset.name.indexOf(query) !== -1 || card.dataset.email.indexOf(query) !== -1 || card.dataset.phone.indexOf(query) !== -1;
                 card.style.display = match ? '' : 'none';
                 if (match) visibleCount++;
-              });
-
-              rows.forEach(function(row, i) {
-                var match = !query || row.dataset.username.indexOf(query) !== -1 || row.dataset.name.indexOf(query) !== -1 || row.dataset.email.indexOf(query) !== -1 || row.dataset.phone.indexOf(query) !== -1;
-                row.style.display = match ? '' : 'none';
-                if (actionRows[i]) actionRows[i].style.display = match ? '' : 'none';
               });
 
               document.getElementById('noResults').style.display = (query && visibleCount === 0) ? '' : 'none';
@@ -339,6 +293,9 @@ module.exports = function (db, appConfig, upload) {
                 </div>
                 <button type="submit">Reset Password</button>
               </form>
+            </div>
+            <div class="links" style="margin-top:20px;">
+              <a href="/judge/users">&larr; Back to Users</a>
             </div>
           </div>
         </body>
@@ -486,10 +443,10 @@ module.exports = function (db, appConfig, upload) {
                 <a href="/user/vote">Vote Here!</a>
             </div>
 
-            <div style="text-align:center;padding:40px;background:#f8f9fa;border-radius:8px;">
+            <div style="text-align:center;padding:40px;background:var(--card-bg);border-radius:8px;">
               <div style="font-size:48px;margin-bottom:20px;">${isLocked ? '🔒' : '🚫'}</div>
-              <h3 style="color:#666;margin-bottom:10px;">${isLocked ? 'Voting is Locked' : 'Voting is not open yet'}</h3>
-              <p style="color:#999;">${isLocked ? 'Judging has been finalized by the administrator. <a href="/judge/results">View Results</a>' : 'Contact the administrator to open voting.'}</p>
+              <h3 style="color:var(--text-secondary);margin-bottom:10px;">${isLocked ? 'Voting is Locked' : 'Voting is not open yet'}</h3>
+              <p style="color:var(--text-muted);">${isLocked ? 'Judging has been finalized by the administrator. <a href="/judge/results">View Results</a>' : 'Contact the administrator to open voting.'}</p>
             </div>
           </div>
         </body>
@@ -553,7 +510,7 @@ module.exports = function (db, appConfig, upload) {
         `).join('');
 
         const judgedCards = carsJudged.map(car => `
-          <div class="vehicle-card" style="border-color:#27ae60;">
+          <div class="vehicle-card" style="border-color:var(--success-color);">
             <div class="vehicle-info" style="flex:1;">
               <div class="vehicle-title">${car.year || ''} ${car.make} ${car.model}</div>
               <div class="vehicle-class">
@@ -562,8 +519,8 @@ module.exports = function (db, appConfig, upload) {
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;">
-              <span style="background:#27ae60;color:white;padding:6px 14px;border-radius:20px;font-weight:600;">${car.total_score} pts</span>
-              <span style="color:#27ae60;font-weight:600;">✓ Scored</span>
+              <span style="background:var(--success-color);color:white;padding:6px 14px;border-radius:20px;font-weight:600;">${car.total_score} pts</span>
+              <span style="color:var(--success-color);font-weight:600;">✓ Scored</span>
             </div>
           </div>
         `).join('');
@@ -579,11 +536,11 @@ module.exports = function (db, appConfig, upload) {
         ${appBgStyles()}
             <style>
               .vehicle-card {
-                background: #f8f9fa;
+                background: var(--card-bg);
                 border-radius: 12px;
                 padding: 16px;
                 margin-bottom: 12px;
-                border: 1px solid #e1e1e1;
+                border: 1px solid var(--card-border);
                 display: flex;
                 flex-direction: column;
                 gap: 12px;
@@ -593,7 +550,7 @@ module.exports = function (db, appConfig, upload) {
                 height: 120px;
                 border-radius: 8px;
                 overflow: hidden;
-                background: #e1e1e1;
+                background: var(--card-border);
               }
               .vehicle-image img {
                 width: 100%;
@@ -613,12 +570,12 @@ module.exports = function (db, appConfig, upload) {
               .vehicle-title {
                 font-size: 16px;
                 font-weight: 700;
-                color: #1a1a2e;
+                color: var(--text-primary);
                 margin-bottom: 4px;
               }
               .vehicle-meta {
                 font-size: 12px;
-                color: #888;
+                color: var(--text-muted);
                 margin-bottom: 8px;
               }
               .vehicle-class {
@@ -627,7 +584,7 @@ module.exports = function (db, appConfig, upload) {
                 gap: 6px;
               }
               .type-badge {
-                background: #3498db;
+                background: var(--btn-edit-bg);
                 color: white;
                 padding: 3px 10px;
                 border-radius: 20px;
@@ -655,7 +612,7 @@ module.exports = function (db, appConfig, upload) {
                 gap: 8px;
               }
               .product-card.sold-out { opacity: 0.7; }
-              .product-card.sold-out h5 { color: #e74c3c; }
+              .product-card.sold-out h5 { color: var(--error-color); }
               @media (min-width: 768px) {
                 .vehicle-card {
                   flex-direction: row;
@@ -697,15 +654,15 @@ module.exports = function (db, appConfig, upload) {
               <h3 class="section-title">Vehicles Ready to Judge (<span id="toJudgeCount">${carsToJudge.length}</span>)</h3>
 
               <div style="margin-bottom:15px;display:flex;gap:8px;flex-wrap:wrap;">
-                <input type="text" id="vehicleSearch" placeholder="Search by year, make, model, owner, or email..." oninput="filterVehicles()" style="flex:1;min-width:200px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#e94560'" onblur="this.style.borderColor='#e1e1e1'">
-                <select id="voterIdFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+                <input type="text" id="vehicleSearch" placeholder="Search by year, make, model, owner, or email..." oninput="filterVehicles()" style="flex:1;min-width:200px;padding:10px 14px;border:2px solid var(--card-border);border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-primary)'" onblur="this.style.borderColor='var(--card-border)'">
+                <select id="voterIdFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid var(--card-border);border-radius:8px;font-size:14px;">
                   <option value="">All Voter IDs</option>
                   ${judgeVoterIds.map(id => `<option value="${id}">#${id}</option>`).join('')}
                 </select>
               </div>
-              <div id="noResults" style="display:none;text-align:center;color:#666;padding:20px;font-size:14px;">No vehicles match your search.</div>
+              <div id="noResults" style="display:none;text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">No vehicles match your search.</div>
 
-              ${carsToJudge.length > 0 ? toJudgeCards : '<p style="color: #27ae60; text-align: center; padding: 20px; background: #d4edda; border-radius: 8px;">🎉 You have scored all active vehicles!</p>'}
+              ${carsToJudge.length > 0 ? toJudgeCards : '<p style="color: var(--success-color); text-align: center; padding: 20px; background: var(--status-active-bg); border-radius: 8px;">🎉 You have scored all active vehicles!</p>'}
 
               ${carsJudged.length > 0 ? `
                 <h3 class="section-title" style="margin-top:30px;">Already Scored (${carsJudged.length})</h3>
@@ -833,7 +790,7 @@ module.exports = function (db, appConfig, upload) {
               return `
                 <div class="category-section">
                   <h4 class="category-title">${cat.catagory_name}</h4>
-                  ${questionInputs || '<p style="color:#999;">No questions in this category</p>'}
+                  ${questionInputs || '<p style="color:var(--text-muted);">No questions in this category</p>'}
                 </div>
               `;
             }).join('');
@@ -880,33 +837,33 @@ module.exports = function (db, appConfig, upload) {
                     font-size: 14px;
                   }
                   .category-section {
-                    background: #f8f9fa;
+                    background: var(--card-bg);
                     border-radius: 12px;
                     padding: 20px;
                     margin-bottom: 15px;
-                    border: 1px solid #e1e1e1;
+                    border: 1px solid var(--card-border);
                   }
                   .category-title {
                     margin: 0 0 15px 0;
                     padding-bottom: 10px;
-                    border-bottom: 2px solid #3498db;
-                    color: #2c3e50;
+                    border-bottom: 2px solid var(--btn-edit-bg);
+                    color: var(--heading-alt);
                   }
                   .score-question {
                     padding: 12px 0;
-                    border-bottom: 1px solid #e1e1e1;
+                    border-bottom: 1px solid var(--card-border);
                   }
                   .score-question:last-child {
                     border-bottom: none;
                   }
                   .question-text {
                     font-size: 14px;
-                    color: #333;
+                    color: var(--text-dark);
                     margin-bottom: 8px;
                   }
                   .score-range {
                     font-size: 12px;
-                    color: #888;
+                    color: var(--text-muted);
                     font-weight: 400;
                   }
                   .bubble-row {
@@ -918,14 +875,14 @@ module.exports = function (db, appConfig, upload) {
                     width: 40px;
                     height: 40px;
                     border-radius: 50%;
-                    border: 2px solid #ddd;
-                    background: #fff;
+                    border: 2px solid var(--card-border);
+                    background: var(--modal-content-bg);
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     font-size: 14px;
                     font-weight: 600;
-                    color: #333;
+                    color: var(--text-dark);
                     cursor: pointer;
                     transition: all 0.15s;
                     user-select: none;
@@ -937,19 +894,19 @@ module.exports = function (db, appConfig, upload) {
                   .score-bubble.selected {
                     background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
                     color: white;
-                    border-color: #2980b9;
+                    border-color: var(--info-highlight-text);
                     box-shadow: 0 2px 8px rgba(52, 152, 219, 0.4);
                   }
                   .submit-section {
-                    background: #fff3cd;
-                    border: 2px solid #ffc107;
+                    background: var(--warning-bg);
+                    border: 2px solid var(--warning-border);
                     border-radius: 12px;
                     padding: 20px;
                     margin-top: 20px;
                     text-align: center;
                   }
                   .submit-warning {
-                    color: #856404;
+                    color: var(--warning-text);
                     margin-bottom: 15px;
                     font-size: 14px;
                   }
@@ -1013,7 +970,7 @@ module.exports = function (db, appConfig, upload) {
                   <form method="POST" action="/judge/submit-scores/${carId}" onsubmit="return confirmSubmit()">
                     <h3 class="section-title">Scoring Sheet</h3>
 
-                    ${categoryForms || '<p style="color:#e74c3c;padding:20px;background:#f8f9fa;border-radius:8px;">No judging categories configured for this vehicle type. Please contact the administrator.</p>'}
+                    ${categoryForms || '<p style="color:var(--error-color);padding:20px;background:var(--card-bg);border-radius:8px;">No judging categories configured for this vehicle type. Please contact the administrator.</p>'}
 
                     ${categories.length > 0 ? `
                       <div class="submit-section">
@@ -1024,7 +981,7 @@ module.exports = function (db, appConfig, upload) {
                   </form>
 
                   <div style="margin-top:20px;">
-                    <a href="/judge/judge-vehicles" style="color:#666;">← Back to Vehicles List</a>
+                    <a href="/judge/judge-vehicles" style="color:var(--text-secondary);">← Back to Vehicles List</a>
                   </div>
                 </div>
 
@@ -1160,10 +1117,10 @@ module.exports = function (db, appConfig, upload) {
             </div>
 
             <h3 class="section-title">Results</h3>
-            <div style="text-align:center;padding:40px;background:#f8f9fa;border-radius:8px;">
+            <div style="text-align:center;padding:40px;background:var(--card-bg);border-radius:8px;">
               <div style="font-size:48px;margin-bottom:20px;">🔒</div>
-              <h3 style="color:#666;margin-bottom:10px;">Results Not Yet Published</h3>
-              <p style="color:#999;">Results will be available here once voting has been locked by the administrator.</p>
+              <h3 style="color:var(--text-secondary);margin-bottom:10px;">Results Not Yet Published</h3>
+              <p style="color:var(--text-muted);">Results will be available here once voting has been locked by the administrator.</p>
             </div>
           </div>
         </body>
@@ -1213,14 +1170,14 @@ module.exports = function (db, appConfig, upload) {
             ${Object.keys(judgeResultsByClass).map(className => {
               const classResults = judgeResultsByClass[className];
               const resultsList = classResults.map(r => `
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:${r.place === 1 ? '#fff9e6' : '#f8f9fa'};border-radius:6px;margin-bottom:8px;border:${r.place === 1 ? '2px solid #f1c40f' : '1px solid #ddd'};">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:${r.place === 1 ? 'var(--gold-bg)' : 'var(--card-bg)'};border-radius:6px;margin-bottom:8px;border:${r.place === 1 ? '2px solid var(--gold-border)' : '1px solid var(--card-border)'};">
                   <span><strong>${placeLabels[r.place - 1] || r.place}</strong> - ${r.year || ''} ${r.make} ${r.model} (ID: ${r.voter_id || 'N/A'})</span>
-                  <span style="background:#27ae60;color:white;padding:4px 12px;border-radius:20px;font-weight:600;">${r.total_score || 0} pts</span>
+                  <span style="background:var(--success-color);color:white;padding:4px 12px;border-radius:20px;font-weight:600;">${r.total_score || 0} pts</span>
                 </div>
               `).join('');
               return `
-                <div style="background:white;border:1px solid #ddd;border-radius:8px;padding:20px;margin-bottom:20px;">
-                  <h4 style="margin:0 0 15px 0;color:#2c3e50;border-bottom:2px solid #3498db;padding-bottom:10px;">${className}</h4>
+                <div style="background:var(--modal-bg);border:1px solid var(--card-border);border-radius:8px;padding:20px;margin-bottom:20px;">
+                  <h4 style="margin:0 0 15px 0;color:var(--heading-alt);border-bottom:2px solid var(--btn-edit-bg);padding-bottom:10px;">${className}</h4>
                   ${resultsList}
                 </div>
               `;
@@ -1229,7 +1186,7 @@ module.exports = function (db, appConfig, upload) {
         } else if (judgeResultsPublished) {
           judgeResultsHtml = `
             <h3 class="section-title">Judge Results</h3>
-            <p style="color:#999;">No judge results have been published yet.</p>
+            <p style="color:var(--text-muted);">No judge results have been published yet.</p>
           `;
         }
 
@@ -1239,13 +1196,13 @@ module.exports = function (db, appConfig, upload) {
           specialtyResultsHtml = `
             <h3 class="section-title" style="margin-top:30px;">Specialty Vote Winners</h3>
             ${specialtyResults.map(r => `
-              <div style="background:white;border:1px solid #ddd;border-radius:8px;padding:20px;margin-bottom:20px;">
-                <h4 style="margin:0 0 15px 0;color:#2c3e50;border-bottom:2px solid #9b59b6;padding-bottom:10px;">${r.vote_name}</h4>
-                <div style="background:#fff9e6;border:2px solid #f1c40f;border-radius:8px;padding:15px;text-align:center;">
+              <div style="background:var(--modal-bg);border:1px solid var(--card-border);border-radius:8px;padding:20px;margin-bottom:20px;">
+                <h4 style="margin:0 0 15px 0;color:var(--heading-alt);border-bottom:2px solid var(--badge-purple-bg);padding-bottom:10px;">${r.vote_name}</h4>
+                <div style="background:var(--gold-bg);border:2px solid var(--gold-border);border-radius:8px;padding:15px;text-align:center;">
                   <div style="font-size:36px;margin-bottom:10px;">🏆</div>
-                  <div style="font-size:18px;font-weight:bold;color:#2c3e50;">${r.year || ''} ${r.make} ${r.model}</div>
-                  <div style="color:#666;margin-top:5px;">Voter ID: ${r.voter_id || 'N/A'}</div>
-                  <div style="margin-top:10px;background:#27ae60;color:white;padding:6px 16px;border-radius:20px;display:inline-block;font-weight:600;">${r.total_score || 0} votes</div>
+                  <div style="font-size:18px;font-weight:bold;color:var(--heading-alt);">${r.year || ''} ${r.make} ${r.model}</div>
+                  <div style="color:var(--text-secondary);margin-top:5px;">Voter ID: ${r.voter_id || 'N/A'}</div>
+                  <div style="margin-top:10px;background:var(--success-color);color:white;padding:6px 16px;border-radius:20px;display:inline-block;font-weight:600;">${r.total_score || 0} votes</div>
                 </div>
               </div>
             `).join('')}
@@ -1253,7 +1210,7 @@ module.exports = function (db, appConfig, upload) {
         } else if (specialtyResultsPublished) {
           specialtyResultsHtml = `
             <h3 class="section-title" style="margin-top:30px;">Specialty Vote Results</h3>
-            <p style="color:#999;">No specialty vote results have been published yet.</p>
+            <p style="color:var(--text-muted);">No specialty vote results have been published yet.</p>
           `;
         }
 
@@ -1362,7 +1319,7 @@ module.exports = function (db, appConfig, upload) {
         `).join('');
 
         const inactiveVehicleCards = inactiveCars.map(car => `
-          <div class="vehicle-card" data-year="${(car.year || '').toString().toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-username="${(car.owner_username || '').toLowerCase()}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-voterid="${car.voter_id || ''}" data-status="pending" style="opacity: 0.7; border-color: #ffc107;">
+          <div class="vehicle-card" data-year="${(car.year || '').toString().toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-username="${(car.owner_username || '').toLowerCase()}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-voterid="${car.voter_id || ''}" data-status="pending" style="opacity: 0.7; border-color: var(--warning-border);">
             <a href="/judge/view-vehicle/${car.car_id}" class="vehicle-image" style="cursor:pointer;display:block;text-decoration:none;">
               ${car.image_url
                 ? `<img src="${car.image_url}" alt="${car.make} ${car.model}">`
@@ -1380,7 +1337,7 @@ module.exports = function (db, appConfig, upload) {
               ${car.description ? `<div class="vehicle-description">${car.description}</div>` : ''}
             </div>
             <div class="vehicle-actions">
-              <span style="color:#856404;font-size:12px;font-weight:600;">⏳ Awaiting Activation</span>
+              <span style="color:var(--warning-text);font-size:12px;font-weight:600;">⏳ Awaiting Activation</span>
             </div>
           </div>
         `).join('');
@@ -1396,11 +1353,11 @@ module.exports = function (db, appConfig, upload) {
         ${appBgStyles()}
           <style>
             .vehicle-card {
-              background: #f8f9fa;
+              background: var(--card-bg);
               border-radius: 12px;
               padding: 16px;
               margin-bottom: 12px;
-              border: 1px solid #e1e1e1;
+              border: 1px solid var(--card-border);
               display: flex;
               flex-direction: column;
               gap: 12px;
@@ -1410,7 +1367,7 @@ module.exports = function (db, appConfig, upload) {
               height: 120px;
               border-radius: 8px;
               overflow: hidden;
-              background: #e1e1e1;
+              background: var(--card-border);
             }
             .vehicle-image img {
               width: 100%;
@@ -1432,12 +1389,12 @@ module.exports = function (db, appConfig, upload) {
             .vehicle-title {
               font-size: 16px;
               font-weight: 700;
-              color: #1a1a2e;
+              color: var(--text-primary);
               margin-bottom: 4px;
             }
             .vehicle-meta {
               font-size: 12px;
-              color: #888;
+              color: var(--text-muted);
               margin-bottom: 8px;
             }
             .vehicle-class {
@@ -1447,7 +1404,7 @@ module.exports = function (db, appConfig, upload) {
               margin-bottom: 8px;
             }
             .type-badge {
-              background: #3498db;
+              background: var(--btn-edit-bg);
               color: white;
               padding: 3px 10px;
               border-radius: 20px;
@@ -1472,7 +1429,7 @@ module.exports = function (db, appConfig, upload) {
             }
             .vehicle-description {
               font-size: 13px;
-              color: #666;
+              color: var(--text-secondary);
               line-height: 1.4;
             }
             .vehicle-actions {
@@ -1520,31 +1477,31 @@ module.exports = function (db, appConfig, upload) {
             <h3 class="section-title">All Vehicles (${activeCars.length + inactiveCars.length})</h3>
 
             <div style="margin-bottom:15px;display:flex;gap:8px;flex-wrap:wrap;">
-              <input type="text" id="vehicleSearch" placeholder="Search by year, make, model, owner, or email..." oninput="filterVehicles()" style="flex:1;min-width:200px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#e94560'" onblur="this.style.borderColor='#e1e1e1'">
-              <select id="statusFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+              <input type="text" id="vehicleSearch" placeholder="Search by year, make, model, owner, or email..." oninput="filterVehicles()" style="flex:1;min-width:200px;padding:10px 14px;border:2px solid var(--card-border);border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-primary)'" onblur="this.style.borderColor='var(--card-border)'">
+              <select id="statusFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid var(--card-border);border-radius:8px;font-size:14px;">
                 <option value="">All Statuses</option>
                 <option value="pending">Pending Payment</option>
                 <option value="active">Active</option>
               </select>
-              <select id="voterIdFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+              <select id="voterIdFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid var(--card-border);border-radius:8px;font-size:14px;">
                 <option value="">All Voter IDs</option>
                 ${voterIds.map(id => `<option value="${id}">#${id}</option>`).join('')}
               </select>
             </div>
-            <div id="noResults" style="display:none;text-align:center;color:#666;padding:20px;font-size:14px;">No vehicles match your search.</div>
+            <div id="noResults" style="display:none;text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">No vehicles match your search.</div>
 
             <div id="activeSection">
               <h3 class="section-title">Active Vehicles (<span id="activeCount">${activeCars.length}</span>)</h3>
               <div id="activeVehicles">
-                ${activeCars.length > 0 ? vehicleCards : '<p class="no-vehicles-msg" style="color: #666; text-align: center; padding: 20px;">No active vehicles to judge.</p>'}
+                ${activeCars.length > 0 ? vehicleCards : '<p class="no-vehicles-msg" style="color: var(--text-secondary); text-align: center; padding: 20px;">No active vehicles to judge.</p>'}
               </div>
             </div>
 
             <div id="inactiveSection">
               <h3 class="section-title" style="margin-top:30px;">Inactive Vehicles - Awaiting Registration (<span id="inactiveCount">${inactiveCars.length}</span>)</h3>
-              <p style="color:#856404;font-size:13px;margin-bottom:15px;">These vehicles are waiting to be activated by the registrar. You cannot judge them until they are activated.</p>
+              <p style="color:var(--warning-text);font-size:13px;margin-bottom:15px;">These vehicles are waiting to be activated by the registrar. You cannot judge them until they are activated.</p>
               <div id="inactiveVehicles">
-                ${inactiveCars.length > 0 ? inactiveVehicleCards : '<p class="no-vehicles-msg" style="color: #666; text-align: center; padding: 20px;">No inactive vehicles.</p>'}
+                ${inactiveCars.length > 0 ? inactiveVehicleCards : '<p class="no-vehicles-msg" style="color: var(--text-secondary); text-align: center; padding: 20px;">No inactive vehicles.</p>'}
               </div>
             </div>
 
@@ -1645,7 +1602,7 @@ module.exports = function (db, appConfig, upload) {
               height: 200px;
               border-radius: 12px;
               overflow: hidden;
-              background: #e1e1e1;
+              background: var(--card-border);
             }
             .vehicle-preview-image img {
               width: 100%;
@@ -1666,49 +1623,49 @@ module.exports = function (db, appConfig, upload) {
             .vehicle-preview-info h4 {
               font-size: 20px;
               margin-bottom: 8px;
-              color: #1a1a2e;
+              color: var(--text-primary);
             }
             .vehicle-preview-info p {
-              color: #666;
+              color: var(--text-secondary);
               margin-bottom: 4px;
               font-size: 14px;
             }
             .owner-details {
-              background: #e8f4fd;
+              background: var(--info-highlight-bg);
               padding: 16px;
               border-radius: 12px;
               margin-bottom: 20px;
             }
             .owner-details h4 {
-              color: #2980b9;
+              color: var(--info-highlight-text);
               margin-bottom: 10px;
             }
             .owner-details p {
               margin: 4px 0;
-              color: #333;
+              color: var(--text-dark);
             }
             .detail-card {
-              background: white;
+              background: var(--modal-bg);
               border-radius: 12px;
               padding: 20px;
-              box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+              box-shadow: 0 2px 10px var(--container-shadow);
               margin-bottom: 20px;
             }
             .detail-row {
               display: flex;
               justify-content: space-between;
               padding: 10px 0;
-              border-bottom: 1px solid #f0f0f0;
+              border-bottom: 1px solid var(--divider-color);
             }
             .detail-row:last-child {
               border-bottom: none;
             }
             .detail-label {
               font-weight: 600;
-              color: #555;
+              color: var(--text-secondary);
             }
             .detail-value {
-              color: #333;
+              color: var(--text-dark);
             }
           </style>
         </head>
@@ -1769,7 +1726,7 @@ module.exports = function (db, appConfig, upload) {
             </div>
 
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
-              <a href="/judge/vehicles" class="action-btn" style="background:#6c757d;">Back to Vehicles</a>
+              <a href="/judge/vehicles" class="action-btn" style="background:var(--btn-secondary-bg);">Back to Vehicles</a>
             </div>
           </div>
         </body>
@@ -1831,7 +1788,7 @@ module.exports = function (db, appConfig, upload) {
                 height: 200px;
                 border-radius: 12px;
                 overflow: hidden;
-                background: #e1e1e1;
+                background: var(--card-border);
               }
               .vehicle-preview-image img {
                 width: 100%;
@@ -1852,10 +1809,10 @@ module.exports = function (db, appConfig, upload) {
               .vehicle-preview-info h4 {
                 font-size: 20px;
                 margin-bottom: 8px;
-                color: #1a1a2e;
+                color: var(--text-primary);
               }
               .vehicle-preview-info p {
-                color: #666;
+                color: var(--text-secondary);
                 margin-bottom: 8px;
               }
             </style>

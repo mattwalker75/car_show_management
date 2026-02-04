@@ -39,8 +39,8 @@ module.exports = function (db, appConfig, upload) {
               <div id="prodImageDisplay" style="margin:10px auto;">
                 <div class="current-image-placeholder" style="width:120px;height:80px;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:36px;">🛍️</div>
               </div>
-              <button type="button" id="prodImageBtn" style="background:#3498db;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;">Update Image</button>
-              <div style="margin-top:6px;color:#999;font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
+              <button type="button" id="prodImageBtn" style="background:var(--btn-edit-bg);color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;">Update Image</button>
+              <div style="margin-top:6px;color:var(--text-muted);font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
               <input type="file" name="productImage" id="prodImageInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
             </div>
 
@@ -59,17 +59,17 @@ module.exports = function (db, appConfig, upload) {
                 <input type="text" name="price" placeholder="0.00" style="flex:1;" oninput="validatePriceInput(this)" onblur="formatPriceBlur(this)">
               </div>
             </div>
-            <button type="submit" style="background:#27ae60;color:white;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-size:16px;">Add Product</button>
+            <button type="submit" style="background:var(--success-color);color:white;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-size:16px;">Add Product</button>
           </form>
 
           <!-- Product image preview modal (outside form) -->
           <div id="prodImageModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
-            <div style="background:white;border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
-              <h4 style="margin:0 0 16px;color:#2c3e50;">Preview Product Image</h4>
-              <img id="prodImagePreview" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid #e1e1e1;">
+            <div style="background:var(--modal-content-bg);border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
+              <h4 style="margin:0 0 16px;color:var(--heading-alt);">Preview Product Image</h4>
+              <img id="prodImagePreview" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid var(--card-border);">
               <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
-                <button type="button" id="prodImageSave" style="padding:10px 28px;background:#27ae60;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
-                <button type="button" id="prodImageCancel" style="padding:10px 28px;background:#95a5a6;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
+                <button type="button" id="prodImageSave" style="padding:10px 28px;background:var(--success-color);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
+                <button type="button" id="prodImageCancel" style="padding:10px 28px;background:var(--btn-cancel-bg);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
               </div>
             </div>
           </div>
@@ -121,7 +121,7 @@ module.exports = function (db, appConfig, upload) {
             });
             saveBtn.addEventListener('click', function() {
               if (!input.files || !input.files[0]) return;
-              display.innerHTML = '<img src="' + preview.src + '" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid #e1e1e1;object-fit:cover;">';
+              display.innerHTML = '<img src="' + preview.src + '" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid var(--card-border);object-fit:cover;">';
               modal.style.display = 'none';
             });
           })();
@@ -190,9 +190,9 @@ module.exports = function (db, appConfig, upload) {
             <h3 class="section-title">Edit Product / Service</h3>
 
             ${product.admin_deactivated ? `
-            <div style="background:#fde8e8;border:2px solid #e74c3c;border-radius:10px;padding:12px 16px;margin-bottom:16px;">
-              <div style="font-weight:700;color:#e74c3c;">Product deactivated by Admin</div>
-              <div style="font-size:13px;color:#c0392b;">This product has been deactivated by an administrator and is hidden from other users.</div>
+            <div style="background:var(--error-bg);border:2px solid var(--btn-delete-bg);border-radius:10px;padding:12px 16px;margin-bottom:16px;">
+              <div style="font-weight:700;color:var(--error-color);">Product deactivated by Admin</div>
+              <div style="font-size:13px;color:var(--error-color);">This product has been deactivated by an administrator and is hidden from other users.</div>
             </div>
             ` : ''}
 
@@ -201,18 +201,18 @@ module.exports = function (db, appConfig, upload) {
                 <label>Product Image (Optional)</label>
                 <div id="editProdImageDisplay" style="margin:10px auto;">
                   ${product.image_url
-                    ? `<img src="${product.image_url}" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid #e1e1e1;object-fit:cover;">`
+                    ? `<img src="${product.image_url}" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid var(--card-border);object-fit:cover;">`
                     : `<div class="current-image-placeholder" style="width:120px;height:80px;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:36px;">🛍️</div>`
                   }
                 </div>
                 <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-                  <button type="button" id="editProdImageBtn" style="background:#3498db;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;">Update Image</button>
+                  <button type="button" id="editProdImageBtn" style="background:var(--btn-edit-bg);color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;">Update Image</button>
                   ${product.image_url ? `
                   <button type="button" onclick="document.getElementById('removeImgForm').submit();"
-                    style="background:#e74c3c;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;text-transform:none;letter-spacing:normal;min-height:auto;">Remove Image</button>
+                    style="background:var(--btn-delete-bg);color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;text-transform:none;letter-spacing:normal;min-height:auto;">Remove Image</button>
                   ` : ''}
                 </div>
-                <div style="margin-top:6px;color:#999;font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
+                <div style="margin-top:6px;color:var(--text-muted);font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
                 <input type="file" name="productImage" id="editProdImageInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
               </div>
 
@@ -237,10 +237,10 @@ module.exports = function (db, appConfig, upload) {
                   <span style="font-size:16px;font-weight:600;">$</span>
                   <input type="text" name="discount_price" value="${product.discount_price ? parseFloat(product.discount_price).toFixed(2) : ''}" placeholder="0.00" style="flex:1;" oninput="validatePriceInput(this)" onblur="formatPriceBlur(this)">
                 </div>
-                <small style="color:#888;display:block;margin-top:4px;">If set, the original price will be shown with a line through it and this discount price will appear next to it.</small>
+                <small style="color:var(--text-muted);display:block;margin-top:4px;">If set, the original price will be shown with a line through it and this discount price will appear next to it.</small>
               </div>
 
-              <button type="submit" style="background:#27ae60;color:white;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-size:16px;">Save Changes</button>
+              <button type="submit" style="background:var(--success-color);color:white;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-size:16px;">Save Changes</button>
             </form>
 
             ${product.image_url ? `
@@ -249,12 +249,12 @@ module.exports = function (db, appConfig, upload) {
 
             <!-- Edit product image preview modal (outside form) -->
             <div id="editProdImageModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
-              <div style="background:white;border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
-                <h4 style="margin:0 0 16px;color:#2c3e50;">Preview Product Image</h4>
-                <img id="editProdImagePreview" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid #e1e1e1;">
+              <div style="background:var(--modal-content-bg);border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
+                <h4 style="margin:0 0 16px;color:var(--heading-alt);">Preview Product Image</h4>
+                <img id="editProdImagePreview" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid var(--card-border);">
                 <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
-                  <button type="button" id="editProdImageSave" style="padding:10px 28px;background:#27ae60;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
-                  <button type="button" id="editProdImageCancel" style="padding:10px 28px;background:#95a5a6;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
+                  <button type="button" id="editProdImageSave" style="padding:10px 28px;background:var(--success-color);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
+                  <button type="button" id="editProdImageCancel" style="padding:10px 28px;background:var(--btn-cancel-bg);color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
                 </div>
               </div>
             </div>
@@ -306,7 +306,7 @@ module.exports = function (db, appConfig, upload) {
               });
               saveBtn.addEventListener('click', function() {
                 if (!input.files || !input.files[0]) return;
-                display.innerHTML = '<img src="' + preview.src + '" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid #e1e1e1;object-fit:cover;">';
+                display.innerHTML = '<img src="' + preview.src + '" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid var(--card-border);object-fit:cover;">';
                 modal.style.display = 'none';
               });
             })();

@@ -23,8 +23,8 @@
     },
     "appTitle": "Testing Car Show",
     "appSubtitle": "Sign in to your account",
-    "judgeVotingStatus": "Close",
-    "specialtyVotingStatus": "Close",
+    "judgeVotingStatus": "Open",
+    "specialtyVotingStatus": "Open",
     "defaultRegistrationPrice": 25,
     "defaultMinScore": 0,
     "defaultMaxScore": 5,
@@ -36,7 +36,7 @@
         "useTint": true,
         "tintColor": "#0056d6",
         "tintOpacity": 0.26,
-        "cardOpacity": 0.65
+        "cardOpacity": 1
     },
     "appBackground": {
         "useImage": true,
@@ -45,8 +45,9 @@
         "useTint": true,
         "tintColor": "#1a1a2e",
         "tintOpacity": 0.5,
-        "containerOpacity": 0.87
+        "containerOpacity": 1
     },
+    "theme": "light",
     "chatEnabled": true,
     "chatMessageLimit": 200
 }

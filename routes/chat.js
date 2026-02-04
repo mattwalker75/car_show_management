@@ -10,7 +10,7 @@ module.exports = function (db, appConfig, upload) {
   const styles = '<link rel="stylesheet" href="/css/styles.css">';
   const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
   const appBgStyles = () => getAppBackgroundStyles(appConfig);
-  const bodyTag = (req) => { const u = req.session && req.session.user; return `<body data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
+  const bodyTag = (req) => { const u = req.session && req.session.user; const theme = appConfig.theme || 'light'; return `<body data-theme="${theme}" data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
 
   // Middleware: requires login + chat_enabled flag
   function requireChatAccess(req, res, next) {
@@ -59,7 +59,7 @@ module.exports = function (db, appConfig, upload) {
         width: 36px;
         height: 36px;
         border-radius: 50%;
-        background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+        background: var(--avatar-gradient);
         color: white;
         font-weight: 700;
         font-size: 14px;
@@ -70,33 +70,33 @@ module.exports = function (db, appConfig, upload) {
         overflow: hidden;
       }
       .chat-msg-content {
-        background: #f8f9fa;
+        background: var(--card-bg);
         border-radius: 12px;
-        border: 1px solid #e1e1e1;
+        border: 1px solid var(--card-border);
         padding: 8px 12px;
       }
       .chat-msg.own .chat-msg-content {
-        background: #e8f4fd;
-        border-color: #b8daff;
+        background: var(--chat-msg-own-bg);
+        border-color: var(--chat-msg-own-border);
       }
       .chat-msg-name {
         font-weight: 600;
         font-size: 13px;
-        color: #1a1a2e;
+        color: var(--text-primary);
       }
       .chat-msg-time {
         font-size: 11px;
-        color: #999;
+        color: var(--text-muted);
       }
       .chat-msg-text {
         font-size: 14px;
-        color: #333;
+        color: var(--text-dark);
         word-wrap: break-word;
       }
       .chat-input-area {
-        border-top: 2px solid #e1e1e1;
+        border-top: 2px solid var(--divider-color);
         padding: 12px;
-        background: #f8f9fa;
+        background: var(--card-bg);
         border-radius: 0 0 12px 12px;
       }
       .chat-input-row {
@@ -107,7 +107,7 @@ module.exports = function (db, appConfig, upload) {
       .chat-input-row textarea {
         flex: 1;
         padding: 10px 14px;
-        border: 2px solid #e1e1e1;
+        border: 2px solid var(--card-border);
         border-radius: 10px;
         font-size: 15px;
         resize: none;
@@ -116,11 +116,11 @@ module.exports = function (db, appConfig, upload) {
       }
       .chat-input-row textarea:focus {
         outline: none;
-        border-color: #e94560;
+        border-color: var(--accent-primary);
       }
       .chat-send-btn {
         padding: 10px 20px;
-        background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+        background: var(--accent-gradient);
         color: white;
         border: none;
         border-radius: 10px;
@@ -133,7 +133,7 @@ module.exports = function (db, appConfig, upload) {
       .chat-send-btn.cooldown {
         opacity: 0.5;
         cursor: not-allowed;
-        background: #888;
+        background: var(--text-muted);
       }
       .chat-sidebar {
         position: absolute;
@@ -142,8 +142,8 @@ module.exports = function (db, appConfig, upload) {
         bottom: 0;
         width: 260px;
         max-width: 80vw;
-        background: #f8f9fa;
-        border-left: 1px solid #e1e1e1;
+        background: var(--card-bg);
+        border-left: 1px solid var(--divider-color);
         padding: 16px 12px;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
@@ -169,16 +169,16 @@ module.exports = function (db, appConfig, upload) {
         width: 28px;
         height: 28px;
         border: none;
-        background: #e1e1e1;
+        background: var(--card-border);
         border-radius: 50%;
         cursor: pointer;
         font-size: 16px;
-        color: #666;
+        color: var(--text-secondary);
         flex-shrink: 0;
         transition: background 0.2s;
       }
       .chat-sidebar-close:active {
-        background: #c0c0c0;
+        background: var(--divider-color);
       }
       .chat-sidebar-backdrop {
         display: none;
@@ -249,29 +249,29 @@ module.exports = function (db, appConfig, upload) {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: #27ae60;
+        background: var(--success-color);
         flex-shrink: 0;
       }
       .online-indicator.away {
-        background: #f39c12;
+        background: var(--warning-color);
       }
       .btn-load-more {
         background: none;
-        border: 1px solid #e1e1e1;
+        border: 1px solid var(--card-border);
         border-radius: 8px;
         padding: 8px 16px;
-        color: #666;
+        color: var(--text-secondary);
         width: 100%;
         cursor: pointer;
         font-size: 13px;
       }
       .btn-load-more:hover {
-        background: #f0f0f0;
+        background: var(--card-bg);
       }
       .char-counter {
         text-align: right;
         font-size: 11px;
-        color: #888;
+        color: var(--text-muted);
       }
       .role-badge {
         display: inline-block;
@@ -282,28 +282,28 @@ module.exports = function (db, appConfig, upload) {
         text-transform: uppercase;
       }
       .role-badge.admin {
-        background: #e8f4fd;
-        color: #2980b9;
+        background: var(--info-highlight-bg);
+        color: var(--info-highlight-text);
       }
       .role-badge.judge {
-        background: #fef3e2;
-        color: #e67e22;
+        background: var(--warning-bg);
+        color: var(--role-vendor);
       }
       .role-badge.registrar {
-        background: #e8f8f5;
-        color: #27ae60;
+        background: var(--success-bg);
+        color: var(--success-color);
       }
       .role-badge.vendor {
-        background: #f4e8ff;
-        color: #8e44ad;
+        background: rgba(155, 89, 182, 0.15);
+        color: var(--badge-purple-bg);
       }
       .role-badge.user {
-        background: #f0f0f0;
-        color: #666;
+        background: var(--card-bg);
+        color: var(--text-secondary);
       }
       .chat-empty {
         text-align: center;
-        color: #999;
+        color: var(--text-muted);
         padding: 40px 20px;
         font-size: 14px;
       }
@@ -352,13 +352,13 @@ module.exports = function (db, appConfig, upload) {
       }
       .chat-blocked-notice {
         text-align: center;
-        color: #e94560;
+        color: var(--accent-primary);
         font-size: 13px;
         font-weight: 600;
         padding: 8px;
       }
       .online-user.is-blocked .online-user-name {
-        color: #999;
+        color: var(--text-muted);
         text-decoration: line-through;
       }
     </style>`;

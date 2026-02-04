@@ -1,7 +1,214 @@
 /* styles.css - Shared base styles (mobile-first design)
  * Used across all pages: login, register, error/success pages, and dashboards.
  * Includes layout, typography, forms, buttons, dashboard components, and responsive breakpoints.
+ *
+ * All colors are defined as CSS custom properties (variables) in :root (light mode)
+ * and [data-theme="dark"] (dark mode) for centralized theming.
  */
+
+/* ── Light Mode (default) ─────────────────────────────────────────────── */
+:root {
+  /* Page background */
+  --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+
+  /* Container/card */
+  --container-bg: rgba(255, 255, 255, 0.98);
+  --container-shadow: rgba(0, 0, 0, 0.3);
+
+  /* Text colors */
+  --text-primary: #1a1a2e;
+  --text-secondary: #666;
+  --text-muted: #999;
+  --text-dark: #333;
+
+  /* Accent / brand colors */
+  --accent-primary: #e94560;
+  --accent-primary-light: #ff6b6b;
+  --accent-gradient: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+
+  /* Success / error / warning */
+  --success-color: #27ae60;
+  --success-light: #2ecc71;
+  --success-bg: #f0fff4;
+  --success-border: #c6f6d5;
+  --success-text: #38a169;
+  --success-dark-text: #155724;
+  --error-color: #e74c3c;
+  --error-bg: #fff5f5;
+  --error-border: #fed7d7;
+  --error-text: #e94560;
+  --warning-bg: #fff3cd;
+  --warning-border: #ffc107;
+  --warning-text: #856404;
+
+  /* Form elements */
+  --input-bg: #f8f9fa;
+  --input-bg-focus: #fff;
+  --input-border: #e1e1e1;
+  --input-focus-border: #e94560;
+  --input-focus-shadow: rgba(233, 69, 96, 0.1);
+  --input-text: inherit;
+
+  /* Cards and surfaces */
+  --card-bg: #f8f9fa;
+  --card-border: #e1e1e1;
+
+  /* Navigation */
+  --nav-bg: #f8f9fa;
+  --nav-border: #e1e1e1;
+  --nav-text: #333;
+  --nav-active-gradient: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+  --nav-active-text: white;
+  --nav-active-border: #e94560;
+
+  /* Welcome card */
+  --welcome-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  --welcome-text: white;
+  --welcome-text-secondary: rgba(255, 255, 255, 0.8);
+
+  /* Table */
+  --table-header-bg: #f8f9fa;
+  --table-border: #e1e1e1;
+
+  /* Buttons */
+  --btn-secondary-bg: #6c757d;
+  --btn-edit-bg: #3498db;
+  --btn-delete-bg: #e74c3c;
+
+  /* Modal */
+  --modal-bg: white;
+  --modal-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Role badge colors */
+  --role-admin: #e94560;
+  --role-judge: #3498db;
+  --role-registrar: #9b59b6;
+  --role-user: #27ae60;
+  --role-vendor: #e67e22;
+
+  /* Section dividers */
+  --divider-color: #e1e1e1;
+  --divider-heavy: #000;
+
+  /* Config subnav */
+  --subnav-bg: #f0f0f5;
+  --subnav-item-bg: white;
+
+  /* Chat */
+  --chat-msg-bg: #f8f9fa;
+  --chat-msg-own-bg: #e8f4fd;
+  --chat-msg-own-border: #b8daff;
+  --chat-input-bg: #f8f9fa;
+  --chat-name-color: #1a1a2e;
+  --chat-text-color: #333;
+
+  /* Misc */
+  --link-color: #e94560;
+  --avatar-gradient: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+  --btn-bg: #f8f9fa;
+  --btn-text: #666;
+  --gold-bg: #fff9e6;
+  --gold-border: #f1c40f;
+  --heading-alt: #2c3e50;
+  --badge-info-bg: #3498db;
+  --badge-purple-bg: #9b59b6;
+  --inactive-border: #ffc107;
+  --deactivated-border: #f39c12;
+  --price-strikethrough: #999;
+  --status-active-bg: #d4edda;
+  --status-active-text: #155724;
+  --status-inactive-bg: #f8d7da;
+  --status-inactive-text: #721c24;
+  --btn-cancel-bg: #95a5a6;
+  --btn-dark-bg: #2c3e50;
+  --success-gradient: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+  --warning-color: #f39c12;
+  --info-highlight-bg: #e8f4fd;
+  --info-highlight-text: #2980b9;
+  --modal-content-bg: white;
+  --overlay-bg: rgba(0, 0, 0, 0.6);
+  --checkbox-accent: #3498db;
+}
+
+/* ── Dark Mode ────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg-gradient: linear-gradient(135deg, #0d0d14 0%, #0b1120 50%, #081830 100%);
+
+  --container-bg: rgba(30, 30, 45, 0.98);
+  --container-shadow: rgba(0, 0, 0, 0.5);
+
+  --text-primary: #e0e0e0;
+  --text-secondary: #aaa;
+  --text-muted: #777;
+  --text-dark: #ccc;
+
+  --success-bg: rgba(39, 174, 96, 0.15);
+  --success-border: rgba(39, 174, 96, 0.3);
+  --success-text: #4ade80;
+  --success-dark-text: #4ade80;
+  --error-bg: rgba(233, 69, 96, 0.15);
+  --error-border: rgba(233, 69, 96, 0.3);
+  --error-text: #ff7b93;
+  --warning-bg: rgba(255, 193, 7, 0.15);
+  --warning-border: rgba(255, 193, 7, 0.3);
+  --warning-text: #ffd54f;
+
+  --input-bg: #252538;
+  --input-bg-focus: #2a2a40;
+  --input-border: #3a3a50;
+  --input-focus-shadow: rgba(233, 69, 96, 0.2);
+  --input-text: #e0e0e0;
+
+  --card-bg: #252538;
+  --card-border: #3a3a50;
+
+  --nav-bg: #252538;
+  --nav-border: #3a3a50;
+  --nav-text: #ccc;
+
+  --welcome-bg: linear-gradient(135deg, #252538 0%, #1e1e30 100%);
+
+  --table-header-bg: #252538;
+  --table-border: #3a3a50;
+
+  --modal-bg: #1e1e30;
+  --modal-overlay: rgba(0, 0, 0, 0.7);
+
+  --divider-color: #3a3a50;
+  --divider-heavy: #555;
+
+  --subnav-bg: #1e1e30;
+  --subnav-item-bg: #252538;
+
+  --chat-msg-bg: #252538;
+  --chat-msg-own-bg: rgba(52, 152, 219, 0.2);
+  --chat-msg-own-border: rgba(52, 152, 219, 0.3);
+  --chat-input-bg: #252538;
+  --chat-name-color: #e0e0e0;
+  --chat-text-color: #ccc;
+
+  --btn-bg: #252538;
+  --btn-text: #aaa;
+  --gold-bg: rgba(241, 196, 15, 0.15);
+  --gold-border: #b8960b;
+  --heading-alt: #b0c4de;
+  --inactive-border: #b8960b;
+  --deactivated-border: #b87a0b;
+  --price-strikethrough: #777;
+  --status-active-bg: rgba(39, 174, 96, 0.2);
+  --status-active-text: #4ade80;
+  --status-inactive-bg: rgba(233, 69, 96, 0.2);
+  --status-inactive-text: #ff7b93;
+  --btn-cancel-bg: #6b7b7c;
+  --btn-dark-bg: #3d5a80;
+  --success-gradient: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+  --warning-color: #f39c12;
+  --info-highlight-bg: rgba(52, 152, 219, 0.15);
+  --info-highlight-text: #6cb4e6;
+  --modal-content-bg: #1e1e30;
+  --overlay-bg: rgba(0, 0, 0, 0.7);
+  --checkbox-accent: #5dade2;
+}
 
 * {
   margin: 0;
@@ -17,7 +224,8 @@ html {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  background: var(--bg-gradient);
+  color: var(--text-dark);
   min-height: 100vh;
   min-height: -webkit-fill-available;
   display: flex;
@@ -29,9 +237,9 @@ body {
 }
 
 .container {
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--container-bg);
   border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 10px 40px var(--container-shadow);
   padding: 24px 20px;
   width: 100%;
   max-width: 500px;
@@ -49,7 +257,7 @@ body {
 }
 
 h1, h2 {
-  color: #1a1a2e;
+  color: var(--text-primary);
   text-align: center;
   margin-bottom: 8px;
   font-weight: 700;
@@ -64,7 +272,7 @@ h2 {
 }
 
 .subtitle {
-  color: #666;
+  color: var(--text-secondary);
   text-align: center;
   margin-bottom: 24px;
   font-size: 14px;
@@ -76,7 +284,7 @@ h2 {
 
 label {
   display: block;
-  color: #333;
+  color: var(--text-dark);
   font-weight: 600;
   margin-bottom: 6px;
   font-size: 14px;
@@ -84,31 +292,36 @@ label {
 
 input[type="text"],
 input[type="email"],
-input[type="password"] {
+input[type="password"],
+input[type="number"],
+textarea {
   width: 100%;
   padding: 16px;
-  border: 2px solid #e1e1e1;
+  border: 2px solid var(--input-border);
   border-radius: 12px;
   font-size: 16px;
   transition: all 0.2s ease;
-  background: #f8f9fa;
+  background: var(--input-bg);
+  color: var(--input-text);
   -webkit-appearance: none;
   appearance: none;
 }
 
 input[type="text"]:focus,
 input[type="email"]:focus,
-input[type="password"]:focus {
-  border-color: #e94560;
+input[type="password"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+  border-color: var(--input-focus-border);
   outline: none;
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.1);
+  background: var(--input-bg-focus);
+  box-shadow: 0 0 0 4px var(--input-focus-shadow);
 }
 
 button[type="submit"] {
   width: 100%;
   padding: 18px;
-  background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+  background: var(--accent-gradient);
   color: white;
   border: none;
   border-radius: 12px;
@@ -129,23 +342,23 @@ button[type="submit"]:active {
 }
 
 .error-message {
-  background: #fff5f5;
-  color: #e94560;
+  background: var(--error-bg);
+  color: var(--error-text);
   padding: 14px 16px;
   border-radius: 12px;
   margin-bottom: 16px;
-  border: 1px solid #fed7d7;
+  border: 1px solid var(--error-border);
   font-size: 14px;
   text-align: center;
 }
 
 .success-message {
-  background: #f0fff4;
-  color: #38a169;
+  background: var(--success-bg);
+  color: var(--success-text);
   padding: 14px 16px;
   border-radius: 12px;
   margin-bottom: 16px;
-  border: 1px solid #c6f6d5;
+  border: 1px solid var(--success-border);
   font-size: 14px;
   text-align: center;
 }
@@ -154,11 +367,11 @@ button[type="submit"]:active {
   text-align: center;
   margin-top: 20px;
   padding-top: 20px;
-  border-top: 1px solid #e1e1e1;
+  border-top: 1px solid var(--divider-color);
 }
 
 .links a {
-  color: #e94560;
+  color: var(--link-color);
   text-decoration: none;
   font-weight: 600;
   font-size: 16px;
@@ -184,7 +397,7 @@ button[type="submit"]:active {
   gap: 16px;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 2px solid #e1e1e1;
+  border-bottom: 2px solid var(--divider-color);
 }
 
 .dashboard-header h1 {
@@ -203,7 +416,7 @@ button[type="submit"]:active {
 .user-avatar {
   width: 44px;
   height: 44px;
-  background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+  background: var(--avatar-gradient);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -215,64 +428,64 @@ button[type="submit"]:active {
 }
 
 .logout-btn {
-  background: #f8f9fa;
-  color: #666;
+  background: var(--btn-bg);
+  color: var(--btn-text);
   padding: 12px 20px;
   border-radius: 10px;
   text-decoration: none;
   font-weight: 600;
   font-size: 14px;
   transition: all 0.2s ease;
-  border: 2px solid #e1e1e1;
+  border: 2px solid var(--card-border);
   min-height: 44px;
   display: flex;
   align-items: center;
 }
 
 .logout-btn:active {
-  background: #e94560;
+  background: var(--accent-primary);
   color: white;
-  border-color: #e94560;
+  border-color: var(--accent-primary);
 }
 
 .profile-btn {
-  background: #f8f9fa;
-  color: #666;
+  background: var(--btn-bg);
+  color: var(--btn-text);
   padding: 12px 20px;
   border-radius: 10px;
   text-decoration: none;
   font-weight: 600;
   font-size: 14px;
   transition: all 0.2s ease;
-  border: 2px solid #e1e1e1;
+  border: 2px solid var(--card-border);
   min-height: 44px;
   display: flex;
   align-items: center;
 }
 
 .profile-btn:active {
-  background: #3498db;
+  background: var(--btn-edit-bg);
   color: white;
-  border-color: #3498db;
+  border-color: var(--btn-edit-bg);
 }
 
 .welcome-card {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  color: white;
+  background: var(--welcome-bg);
+  color: var(--welcome-text);
   padding: 20px;
   border-radius: 14px;
   margin-bottom: 20px;
 }
 
 .welcome-card h2 {
-  color: white;
+  color: var(--welcome-text);
   text-align: left;
   font-size: 22px;
   margin-bottom: 8px;
 }
 
 .welcome-card p {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--welcome-text-secondary);
   font-size: 14px;
   line-height: 1.4;
 }
@@ -284,7 +497,7 @@ button[type="submit"]:active {
 }
 
 .stat-card {
-  background: #f8f9fa;
+  background: var(--card-bg);
   padding: 20px 16px;
   border-radius: 14px;
   text-align: center;
@@ -293,12 +506,12 @@ button[type="submit"]:active {
 .stat-number {
   font-size: 32px;
   font-weight: 700;
-  color: #e94560;
+  color: var(--accent-primary);
   margin-bottom: 4px;
 }
 
 .stat-label {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 600;
 }
@@ -370,8 +583,8 @@ button[type="submit"]:active {
   }
 
   .logout-btn:hover {
-    background: #e94560;
+    background: var(--accent-primary);
     color: white;
-    border-color: #e94560;
+    border-color: var(--accent-primary);
   }
 }

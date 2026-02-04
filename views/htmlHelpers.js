@@ -2,6 +2,7 @@
 // Eliminates duplication of styles, scripts, and body tag generation across route files
 
 const { getAppBackgroundStyles } = require('./layout');
+const { appConfig } = require('../config/appConfig');
 
 // ── CSS Link Tags ──────────────────────────────────────────────────────────
 const styles = '<link rel="stylesheet" href="/css/styles.css">';
@@ -15,7 +16,8 @@ const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/
  */
 function getBodyTag(req) {
   const u = req.session && req.session.user;
-  return `<body data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`;
+  const theme = appConfig.theme || 'light';
+  return `<body data-theme="${theme}" data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`;
 }
 
 // ── App Background Styles ──────────────────────────────────────────────────

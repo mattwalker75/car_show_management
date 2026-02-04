@@ -81,7 +81,7 @@ module.exports = function(db, appConfig, upload) {
       const activeVehicleCards = activeCars.map(makeCard).join('');
 
       const inactiveVehicleCards = inactiveCars.map(car => `
-        <div class="vehicle-card" data-year="${(car.year || '').toString().toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-username="${(car.owner_username || '').toLowerCase()}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-voterid="${car.voter_id || ''}" data-status="pending" style="opacity: 0.7; border-color: #ffc107;">
+        <div class="vehicle-card" data-year="${(car.year || '').toString().toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-username="${(car.owner_username || '').toLowerCase()}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-voterid="${car.voter_id || ''}" data-status="pending" style="opacity: 0.7; border-color: var(--warning-border);">
           <div class="vehicle-image">
             ${car.image_url
               ? `<img src="${car.image_url}" alt="${car.year ? car.year + ' ' : ''}${car.make} ${car.model}">`
@@ -116,11 +116,11 @@ module.exports = function(db, appConfig, upload) {
           ${getAppBgStyles(appConfig)}
           <style>
             .vehicle-card {
-              background: #f8f9fa;
+              background: var(--card-bg);
               border-radius: 12px;
               padding: 16px;
               margin-bottom: 12px;
-              border: 1px solid #e1e1e1;
+              border: 1px solid var(--card-border);
               display: flex;
               flex-direction: column;
               gap: 12px;
@@ -130,7 +130,7 @@ module.exports = function(db, appConfig, upload) {
               height: 120px;
               border-radius: 8px;
               overflow: hidden;
-              background: #e1e1e1;
+              background: var(--card-border);
             }
             .vehicle-image img {
               width: 100%;
@@ -152,12 +152,12 @@ module.exports = function(db, appConfig, upload) {
             .vehicle-title {
               font-size: 16px;
               font-weight: 700;
-              color: #1a1a2e;
+              color: var(--text-primary);
               margin-bottom: 4px;
             }
             .vehicle-meta {
               font-size: 12px;
-              color: #888;
+              color: var(--text-muted);
               margin-bottom: 8px;
             }
             .vehicle-class {
@@ -167,7 +167,7 @@ module.exports = function(db, appConfig, upload) {
               margin-bottom: 8px;
             }
             .type-badge {
-              background: #3498db;
+              background: var(--btn-edit-bg);
               color: white;
               padding: 3px 10px;
               border-radius: 20px;
@@ -192,7 +192,7 @@ module.exports = function(db, appConfig, upload) {
             }
             .vehicle-description {
               font-size: 13px;
-              color: #666;
+              color: var(--text-secondary);
               line-height: 1.4;
             }
             .vehicle-actions {
@@ -224,31 +224,31 @@ module.exports = function(db, appConfig, upload) {
             <h3 class="section-title">All Vehicles (${activeCars.length + inactiveCars.length})</h3>
 
             <div style="margin-bottom:15px;display:flex;gap:8px;flex-wrap:wrap;">
-              <input type="text" id="vehicleSearch" placeholder="Search by year, make, model, owner, or email..." oninput="filterVehicles()" style="flex:1;min-width:200px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#e94560'" onblur="this.style.borderColor='#e1e1e1'">
-              <select id="statusFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+              <input type="text" id="vehicleSearch" placeholder="Search by year, make, model, owner, or email..." oninput="filterVehicles()" style="flex:1;min-width:200px;padding:10px 14px;border:2px solid var(--card-border);border-radius:8px;font-size:14px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='#e94560'" onblur="this.style.borderColor='#e1e1e1'">
+              <select id="statusFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid var(--card-border);border-radius:8px;font-size:14px;">
                 <option value="">All Statuses</option>
                 <option value="pending">Pending Payment</option>
                 <option value="active">Active</option>
               </select>
-              <select id="voterIdFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
+              <select id="voterIdFilter" onchange="filterVehicles()" style="min-width:140px;padding:10px 14px;border:2px solid var(--card-border);border-radius:8px;font-size:14px;">
                 <option value="">All Voter IDs</option>
                 ${voterIds.map(id => `<option value="${id}">#${id}</option>`).join('')}
               </select>
             </div>
-            <div id="noResults" style="display:none;text-align:center;color:#666;padding:20px;font-size:14px;">No vehicles match your search.</div>
+            <div id="noResults" style="display:none;text-align:center;color:var(--text-secondary);padding:20px;font-size:14px;">No vehicles match your search.</div>
 
             <div id="activeSection">
               <h3 class="section-title">Active Vehicles (<span id="activeCount">${activeCars.length}</span>)</h3>
               <div id="activeVehicles">
-                ${activeCars.length > 0 ? activeVehicleCards : '<p class="no-vehicles-msg" style="color: #666; text-align: center; padding: 20px;">No active vehicles.</p>'}
+                ${activeCars.length > 0 ? activeVehicleCards : '<p class="no-vehicles-msg" style="color: var(--text-secondary); text-align: center; padding: 20px;">No active vehicles.</p>'}
               </div>
             </div>
 
             <div id="inactiveSection">
               <h3 class="section-title" style="margin-top:30px;">Inactive Vehicles - Awaiting Registration (<span id="inactiveCount">${inactiveCars.length}</span>)</h3>
-              <p style="color:#856404;font-size:13px;margin-bottom:15px;">These vehicles are waiting to be activated by the registrar.</p>
+              <p style="color:var(--warning-text);font-size:13px;margin-bottom:15px;">These vehicles are waiting to be activated by the registrar.</p>
               <div id="inactiveVehicles">
-                ${inactiveCars.length > 0 ? inactiveVehicleCards : '<p class="no-vehicles-msg" style="color: #666; text-align: center; padding: 20px;">No inactive vehicles.</p>'}
+                ${inactiveCars.length > 0 ? inactiveVehicleCards : '<p class="no-vehicles-msg" style="color: var(--text-secondary); text-align: center; padding: 20px;">No inactive vehicles.</p>'}
               </div>
             </div>
 
@@ -389,53 +389,53 @@ module.exports = function(db, appConfig, upload) {
                 .file-input-label {
                   display: block;
                   padding: 14px 16px;
-                  background: #f8f9fa;
-                  border: 2px dashed #e1e1e1;
+                  background: var(--card-bg);
+                  border: 2px dashed var(--card-border);
                   border-radius: 12px;
                   text-align: center;
-                  color: #666;
+                  color: var(--text-secondary);
                   font-size: 14px;
                   cursor: pointer;
                 }
                 .file-input-wrapper:hover .file-input-label {
-                  border-color: #e94560;
-                  background: #fff5f7;
+                  border-color: var(--accent-primary);
+                  background: var(--error-bg);
                 }
                 .file-input-wrapper.has-file .file-input-label {
-                  border-color: #27ae60;
+                  border-color: var(--success-color);
                   background: rgba(39, 174, 96, 0.1);
-                  color: #27ae60;
+                  color: var(--success-color);
                 }
                 .file-name {
                   margin-top: 8px;
                   font-size: 13px;
-                  color: #27ae60;
+                  color: var(--success-color);
                   text-align: center;
                   font-weight: 600;
                 }
                 textarea {
                   width: 100%;
                   padding: 16px;
-                  border: 2px solid #e1e1e1;
+                  border: 2px solid var(--card-border);
                   border-radius: 12px;
                   font-size: 16px;
                   font-family: inherit;
                   resize: vertical;
                   min-height: 100px;
-                  background: #f8f9fa;
+                  background: var(--card-bg);
                 }
                 textarea:focus {
-                  border-color: #e94560;
+                  border-color: var(--accent-primary);
                   outline: none;
-                  background: #fff;
+                  background: var(--modal-content-bg);
                 }
                 .owner-info {
-                  background: #e8f4fd;
+                  background: var(--info-highlight-bg);
                   padding: 12px 16px;
                   border-radius: 8px;
                   margin-bottom: 20px;
                   font-size: 14px;
-                  color: #2980b9;
+                  color: var(--info-highlight-text);
                 }
               </style>
             </head>
@@ -508,7 +508,7 @@ module.exports = function(db, appConfig, upload) {
                         <input type="file" name="vehicle_photo" accept="image/jpeg,image/png,image/gif,image/webp" onchange="updateFileName(this)">
                       </div>
                       <div class="file-name" id="fileName"></div>
-                      <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin:10px auto 0;border-radius:8px;border:2px solid #e1e1e1;">
+                      <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin:10px auto 0;border-radius:8px;border:2px solid var(--card-border);">
                     </div>
                     <button type="submit">Update Vehicle</button>
                   </div>

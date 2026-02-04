@@ -26,10 +26,11 @@ module.exports = function (db, appConfig, upload, port) {
     const useTint = bg.useTint;
     const tintColor = bg.tintColor || '#1a1a2e';
     const tintOpacity = bg.tintOpacity ?? 0.5;
+    const isDark = appConfig.theme === 'dark';
 
     let bodyBg;
     if (useImage) {
-      bodyBg = `background: url('${bg.imageUrl}') center/cover no-repeat fixed; background-color: #1a1a2e;`;
+      bodyBg = `background: url('${bg.imageUrl}') center/cover no-repeat fixed; background-color: ${isDark ? '#0d0d14' : '#1a1a2e'};`;
     } else {
       bodyBg = `background: ${bgColor};`;
     }
@@ -51,10 +52,14 @@ module.exports = function (db, appConfig, upload, port) {
       `;
     }
 
+    const containerBgLight = `rgba(255, 255, 255, ${cardOpacity})`;
+    const containerBgDark = `rgba(30, 30, 45, ${cardOpacity})`;
+
     return `
       <style>
         body { ${bodyBg} }
-        .container:not(.dashboard-container) { background: rgba(255, 255, 255, ${cardOpacity}); }
+        .container:not(.dashboard-container) { background: ${containerBgLight}; }
+        [data-theme="dark"] .container:not(.dashboard-container) { background: ${containerBgDark}; }
         ${tintStyles}
       </style>
     `;
@@ -75,7 +80,7 @@ module.exports = function (db, appConfig, upload, port) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             ${styles}
           </head>
-          <body>
+          <body data-theme="${appConfig.theme || 'light'}">
             <div class="container">
               <div class="logo">
                 <div class="logo-icon">🏎️</div>
@@ -132,7 +137,7 @@ module.exports = function (db, appConfig, upload, port) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
         </head>
-        <body>
+        <body data-theme="${appConfig.theme || 'light'}">
           <div class="container">
             <div class="logo">
               <div class="logo-icon">🏎️</div>
@@ -185,7 +190,7 @@ module.exports = function (db, appConfig, upload, port) {
               <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
               ${styles}
             </head>
-            <body>
+            <body data-theme="${appConfig.theme || 'light'}">
               <div class="container">
                 <div class="logo">
                   <div class="logo-icon">🏎️</div>
@@ -232,7 +237,7 @@ module.exports = function (db, appConfig, upload, port) {
                   z-index: 1000;
                 }
                 .recovery-modal-content {
-                  background: white;
+                  background: var(--modal-content-bg);
                   padding: 30px;
                   border-radius: 12px;
                   max-width: 90%;
@@ -241,28 +246,28 @@ module.exports = function (db, appConfig, upload, port) {
                   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
                 }
                 .recovery-modal h2 {
-                  color: #e74c3c;
+                  color: var(--error-color);
                   margin-bottom: 15px;
                 }
                 .recovery-modal p {
-                  color: #333;
+                  color: var(--text-dark);
                   margin-bottom: 20px;
                   line-height: 1.6;
                 }
                 .recovery-url-box {
-                  background: #f8f9fa;
-                  border: 2px solid #e74c3c;
+                  background: var(--card-bg);
+                  border: 2px solid var(--btn-delete-bg);
                   border-radius: 8px;
                   padding: 15px;
                   margin: 20px 0;
                   word-break: break-all;
                   font-family: monospace;
                   font-size: 12px;
-                  color: #333;
+                  color: var(--text-dark);
                   text-align: left;
                 }
                 .copy-btn {
-                  background: #3498db;
+                  background: var(--btn-edit-bg);
                   color: white;
                   border: none;
                   padding: 10px 20px;
@@ -272,10 +277,10 @@ module.exports = function (db, appConfig, upload, port) {
                   font-size: 14px;
                 }
                 .copy-btn:hover {
-                  background: #2980b9;
+                  background: var(--btn-edit-bg);
                 }
                 .proceed-btn {
-                  background: #27ae60;
+                  background: var(--success-color);
                   color: white;
                   border: none;
                   padding: 10px 20px;
@@ -286,7 +291,7 @@ module.exports = function (db, appConfig, upload, port) {
                   display: inline-block;
                 }
                 .proceed-btn:hover {
-                  background: #219a52;
+                  background: var(--success-color);
                 }
                 .warning-icon {
                   font-size: 48px;
@@ -294,13 +299,13 @@ module.exports = function (db, appConfig, upload, port) {
                 }
               </style>
             </head>
-            <body>
+            <body data-theme="${appConfig.theme || 'light'}">
               <div class="recovery-modal">
                 <div class="recovery-modal-content">
                   <div class="warning-icon">⚠️</div>
                   <h2>IMPORTANT: Save This Recovery URL!</h2>
                   <p>Your admin account has been created successfully. Below is your <strong>one-time recovery URL</strong>. If you ever forget your admin password, you can use this URL to create a new admin account.</p>
-                  <p><strong style="color: #e74c3c;">Save this URL in a safe location NOW. You will NOT see it again!</strong></p>
+                  <p><strong style="color: var(--error-color);">Save this URL in a safe location NOW. You will NOT see it again!</strong></p>
                   <div class="recovery-url-box" id="recoveryUrl">${recoveryUrl}</div>
                   <div style="margin-top: 20px;">
                     <button class="copy-btn" onclick="copyUrl()">📋 Copy URL</button>
@@ -347,7 +352,7 @@ module.exports = function (db, appConfig, upload, port) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
         </head>
-        <body>
+        <body data-theme="${appConfig.theme || 'light'}">
           <div class="container">
             <div class="logo">
               <div class="logo-icon">🏎️</div>
@@ -376,7 +381,7 @@ module.exports = function (db, appConfig, upload, port) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
         </head>
-        <body>
+        <body data-theme="${appConfig.theme || 'light'}">
           <div class="container">
             <div class="logo">
               <div class="logo-icon">🏎️</div>
@@ -405,7 +410,7 @@ module.exports = function (db, appConfig, upload, port) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
         </head>
-        <body>
+        <body data-theme="${appConfig.theme || 'light'}">
           <div class="container">
             <div class="logo">
               <div class="logo-icon">🏎️</div>
@@ -431,14 +436,14 @@ module.exports = function (db, appConfig, upload, port) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         ${styles}
       </head>
-      <body>
+      <body data-theme="${appConfig.theme || 'light'}">
         <div class="container">
           <div class="logo">
             <div class="logo-icon">🏎️</div>
             <h1>Car Show Manager</h1>
             <p class="subtitle">Admin Account Recovery</p>
           </div>
-          <div class="success-message" style="background: #fff3cd; color: #856404; border-color: #ffeeba;">
+          <div class="success-message" style="background: var(--warning-bg); color: var(--warning-text); border-color: var(--warning-border);">
             Recovery token validated. Create a new admin account below.
           </div>
           <form method="POST" action="/admin/recover">
@@ -489,7 +494,7 @@ module.exports = function (db, appConfig, upload, port) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
         </head>
-        <body>
+        <body data-theme="${appConfig.theme || 'light'}">
           <div class="container">
             <div class="logo">
               <div class="logo-icon">🏎️</div>
@@ -518,7 +523,7 @@ module.exports = function (db, appConfig, upload, port) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
         </head>
-        <body>
+        <body data-theme="${appConfig.theme || 'light'}">
           <div class="container">
             <div class="logo">
               <div class="logo-icon">🏎️</div>
@@ -545,7 +550,7 @@ module.exports = function (db, appConfig, upload, port) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
         </head>
-        <body>
+        <body data-theme="${appConfig.theme || 'light'}">
           <div class="container">
             <div class="logo">
               <div class="logo-icon">🏎️</div>
@@ -600,7 +605,7 @@ module.exports = function (db, appConfig, upload, port) {
               <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
               ${styles}
             </head>
-            <body>
+            <body data-theme="${appConfig.theme || 'light'}">
               <div class="container">
                 <div class="logo">
                   <div class="logo-icon">🏎️</div>
@@ -643,7 +648,7 @@ module.exports = function (db, appConfig, upload, port) {
                   z-index: 1000;
                 }
                 .recovery-modal-content {
-                  background: white;
+                  background: var(--modal-content-bg);
                   padding: 30px;
                   border-radius: 12px;
                   max-width: 90%;
@@ -652,28 +657,28 @@ module.exports = function (db, appConfig, upload, port) {
                   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
                 }
                 .recovery-modal h2 {
-                  color: #e74c3c;
+                  color: var(--error-color);
                   margin-bottom: 15px;
                 }
                 .recovery-modal p {
-                  color: #333;
+                  color: var(--text-dark);
                   margin-bottom: 20px;
                   line-height: 1.6;
                 }
                 .recovery-url-box {
-                  background: #f8f9fa;
-                  border: 2px solid #e74c3c;
+                  background: var(--card-bg);
+                  border: 2px solid var(--btn-delete-bg);
                   border-radius: 8px;
                   padding: 15px;
                   margin: 20px 0;
                   word-break: break-all;
                   font-family: monospace;
                   font-size: 12px;
-                  color: #333;
+                  color: var(--text-dark);
                   text-align: left;
                 }
                 .copy-btn {
-                  background: #3498db;
+                  background: var(--btn-edit-bg);
                   color: white;
                   border: none;
                   padding: 10px 20px;
@@ -683,10 +688,10 @@ module.exports = function (db, appConfig, upload, port) {
                   font-size: 14px;
                 }
                 .copy-btn:hover {
-                  background: #2980b9;
+                  background: var(--btn-edit-bg);
                 }
                 .proceed-btn {
-                  background: #27ae60;
+                  background: var(--success-color);
                   color: white;
                   border: none;
                   padding: 10px 20px;
@@ -697,7 +702,7 @@ module.exports = function (db, appConfig, upload, port) {
                   display: inline-block;
                 }
                 .proceed-btn:hover {
-                  background: #219a52;
+                  background: var(--success-color);
                 }
                 .warning-icon {
                   font-size: 48px;
@@ -705,13 +710,13 @@ module.exports = function (db, appConfig, upload, port) {
                 }
               </style>
             </head>
-            <body>
+            <body data-theme="${appConfig.theme || 'light'}">
               <div class="recovery-modal">
                 <div class="recovery-modal-content">
                   <div class="warning-icon">⚠️</div>
                   <h2>Admin Account Created - NEW Recovery URL!</h2>
                   <p>Your new admin account has been created. A <strong>new recovery URL</strong> has been generated. The old recovery URL is no longer valid.</p>
-                  <p><strong style="color: #e74c3c;">Save this new URL in a safe location NOW. You will NOT see it again!</strong></p>
+                  <p><strong style="color: var(--error-color);">Save this new URL in a safe location NOW. You will NOT see it again!</strong></p>
                   <div class="recovery-url-box" id="recoveryUrl">${newRecoveryUrl}</div>
                   <div style="margin-top: 20px;">
                     <button class="copy-btn" onclick="copyUrl()">Copy URL</button>
@@ -755,7 +760,7 @@ module.exports = function (db, appConfig, upload, port) {
         ${styles}
         ${getLoginBackgroundStyles()}
       </head>
-      <body>
+      <body data-theme="${appConfig.theme || 'light'}">
         <div class="container">
           <div class="logo">
             <div class="logo-icon">🏎️</div>
@@ -797,7 +802,7 @@ module.exports = function (db, appConfig, upload, port) {
         ${styles}
         ${getLoginBackgroundStyles()}
       </head>
-      <body>
+      <body data-theme="${appConfig.theme || 'light'}">
         <div class="container">
           <div class="logo">
             <div class="logo-icon">🏎️</div>
@@ -970,7 +975,7 @@ module.exports = function (db, appConfig, upload, port) {
               }
             </style>
           </head>
-          <body>
+          <body data-theme="${appConfig.theme || 'light'}">
             <div class="door-left" id="doorLeft"></div>
             <div class="door-right" id="doorRight"></div>
 
@@ -1039,7 +1044,7 @@ module.exports = function (db, appConfig, upload, port) {
         ${styles}
         ${getLoginBackgroundStyles()}
       </head>
-      <body>
+      <body data-theme="${appConfig.theme || 'light'}">
         <div class="container">
           <div class="logo">
             <div class="logo-icon">🏎️</div>
@@ -1097,7 +1102,7 @@ module.exports = function (db, appConfig, upload, port) {
         ${styles}
         ${getLoginBackgroundStyles()}
       </head>
-      <body>
+      <body data-theme="${appConfig.theme || 'light'}">
         <div class="container">
           <div class="logo">
             <div class="logo-icon">🏎️</div>
@@ -1163,14 +1168,14 @@ module.exports = function (db, appConfig, upload, port) {
               ${styles}
               ${getLoginBackgroundStyles()}
             </head>
-            <body>
+            <body data-theme="${appConfig.theme || 'light'}">
               <div class="container">
                 <div class="logo">
                   <div class="logo-icon">🏎️</div>
                   <h1>${appConfig.appTitle}</h1>
                 </div>
                 <div class="success-message">Account created successfully!</div>
-                <p style="text-align: center; color: #666; margin-bottom: 20px;">Welcome to ${appConfig.appTitle}. You can now sign in.</p>
+                <p style="text-align: center; color: var(--text-secondary); margin-bottom: 20px;">Welcome to ${appConfig.appTitle}. You can now sign in.</p>
                 <div class="links">
                   <a href="/login">Proceed to Sign In</a>
                 </div>

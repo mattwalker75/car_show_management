@@ -37,8 +37,8 @@ module.exports = function (db, appConfig, upload) {
           <tr>
             <td colspan="5" style="border-top:none;padding-top:0;text-align:center;">
               <a href="/admin/edit-category/${c.judge_catagory_id}" class="action-btn edit">Edit</a>
-              <a href="/admin/category-questions/${c.judge_catagory_id}" class="action-btn" style="background:#3498db;">Questions</a>
-              <a href="#" onclick="confirmDeleteCategory(${c.judge_catagory_id}, '${c.catagory_name.replace(/'/g, "\\'")}'); return false;" class="action-btn" style="background:#e74c3c;">Delete</a>
+              <a href="/admin/category-questions/${c.judge_catagory_id}" class="action-btn" style="background:var(--btn-edit-bg);">Questions</a>
+              <a href="#" onclick="confirmDeleteCategory(${c.judge_catagory_id}, '${c.catagory_name.replace(/'/g, "\\'")}'); return false;" class="action-btn" style="background:var(--btn-delete-bg);">Delete</a>
             </td>
           </tr>
         `).join('');
@@ -63,7 +63,7 @@ module.exports = function (db, appConfig, upload) {
               ${getAdminNav('config', chatEnabled)}
 
               <h3 class="section-title">Judging Categories</h3>
-              <p style="color:#666;margin-bottom:15px;">Define judging categories like Engine, Paint, Interior, etc.</p>
+              <p style="color:var(--text-secondary);margin-bottom:15px;">Define judging categories like Engine, Paint, Interior, etc.</p>
 
               <form method="POST" action="/admin/add-category" style="margin-bottom:20px;">
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
@@ -77,7 +77,7 @@ module.exports = function (db, appConfig, upload) {
                 </div>
               </form>
 
-              <div class="table-wrapper">
+              <div class="table-wrapper config-table">
                 <table class="user-table">
                   <thead>
                     <tr>
@@ -89,7 +89,7 @@ module.exports = function (db, appConfig, upload) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${rows || '<tr><td colspan="5" style="text-align:center;color:#666;">No categories defined yet.</td></tr>'}
+                    ${rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">No categories defined yet.</td></tr>'}
                   </tbody>
                 </table>
               </div>
@@ -247,7 +247,7 @@ module.exports = function (db, appConfig, upload) {
             <td><span class="status-badge ${q.is_active ? 'active' : 'inactive'}">${q.is_active ? 'Active' : 'Inactive'}</span></td>
             <td>
               <a href="/admin/edit-question/${q.judge_question_id}" class="action-btn edit">Edit</a>
-              <a href="#" onclick="confirmDeleteQuestion(${q.judge_question_id}, '${q.question.replace(/'/g, "\\'")}', ${categoryId}); return false;" class="action-btn" style="background:#e74c3c;">Delete</a>
+              <a href="#" onclick="confirmDeleteQuestion(${q.judge_question_id}, '${q.question.replace(/'/g, "\\'")}', ${categoryId}); return false;" class="action-btn" style="background:var(--btn-delete-bg);">Delete</a>
             </td>
           </tr>
         `).join('');
@@ -268,7 +268,7 @@ module.exports = function (db, appConfig, upload) {
               ${getAdminNav('config', chatEnabled)}
 
               <h3 class="section-title">Questions: ${category.catagory_name}</h3>
-              <p style="color:#666;margin-bottom:15px;">Vehicle Type: ${category.vehicle_name}</p>
+              <p style="color:var(--text-secondary);margin-bottom:15px;">Vehicle Type: ${category.vehicle_name}</p>
 
               <form method="POST" action="/admin/add-question/${category.judge_catagory_id}" style="margin-bottom:20px;">
                 <div class="profile-card">
@@ -294,7 +294,7 @@ module.exports = function (db, appConfig, upload) {
                 </div>
               </form>
 
-              <div class="table-wrapper">
+              <div class="table-wrapper config-table">
                 <table class="user-table">
                   <thead>
                     <tr>
@@ -306,7 +306,7 @@ module.exports = function (db, appConfig, upload) {
                     </tr>
                   </thead>
                   <tbody>
-                    ${rows || '<tr><td colspan="5" style="text-align:center;color:#666;">No questions defined yet.</td></tr>'}
+                    ${rows || '<tr><td colspan="5" style="text-align:center;color:var(--text-secondary);">No questions defined yet.</td></tr>'}
                   </tbody>
                 </table>
               </div>
@@ -395,7 +395,7 @@ module.exports = function (db, appConfig, upload) {
             ${getAdminNav('config', chatEnabled)}
 
             <h3 class="section-title">Edit Question</h3>
-            <p style="color:#666;margin-bottom:15px;">Category: ${question.catagory_name}</p>
+            <p style="color:var(--text-secondary);margin-bottom:15px;">Category: ${question.catagory_name}</p>
 
             <form method="POST" action="/admin/edit-question/${question.judge_question_id}">
               <input type="hidden" name="judge_catagory_id" value="${question.judge_catagory_id}">

@@ -56,7 +56,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             const avgScore = carJudgeScores.length > 0 ? (totalScore / carJudgeScores.length).toFixed(1) : '-';
 
             const judgeDetails = carJudgeScores.map(cs =>
-              `<span style="background:#3498db;color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin:2px;">${cs.judge_name}: ${cs.total}</span>`
+              `<span style="background:var(--btn-edit-bg);color:white;padding:2px 8px;border-radius:10px;font-size:11px;margin:2px;">${cs.judge_name}: ${cs.total}</span>`
             ).join(' ');
 
             return `
@@ -64,7 +64,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <td>${car.voter_id || '-'}</td>
                 <td>${car.year || ''} ${car.make} ${car.model}</td>
                 <td>${car.class_name || 'Unassigned'}</td>
-                <td>${judgeDetails || '<span style="color:#999;">No scores yet</span>'}</td>
+                <td>${judgeDetails || '<span style="color:var(--text-muted);">No scores yet</span>'}</td>
                 <td><strong>${avgScore}</strong></td>
                 <td>
                   <a href="/admin/edit-judge-scores/${car.car_id}" class="action-btn edit">Edit Scores</a>
@@ -92,17 +92,17 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 <h3 class="section-title">Judge Voting Status</h3>
 
                 <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
-                  <span style="padding: 8px 16px; border-radius: 20px; font-weight: 600; ${appConfig.judgeVotingStatus === 'Lock' ? 'background:#e74c3c;color:white;' : appConfig.judgeVotingStatus === 'Open' ? 'background:#27ae60;color:white;' : 'background:#999;color:white;'}">
+                  <span style="padding: 8px 16px; border-radius: 20px; font-weight: 600; ${appConfig.judgeVotingStatus === 'Lock' ? 'background:var(--btn-delete-bg);color:white;' : appConfig.judgeVotingStatus === 'Open' ? 'background:var(--success-color);color:white;' : 'background:var(--text-muted);color:white;'}">
                     ${appConfig.judgeVotingStatus === 'Lock' ? '🔒 Voting LOCKED' : appConfig.judgeVotingStatus === 'Open' ? '🔓 Voting OPEN' : '🚫 Voting CLOSED'}
                   </span>
-                  <a href="/admin/preview-judge-results" class="action-btn" style="background:#3498db;">Preview Results</a>
+                  <a href="/admin/preview-judge-results" class="action-btn" style="background:var(--btn-edit-bg);">Preview Results</a>
                   ${appConfig.judgeVotingStatus === 'Close' ? `
-                    <a href="/admin/open-judge-voting" class="action-btn" style="background:#27ae60;" onclick="return confirm('Open voting? Judges will be able to score vehicles.')">Open Voting</a>
+                    <a href="/admin/open-judge-voting" class="action-btn" style="background:var(--success-color);" onclick="return confirm('Open voting? Judges will be able to score vehicles.')">Open Voting</a>
                   ` : appConfig.judgeVotingStatus === 'Open' ? `
-                    <a href="/admin/close-judge-voting" class="action-btn" style="background:#999;" onclick="return confirm('Close voting? Judges will no longer be able to vote.')">Close Voting</a>
-                    <a href="/admin/lock-judge-voting" class="action-btn" style="background:#e74c3c;" onclick="return confirm('Lock voting and publish results? Judges will no longer be able to vote.')">Lock & Publish Results</a>
+                    <a href="/admin/close-judge-voting" class="action-btn" style="background:var(--text-muted);" onclick="return confirm('Close voting? Judges will no longer be able to vote.')">Close Voting</a>
+                    <a href="/admin/lock-judge-voting" class="action-btn" style="background:var(--btn-delete-bg);" onclick="return confirm('Lock voting and publish results? Judges will no longer be able to vote.')">Lock & Publish Results</a>
                   ` : `
-                    <a href="/admin/open-judge-voting" class="action-btn" style="background:#27ae60;" onclick="return confirm('Reopen voting? Judges will be able to vote again.')">Open Voting</a>
+                    <a href="/admin/open-judge-voting" class="action-btn" style="background:var(--success-color);" onclick="return confirm('Reopen voting? Judges will be able to vote again.')">Open Voting</a>
                   `}
                 </div>
 
@@ -119,7 +119,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                       </tr>
                     </thead>
                     <tbody>
-                      ${carRows || '<tr><td colspan="6" style="text-align:center;color:#999;">No cars registered</td></tr>'}
+                      ${carRows || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">No cars registered</td></tr>'}
                     </tbody>
                   </table>
                 </div>
@@ -190,19 +190,19 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                 const key = `${judge.user_id}-${q.judge_question_id}`;
                 const currentScore = scoreMap[key] !== undefined ? scoreMap[key] : '';
                 return `
-                  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:#f8f9fa;border-radius:4px;margin-bottom:5px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--card-bg);border-radius:4px;margin-bottom:5px;">
                     <span style="flex:1;font-size:13px;">${q.question} (${q.min_score}-${q.max_score})</span>
                     <input type="text" name="score_${judge.user_id}_${q.judge_question_id}"
                            value="${currentScore}" inputmode="numeric"
-                           style="width:60px;padding:5px;border:1px solid #ddd;border-radius:4px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
+                           style="width:60px;padding:5px;border:1px solid var(--card-border);border-radius:4px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onblur="if(this.value==='')this.value='0'">
                   </div>
                 `;
               }).join('');
 
               return `
-                <div style="background:white;border:1px solid #ddd;border-radius:8px;padding:15px;margin-bottom:15px;">
-                  <h4 style="margin:0 0 10px 0;color:#2c3e50;">${judge.name}</h4>
-                  ${questionInputs || '<p style="color:#999;">No questions configured for this vehicle type</p>'}
+                <div style="background:var(--modal-content-bg);border:1px solid var(--card-border);border-radius:8px;padding:15px;margin-bottom:15px;">
+                  <h4 style="margin:0 0 10px 0;color:var(--heading-alt);">${judge.name}</h4>
+                  ${questionInputs || '<p style="color:var(--text-muted);">No questions configured for this vehicle type</p>'}
                 </div>
               `;
             }).join('');
@@ -224,13 +224,13 @@ module.exports = function (db, appConfig, upload, saveConfig) {
                   ${getAdminNav('voting', chatEnabled)}
 
                   <h3 class="section-title">Edit Scores: ${car.year || ''} ${car.make} ${car.model}</h3>
-                  <p style="color:#666;margin-bottom:20px;">Class: ${car.class_name || 'Unassigned'} | Voter ID: ${car.voter_id || 'N/A'}</p>
+                  <p style="color:var(--text-secondary);margin-bottom:20px;">Class: ${car.class_name || 'Unassigned'} | Voter ID: ${car.voter_id || 'N/A'}</p>
 
                   <form method="POST" action="/admin/save-judge-scores/${carId}">
                     ${judgeRows || '<p>No judges available</p>'}
                     <div style="margin-top:20px;">
-                      <button type="submit" style="background:#27ae60;color:white;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-size:16px;">Save All Scores</button>
-                      <a href="/admin/judge-status" style="margin-left:10px;color:#666;">Cancel</a>
+                      <button type="submit" style="background:var(--success-color);color:white;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-size:16px;">Save All Scores</button>
+                      <a href="/admin/judge-status" style="margin-left:10px;color:var(--text-secondary);">Cancel</a>
                     </div>
                   </form>
                 </div>
@@ -328,16 +328,16 @@ module.exports = function (db, appConfig, upload, saveConfig) {
           const placeLabels = ['🥇 1st Place', '🥈 2nd Place', '🥉 3rd Place'];
 
           const carsList = top3.map((car, idx) => `
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:${idx === 0 ? '#fff9e6' : '#f8f9fa'};border-radius:6px;margin-bottom:8px;border:${idx === 0 ? '2px solid #f1c40f' : '1px solid #ddd'};">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:12px;background:${idx === 0 ? 'var(--gold-bg)' : 'var(--card-bg)'};border-radius:6px;margin-bottom:8px;border:${idx === 0 ? '2px solid var(--gold-border)' : '1px solid var(--card-border)'};">
               <span><strong>${placeLabels[idx]}</strong> - ${car.year || ''} ${car.make} ${car.model} (ID: ${car.voter_id || 'N/A'})</span>
-              <span style="background:#27ae60;color:white;padding:4px 12px;border-radius:20px;font-weight:600;">${car.total_score || 0} pts</span>
+              <span style="background:var(--success-color);color:white;padding:4px 12px;border-radius:20px;font-weight:600;">${car.total_score || 0} pts</span>
             </div>
           `).join('');
 
           return `
-            <div style="background:white;border:1px solid #ddd;border-radius:8px;padding:20px;margin-bottom:20px;">
-              <h4 style="margin:0 0 15px 0;color:#2c3e50;border-bottom:2px solid #3498db;padding-bottom:10px;">${classData.class_name}</h4>
-              ${carsList || '<p style="color:#999;">No scored vehicles in this class</p>'}
+            <div style="background:var(--modal-content-bg);border:1px solid var(--card-border);border-radius:8px;padding:20px;margin-bottom:20px;">
+              <h4 style="margin:0 0 15px 0;color:var(--heading-alt);border-bottom:2px solid var(--btn-edit-bg);padding-bottom:10px;">${classData.class_name}</h4>
+              ${carsList || '<p style="color:var(--text-muted);">No scored vehicles in this class</p>'}
             </div>
           `;
         }).join('');
@@ -359,14 +359,14 @@ module.exports = function (db, appConfig, upload, saveConfig) {
               ${getAdminNav('voting', chatEnabled)}
 
               <h3 class="section-title">Preview Judge Results - Top 3 by Class</h3>
-              <p style="color:#666;margin-bottom:20px;">This is a preview. Results are not yet published.</p>
+              <p style="color:var(--text-secondary);margin-bottom:20px;">This is a preview. Results are not yet published.</p>
 
               ${classResults || '<p>No classes configured</p>'}
 
               <div style="margin-top:20px;">
-                <a href="/admin/judge-status" class="action-btn" style="background:#666;">Back to Judge Status</a>
+                <a href="/admin/judge-status" class="action-btn" style="background:var(--text-secondary);">Back to Judge Status</a>
                 ${appConfig.judgeVotingStatus !== 'Lock'
-                  ? `<a href="/admin/lock-judge-voting" class="action-btn" style="background:#e74c3c;" onclick="return confirm('Lock voting and publish these results?')">Lock & Publish Results</a>`
+                  ? `<a href="/admin/lock-judge-voting" class="action-btn" style="background:var(--btn-delete-bg);" onclick="return confirm('Lock voting and publish these results?')">Lock & Publish Results</a>`
                   : ''
                 }
               </div>
