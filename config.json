@@ -1,6 +1,53 @@
 {
-  "appTitle": "Matt Car show",
-  "appSubtitle": "Sign in to your account",
-  "judgeVotingStatus": "Close",
-  "specialtyVotingStatus": "Close"
+    "port": 3001,
+    "sessionKeys": [
+        "change-this-to-a-random-secret-key",
+        "change-this-backup-key-too"
+    ],
+    "database": {
+        "engine": "sqlite",
+        "sqlite": {
+            "filename": "carshow.db"
+        },
+        "mysql": {
+            "host": "localhost",
+            "port": 3306,
+            "database": "carshow",
+            "user": "carshow_app",
+            "password": "PASSWORD",
+            "connectionLimit": 10,
+            "waitForConnections": true,
+            "queueLimit": 0
+        },
+        "_comment": "Set 'engine' to 'sqlite' or 'mysql'. SQLite requires no setup. For MySQL: run setup_mysql_db.sql first, then update credentials below."
+    },
+    "appTitle": "Testing Car Show",
+    "appSubtitle": "Sign in to your account",
+    "judgeVotingStatus": "Open",
+    "specialtyVotingStatus": "Open",
+    "defaultRegistrationPrice": 25,
+    "defaultMinScore": 0,
+    "defaultMaxScore": 5,
+    "animatedLogin": true,
+    "loginBackground": {
+        "useImage": true,
+        "imageUrl": "/images/app_config/0ee5884facf4db57ffc92468f5b1163c.jpg",
+        "backgroundColor": "#002e7a",
+        "useTint": true,
+        "tintColor": "#0056d6",
+        "tintOpacity": 0.26,
+        "cardOpacity": 1
+    },
+    "appBackground": {
+        "useImage": true,
+        "imageUrl": "/images/app_config/2821216dc760ba656f79b0e05d91a585.jpg",
+        "backgroundColor": "#1a1a2e",
+        "useTint": true,
+        "tintColor": "#1a1a2e",
+        "tintOpacity": 0.5,
+        "containerOpacity": 1
+    },
+    "theme": "light",
+    "chatEnabled": true,
+    "chatMessageLimit": 200
 }

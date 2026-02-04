@@ -1,0 +1,462 @@
+/* admin.css - Dashboard and admin-specific styles
+ * Navigation bars, tables, card views, modals, badges, forms,
+ * profile cards, and responsive breakpoints for admin/judge/registrar/user dashboards.
+ * All colors reference CSS custom properties from styles.css for theme support.
+ */
+
+/* Mobile-first admin navigation */
+.admin-nav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.admin-nav a {
+  flex: 1;
+  min-width: calc(50% - 4px);
+  padding: 14px 16px;
+  background: var(--nav-bg);
+  border: 2px solid var(--nav-border);
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--nav-text);
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-nav a.active {
+  background: var(--nav-active-gradient);
+  color: var(--nav-active-text);
+  border-color: var(--nav-active-border);
+}
+
+.admin-nav a:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+.config-subnav {
+  margin-top: -12px;
+  margin-bottom: 20px;
+  background: var(--subnav-bg);
+  border-radius: 10px;
+  padding: 8px;
+}
+
+.config-subnav a {
+  background: var(--subnav-item-bg);
+  min-width: calc(50% - 12px);
+}
+
+/* Table wrapper for horizontal scroll on mobile */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 15px;
+  border-radius: 10px;
+  border: 1px solid var(--table-border);
+}
+
+.user-table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+}
+
+.user-table th, .user-table td {
+  padding: 12px 10px;
+  text-align: left;
+  border-bottom: 1px solid var(--table-border);
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.user-table th {
+  background: var(--table-header-bg);
+  font-weight: 600;
+  color: var(--text-dark);
+  position: sticky;
+  top: 0;
+}
+
+
+.user-row-actions td {
+  border-bottom: 1px solid var(--divider-color) !important;
+  padding-bottom: 10px !important;
+}
+
+/* Card view for users (always visible) */
+.user-cards {
+  display: block;
+}
+
+.user-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--card-border);
+}
+
+.user-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.user-card-name {
+  font-weight: 600;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.user-card-username {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.user-card-details {
+  font-size: 14px;
+  color: var(--text-dark);
+  margin-bottom: 12px;
+}
+
+.user-card-details div {
+  margin-bottom: 4px;
+}
+
+.user-card-badges {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.user-card-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* Larger touch targets for action buttons */
+.action-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 70px;
+}
+
+.action-btn.edit {
+  background: var(--btn-edit-bg);
+  color: white;
+}
+
+.action-btn.delete {
+  background: var(--btn-delete-bg);
+  color: white;
+}
+
+.action-btn:active {
+  opacity: 0.8;
+  transform: scale(0.98);
+}
+
+/* Full-width action buttons in card view */
+.user-card-actions .action-btn {
+  flex: 1;
+}
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--modal-overlay);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.modal {
+  background: var(--modal-bg);
+  padding: 24px;
+  border-radius: 15px;
+  max-width: 500px;
+  width: 100%;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal h3 {
+  margin-bottom: 20px;
+  color: var(--text-primary);
+  font-size: 18px;
+}
+
+.role-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.role-badge.admin {
+  background: var(--role-admin);
+  color: white;
+}
+
+.role-badge.judge {
+  background: var(--role-judge);
+  color: white;
+}
+
+.role-badge.registrar {
+  background: var(--role-registrar);
+  color: white;
+}
+
+.role-badge.user {
+  background: var(--role-user);
+  color: white;
+}
+
+.role-badge.vendor {
+  background: var(--role-vendor);
+  color: white;
+}
+
+.status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.status-badge.active {
+  background: var(--status-active-bg);
+  color: var(--status-active-text);
+}
+
+.status-badge.inactive {
+  background: var(--status-inactive-bg);
+  color: var(--status-inactive-text);
+}
+
+select {
+  width: 100%;
+  padding: 14px 16px;
+  border: 2px solid var(--input-border);
+  border-radius: 10px;
+  font-size: 16px;
+  background: var(--input-bg);
+  color: var(--input-text);
+  cursor: pointer;
+  min-height: 50px;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+}
+
+select:focus {
+  border-color: var(--input-focus-border);
+  outline: none;
+  background-color: var(--input-bg-focus);
+}
+
+.btn-secondary {
+  background: var(--btn-secondary-bg);
+  color: white;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 16px;
+  min-height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-secondary:active {
+  opacity: 0.8;
+}
+
+.section-title {
+  font-size: 18px;
+  color: var(--text-primary);
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--divider-color);
+}
+
+.profile-card {
+  background: var(--card-bg);
+  padding: 20px;
+  border-radius: 15px;
+  margin-bottom: 16px;
+}
+
+.profile-card h3 {
+  margin-bottom: 15px;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+/* Form buttons stacked on mobile */
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.form-actions button,
+.form-actions a {
+  width: 100%;
+  text-align: center;
+}
+
+/* Scroll hint for tables */
+.scroll-hint {
+  display: block;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 8px;
+  padding: 8px;
+}
+
+.scroll-hint::before {
+  content: "\2190 Scroll to see more \2192";
+}
+
+/* Tablet and up */
+@media (min-width: 768px) {
+  .user-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+  }
+
+  .user-card {
+    margin-bottom: 0;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .user-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: 0 2px 10px var(--container-shadow);
+  }
+
+  .admin-nav a {
+    flex: 0 0 auto;
+    min-width: auto;
+    padding: 12px 24px;
+  }
+
+  .admin-nav a:hover {
+    background: var(--nav-active-gradient);
+    color: var(--nav-active-text);
+    border-color: var(--nav-active-border);
+  }
+
+  .table-wrapper {
+    overflow-x: visible;
+    border: none;
+  }
+
+  .user-table {
+    min-width: 100%;
+  }
+
+  .user-table th, .user-table td {
+    padding: 12px 15px;
+    font-size: 14px;
+  }
+
+
+  .action-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+    min-height: 36px;
+    min-width: auto;
+    margin-right: 5px;
+  }
+
+  .action-btn:hover {
+    opacity: 0.85;
+  }
+
+  .scroll-hint {
+    display: none;
+  }
+
+  .modal {
+    padding: 30px;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
+
+  .profile-card {
+    padding: 25px;
+  }
+
+  .form-actions {
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+
+  .form-actions button,
+  .form-actions a {
+    width: auto;
+  }
+}
+
+/* Small phones - show card view instead of table */
+@media (max-width: 480px) {
+  .table-wrapper {
+    display: none;
+  }
+
+  .table-wrapper.report-table,
+  .table-wrapper.config-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .scroll-hint {
+    display: none;
+  }
+
+  .section-title {
+    font-size: 16px;
+  }
+}

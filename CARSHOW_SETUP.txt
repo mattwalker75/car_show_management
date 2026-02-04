@@ -26,7 +26,21 @@ Change to the application directory and initialize it
 
 Install required packages
   - npm install express sqlite3 bcrypt 
-  - npm install cookie-session multer sharp
+  - npm install cookie-session sharp
+  - npm install morgan multer
+
+
+Cloning existing repo
+---------------------
+
+Clone the repository
+  - git clone <GIT URL>
+
+Change to the application directory and initialize it
+  - cd carshow_management_app
+
+Install required packages
+  - npm install
 
 
 Setup SQLite database
@@ -50,7 +64,8 @@ Start the application
 ---------------------
 cd carshow_management_app
 node app.js
-
+  or
+npm start
 
 Access the application
 ----------------------
