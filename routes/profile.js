@@ -76,48 +76,8 @@ module.exports = function (db, appConfig, upload) {
         font-size: 42px;
         font-weight: 700;
       }
-      .file-input-wrapper {
-        position: relative;
-        overflow: hidden;
-        display: inline-block;
-        width: 100%;
-      }
-      .file-input-wrapper input[type=file] {
-        position: absolute;
-        left: 0;
-        top: 0;
-        opacity: 0;
-        width: 100%;
-        height: 100%;
-        cursor: pointer;
-      }
-      .file-input-label {
-        display: block;
-        padding: 14px 16px;
-        background: #f8f9fa;
-        border: 2px dashed #e1e1e1;
-        border-radius: 12px;
-        text-align: center;
-        color: #666;
-        font-size: 14px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-      }
-      .file-input-wrapper:hover .file-input-label {
-        border-color: #e94560;
-        background: #fff5f7;
-      }
-      .file-input-wrapper.has-file .file-input-label {
-        border-color: #27ae60;
-        background: rgba(39, 174, 96, 0.1);
-        color: #27ae60;
-      }
-      .file-name {
-        margin-top: 8px;
-        font-size: 13px;
-        color: #27ae60;
-        text-align: center;
-        font-weight: 600;
+      #updatePhotoBtn:hover {
+        background: #d63851;
       }
     </style>`;
 
@@ -179,20 +139,19 @@ module.exports = function (db, appConfig, upload) {
                 <div class="profile-image-container">
                   ${profileImageHtml}
                 </div>
-                <form method="POST" action="/${role}/upload-photo" enctype="multipart/form-data">
-                  <div class="form-group">
-                    <div class="file-input-wrapper" id="fileWrapper">
-                      <div class="file-input-label">
-                        Click or tap to select an image<br>
-                        <small>(JPEG, PNG, GIF, or WebP - Max 5MB)</small>
-                      </div>
-                      <input type="file" name="profile_photo" accept="image/jpeg,image/png,image/gif,image/webp" onchange="updateFileName(this)">
+                <button type="button" id="updatePhotoBtn" style="display:block;width:100%;padding:12px;background:#e94560;color:white;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;">Update Photo</button>
+                <div style="text-align:center;margin-top:6px;color:#999;font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
+                <input type="file" id="profilePhotoInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
+                <div id="photoPreviewModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
+                  <div style="background:white;border-radius:12px;padding:24px;max-width:320px;width:90%;text-align:center;">
+                    <h4 style="margin:0 0 16px;color:#2c3e50;">Preview</h4>
+                    <img id="photoPreviewImg" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid #e1e1e1;">
+                    <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
+                      <button type="button" id="photoSaveBtn" style="padding:10px 28px;background:#27ae60;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
+                      <button type="button" id="photoCancelBtn" style="padding:10px 28px;background:#95a5a6;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
                     </div>
-                    <div class="file-name" id="fileName"></div>
-                    <img id="imagePreview" style="display:none;max-width:200px;max-height:200px;margin:10px auto 0;border-radius:8px;border:2px solid #e1e1e1;">
                   </div>
-                  <button type="submit">Upload Photo</button>
-                </form>
+                </div>
                 <script src="/js/imageUpload.js"></script>
               </div>
 
@@ -252,20 +211,20 @@ module.exports = function (db, appConfig, upload) {
         const user = req.session.user;
 
         if (!req.file) {
-          return res.send(errorPage('Please select an image file to upload.', `/${role}/profile`, 'Try Again'));
+          return res.status(400).json({ success: false, error: 'Please select an image file.' });
         }
 
         const result = await handleProfilePhotoUpload(db, user.user_id, req.file);
 
         if (result.success) {
           req.session.user.image_url = result.imageUrl;
-          res.send(successPage('Profile photo uploaded successfully!', `/${role}/profile`, 'Back to Profile'));
+          res.json({ success: true, imageUrl: result.imageUrl });
         } else {
-          res.send(errorPage(`Error saving photo: ${result.error}`, `/${role}/profile`, 'Try Again'));
+          res.status(400).json({ success: false, error: result.error });
         }
       } catch (err) {
         console.error('Error uploading profile photo:', err.message);
-        res.send(errorPage('An unexpected error occurred. Please try again.', `/${role}/profile`, 'Try Again'));
+        res.status(500).json({ success: false, error: 'An unexpected error occurred.' });
       }
     });
 
