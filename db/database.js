@@ -92,6 +92,20 @@ if (db.engine === 'sqlite') {
     });
   };
 
+  // Callback-style wrappers (used by route files)
+  db.get = function (sql, params, cb) {
+    if (typeof params === 'function') { cb = params; params = []; }
+    sqliteDb.get(sql, params, cb);
+  };
+  db.all = function (sql, params, cb) {
+    if (typeof params === 'function') { cb = params; params = []; }
+    sqliteDb.all(sql, params, cb);
+  };
+  db.run = function (sql, params, cb) {
+    if (typeof params === 'function') { cb = params; params = []; }
+    sqliteDb.run(sql, params, cb);
+  };
+
   // Expose raw database for special cases
   db.raw = sqliteDb;
 
@@ -136,6 +150,20 @@ else if (db.engine === 'mysql') {
       lastID: result.insertId,
       changes: result.affectedRows
     };
+  };
+
+  // Callback-style wrappers (used by route files)
+  db.get = function (sql, params, cb) {
+    if (typeof params === 'function') { cb = params; params = []; }
+    db.getAsync(sql, params).then(row => cb(null, row)).catch(err => cb(err));
+  };
+  db.all = function (sql, params, cb) {
+    if (typeof params === 'function') { cb = params; params = []; }
+    db.allAsync(sql, params).then(rows => cb(null, rows)).catch(err => cb(err));
+  };
+  db.run = function (sql, params, cb) {
+    if (typeof params === 'function') { cb = params; params = []; }
+    db.runAsync(sql, params).then(result => cb(null, result)).catch(err => cb(err));
   };
 
   // Expose pool for special cases

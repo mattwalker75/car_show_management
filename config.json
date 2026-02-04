@@ -1,8 +1,10 @@
 {
     "port": 3001,
-    "sessionKeys": ["change-this-to-a-random-secret-key", "change-this-backup-key-too"],
+    "sessionKeys": [
+        "change-this-to-a-random-secret-key",
+        "change-this-backup-key-too"
+    ],
     "database": {
-        "_comment": "Set 'engine' to 'sqlite' or 'mysql'. SQLite requires no setup. For MySQL: run setup_mysql_db.sql first, then update credentials below.",
         "engine": "sqlite",
         "sqlite": {
             "filename": "carshow.db"
@@ -16,7 +18,8 @@
             "connectionLimit": 10,
             "waitForConnections": true,
             "queueLimit": 0
-        }
+        },
+        "_comment": "Set 'engine' to 'sqlite' or 'mysql'. SQLite requires no setup. For MySQL: run setup_mysql_db.sql first, then update credentials below."
     },
     "appTitle": "Testing Car Show",
     "appSubtitle": "Sign in to your account",
@@ -28,7 +31,7 @@
     "animatedLogin": true,
     "loginBackground": {
         "useImage": true,
-        "imageUrl": "/images/app_config/e217a2abc1c9abfdef0a095cd3724df6.jpg",
+        "imageUrl": "/images/app_config/f40bfa1cb78e0aed38fd83b029d8f553.jpg",
         "backgroundColor": "#002e7a",
         "useTint": true,
         "tintColor": "#0056d6",
@@ -37,7 +40,7 @@
     },
     "appBackground": {
         "useImage": true,
-        "imageUrl": "/images/app_config/6c9e824511f3be812127ae9c8c0dd482.jpg",
+        "imageUrl": "/images/app_config/54432b542c3b0c1c68724472820657f5.jpg",
         "backgroundColor": "#1a1a2e",
         "useTint": true,
         "tintColor": "#1a1a2e",
