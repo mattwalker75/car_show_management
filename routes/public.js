@@ -14,7 +14,7 @@ module.exports = function (db, appConfig, upload, port) {
   const path = require('path');
   const crypto = require('crypto');
   const { requireAuth, hashPassword, verifyPassword, checkInitialSetup } = require('../middleware/auth');
-  const { errorPage, successPage } = require('../views/layout');
+  const { errorPage } = require('../views/layout');
   const styles = `<link rel="stylesheet" href="/css/styles.css">`;
 
   // Generate dynamic login background styles from config

@@ -470,6 +470,47 @@ module.exports = function (db, appConfig, upload) {
                 font-size: 22px;
               }
             }
+            .image-modal {
+              display: none;
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0, 0, 0, 0.95);
+              z-index: 10000;
+              justify-content: center;
+              align-items: center;
+              padding: 20px;
+            }
+            .image-modal.active {
+              display: flex;
+            }
+            .image-modal img {
+              max-width: 100%;
+              max-height: 100%;
+              object-fit: contain;
+              border-radius: 8px;
+            }
+            .image-modal-close {
+              position: absolute;
+              top: 20px;
+              right: 20px;
+              background: rgba(255, 255, 255, 0.2);
+              color: white;
+              border: none;
+              width: 44px;
+              height: 44px;
+              border-radius: 50%;
+              font-size: 24px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            .image-modal-close:hover {
+              background: rgba(255, 255, 255, 0.3);
+            }
           </style>
         </head>
         ${getBodyTag(req)}
@@ -494,9 +535,9 @@ module.exports = function (db, appConfig, upload) {
             `}
 
             <div class="vendor-detail-header">
-              <div class="vendor-detail-image">
+              <div class="vendor-detail-image"${business.image_url ? ` style="cursor:pointer;" onclick="openImageModal(this.querySelector('img').src, this.querySelector('img').alt)"` : ''}>
                 ${business.image_url
-                  ? `<img src="${business.image_url}" alt="${business.business_name || business.vendor_name}">`
+                  ? `<img src="${business.image_url}" alt="${(business.business_name || business.vendor_name).replace(/"/g, '&quot;')}">`
                   : `<div class="vendor-detail-placeholder">🏪</div>`
                 }
               </div>
@@ -574,6 +615,31 @@ module.exports = function (db, appConfig, upload) {
               <a href="/admin/vendors">&larr; Back to Vendors</a>
             </div>
           </div>
+
+          <!-- Fullscreen Image Modal -->
+          <div class="image-modal" id="imageModal" onclick="closeImageModal()">
+            <button class="image-modal-close" onclick="closeImageModal()">&times;</button>
+            <img id="modalImage" src="" alt="">
+          </div>
+
+          <script>
+            function openImageModal(src, alt) {
+              var modal = document.getElementById('imageModal');
+              var img = document.getElementById('modalImage');
+              img.src = src;
+              img.alt = alt || '';
+              modal.classList.add('active');
+              document.body.style.overflow = 'hidden';
+            }
+            function closeImageModal() {
+              var modal = document.getElementById('imageModal');
+              modal.classList.remove('active');
+              document.body.style.overflow = '';
+            }
+            document.addEventListener('keydown', function(e) {
+              if (e.key === 'Escape') closeImageModal();
+            });
+          </script>
         </body>
         </html>
       `);

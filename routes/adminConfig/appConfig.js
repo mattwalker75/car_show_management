@@ -14,7 +14,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // Upload login background image
   router.post('/upload-login-background', requireAdmin, upload.single('backgroundImage'), async (req, res) => {
     if (!req.file) {
-      return res.send(errorPage('No image file selected.', '/admin/app-config', 'Try Again'));
+      return res.status(400).json({ success: false, error: 'No image file selected.' });
     }
     try {
       if (!appConfig.loginBackground) appConfig.loginBackground = {};
@@ -24,12 +24,12 @@ module.exports = function (db, appConfig, upload, saveConfig) {
         appConfig.loginBackground.imageUrl = result.imageUrl;
         appConfig.loginBackground.useImage = true;
         saveConfig();
-        res.redirect('/admin/app-config?saved=1');
+        res.json({ success: true, imageUrl: result.imageUrl });
       } else {
-        res.send(errorPage('Error uploading image: ' + result.error, '/admin/app-config', 'Try Again'));
+        res.status(400).json({ success: false, error: result.error });
       }
     } catch (error) {
-      res.send(errorPage('Error uploading image: ' + error.message, '/admin/app-config', 'Try Again'));
+      res.status(500).json({ success: false, error: error.message });
     }
   });
 
@@ -47,7 +47,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   // Upload app background image
   router.post('/upload-app-background', requireAdmin, upload.single('appBackgroundImage'), async (req, res) => {
     if (!req.file) {
-      return res.send(errorPage('No image file selected.', '/admin/app-config', 'Try Again'));
+      return res.status(400).json({ success: false, error: 'No image file selected.' });
     }
     try {
       if (!appConfig.appBackground) appConfig.appBackground = {};
@@ -57,12 +57,12 @@ module.exports = function (db, appConfig, upload, saveConfig) {
         appConfig.appBackground.imageUrl = result.imageUrl;
         appConfig.appBackground.useImage = true;
         saveConfig();
-        res.redirect('/admin/app-config?saved=1');
+        res.json({ success: true, imageUrl: result.imageUrl });
       } else {
-        res.send(errorPage('Error uploading image: ' + result.error, '/admin/app-config', 'Try Again'));
+        res.status(400).json({ success: false, error: result.error });
       }
     } catch (error) {
-      res.send(errorPage('Error uploading image: ' + error.message, '/admin/app-config', 'Try Again'));
+      res.status(500).json({ success: false, error: error.message });
     }
   });
 
@@ -388,32 +388,52 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             <button type="submit" style="background: #27ae60; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px;">Save Configuration</button>
           </form>
 
-          <!-- Image upload/remove forms (outside main form to avoid nesting) -->
+          <!-- Login background image upload/remove (outside main form to avoid nesting) -->
           <div id="bgImageUploadForm" style="display:${bg.useImage ? 'block' : 'none'};max-width:600px;margin-top:15px;">
-            <form method="POST" action="/admin/upload-login-background" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-              <input type="file" name="backgroundImage" accept="image/jpeg,image/png,image/gif,image/webp"
-                style="flex:1;min-width:200px;padding:8px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
-              <button type="submit" style="background:#3498db;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;">Upload Image</button>
-            </form>
-            ${bg.imageUrl ? `
-            <form method="POST" action="/admin/remove-login-background" style="margin-top:8px;">
-              <button type="submit" style="background:#e74c3c;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">Remove Image</button>
-            </form>
-            ` : ''}
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <button type="button" id="loginBgUploadBtn" style="background:#3498db;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;font-size:14px;">Update Image</button>
+              ${bg.imageUrl ? `
+              <form method="POST" action="/admin/remove-login-background" style="margin:0;">
+                <button type="submit" style="background:#e74c3c;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;text-transform:none;letter-spacing:normal;font-size:14px;min-height:auto;">Remove Image</button>
+              </form>
+              ` : ''}
+            </div>
+            <div style="margin-top:4px;color:#999;font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
+            <input type="file" id="loginBgFileInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
+            <div id="loginBgPreviewModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
+              <div style="background:white;border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
+                <h4 style="margin:0 0 16px;color:#2c3e50;">Preview Login Background</h4>
+                <img id="loginBgPreviewImg" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid #e1e1e1;">
+                <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
+                  <button type="button" id="loginBgSaveBtn" style="padding:10px 28px;background:#27ae60;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
+                  <button type="button" id="loginBgCancelBtn" style="padding:10px 28px;background:#95a5a6;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <!-- App background image upload/remove forms (outside main form) -->
+          <!-- App background image upload/remove (outside main form to avoid nesting) -->
           <div id="appBgImageUploadForm" style="display:${abg.useImage ? 'block' : 'none'};max-width:600px;margin-top:15px;">
-            <form method="POST" action="/admin/upload-app-background" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-              <input type="file" name="appBackgroundImage" accept="image/jpeg,image/png,image/gif,image/webp"
-                style="flex:1;min-width:200px;padding:8px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;">
-              <button type="submit" style="background:#3498db;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;">Upload Image</button>
-            </form>
-            ${abg.imageUrl ? `
-            <form method="POST" action="/admin/remove-app-background" style="margin-top:8px;">
-              <button type="submit" style="background:#e74c3c;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">Remove Image</button>
-            </form>
-            ` : ''}
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+              <button type="button" id="appBgUploadBtn" style="background:#3498db;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;font-size:14px;">Update Image</button>
+              ${abg.imageUrl ? `
+              <form method="POST" action="/admin/remove-app-background" style="margin:0;">
+                <button type="submit" style="background:#e74c3c;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap;text-transform:none;letter-spacing:normal;font-size:14px;min-height:auto;">Remove Image</button>
+              </form>
+              ` : ''}
+            </div>
+            <div style="margin-top:4px;color:#999;font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
+            <input type="file" id="appBgFileInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
+            <div id="appBgPreviewModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
+              <div style="background:white;border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
+                <h4 style="margin:0 0 16px;color:#2c3e50;">Preview App Background</h4>
+                <img id="appBgPreviewImg" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid #e1e1e1;">
+                <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
+                  <button type="button" id="appBgSaveBtn" style="padding:10px 28px;background:#27ae60;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
+                  <button type="button" id="appBgCancelBtn" style="padding:10px 28px;background:#95a5a6;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="links" style="margin-top:20px;">
@@ -585,6 +605,146 @@ module.exports = function (db, appConfig, upload, saveConfig) {
             document.getElementById('appTintColorHex').textContent = this.value;
             updateAppPreview();
           });
+
+          // Login background AJAX upload with modal
+          (function() {
+            var btn = document.getElementById('loginBgUploadBtn');
+            var input = document.getElementById('loginBgFileInput');
+            var modal = document.getElementById('loginBgPreviewModal');
+            var preview = document.getElementById('loginBgPreviewImg');
+            var saveBtn = document.getElementById('loginBgSaveBtn');
+            var cancelBtn = document.getElementById('loginBgCancelBtn');
+            if (!btn || !input) return;
+            btn.addEventListener('click', function() { input.click(); });
+            input.addEventListener('change', function() {
+              if (!input.files || !input.files[0]) return;
+              var file = input.files[0];
+              var allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+              if (allowedTypes.indexOf(file.type) === -1) {
+                alert('Invalid file type. Please select a JPEG, PNG, GIF, or WebP image.');
+                input.value = '';
+                return;
+              }
+              if (file.size > 5 * 1024 * 1024) {
+                alert('File is too large. Maximum size is 5MB.');
+                input.value = '';
+                return;
+              }
+              var reader = new FileReader();
+              reader.onload = function(e) {
+                preview.src = e.target.result;
+                modal.style.display = 'flex';
+              };
+              reader.readAsDataURL(file);
+            });
+            cancelBtn.addEventListener('click', function() {
+              modal.style.display = 'none';
+              input.value = '';
+            });
+            modal.addEventListener('click', function(e) {
+              if (e.target === modal) { modal.style.display = 'none'; input.value = ''; }
+            });
+            saveBtn.addEventListener('click', function() {
+              if (!input.files || !input.files[0]) return;
+              var formData = new FormData();
+              formData.append('backgroundImage', input.files[0]);
+              saveBtn.disabled = true;
+              saveBtn.textContent = 'Saving...';
+              fetch('/admin/upload-login-background', { method: 'POST', body: formData })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                  if (data.success) {
+                    // Update current background preview thumbnail
+                    var section = document.getElementById('bgImageSection');
+                    var thumb = section.querySelector('img');
+                    if (thumb) { thumb.src = data.imageUrl; }
+                    // Update live preview panel
+                    var panel = document.getElementById('previewPanel');
+                    panel.style.backgroundImage = "url('" + data.imageUrl + "')";
+                    panel.style.backgroundSize = 'cover';
+                    panel.style.backgroundPosition = 'center';
+                    panel.dataset.hasImage = 'true';
+                    updatePreview();
+                    modal.style.display = 'none';
+                    input.value = '';
+                  } else {
+                    alert(data.error || 'Upload failed. Please try again.');
+                  }
+                })
+                .catch(function() { alert('Upload failed. Please try again.'); })
+                .finally(function() { saveBtn.disabled = false; saveBtn.textContent = 'Save'; });
+            });
+          })();
+
+          // App background AJAX upload with modal
+          (function() {
+            var btn = document.getElementById('appBgUploadBtn');
+            var input = document.getElementById('appBgFileInput');
+            var modal = document.getElementById('appBgPreviewModal');
+            var preview = document.getElementById('appBgPreviewImg');
+            var saveBtn = document.getElementById('appBgSaveBtn');
+            var cancelBtn = document.getElementById('appBgCancelBtn');
+            if (!btn || !input) return;
+            btn.addEventListener('click', function() { input.click(); });
+            input.addEventListener('change', function() {
+              if (!input.files || !input.files[0]) return;
+              var file = input.files[0];
+              var allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+              if (allowedTypes.indexOf(file.type) === -1) {
+                alert('Invalid file type. Please select a JPEG, PNG, GIF, or WebP image.');
+                input.value = '';
+                return;
+              }
+              if (file.size > 5 * 1024 * 1024) {
+                alert('File is too large. Maximum size is 5MB.');
+                input.value = '';
+                return;
+              }
+              var reader = new FileReader();
+              reader.onload = function(e) {
+                preview.src = e.target.result;
+                modal.style.display = 'flex';
+              };
+              reader.readAsDataURL(file);
+            });
+            cancelBtn.addEventListener('click', function() {
+              modal.style.display = 'none';
+              input.value = '';
+            });
+            modal.addEventListener('click', function(e) {
+              if (e.target === modal) { modal.style.display = 'none'; input.value = ''; }
+            });
+            saveBtn.addEventListener('click', function() {
+              if (!input.files || !input.files[0]) return;
+              var formData = new FormData();
+              formData.append('appBackgroundImage', input.files[0]);
+              saveBtn.disabled = true;
+              saveBtn.textContent = 'Saving...';
+              fetch('/admin/upload-app-background', { method: 'POST', body: formData })
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                  if (data.success) {
+                    // Update current background preview thumbnail
+                    var section = document.getElementById('appBgImageSection');
+                    var thumb = section.querySelector('img');
+                    if (thumb) { thumb.src = data.imageUrl; }
+                    // Update live preview panel
+                    var panel = document.getElementById('appPreviewPanel');
+                    panel.style.backgroundImage = "url('" + data.imageUrl + "')";
+                    panel.style.backgroundSize = 'cover';
+                    panel.style.backgroundPosition = 'center';
+                    panel.dataset.hasImage = 'true';
+                    updateAppPreview();
+                    modal.style.display = 'none';
+                    input.value = '';
+                  } else {
+                    alert(data.error || 'Upload failed. Please try again.');
+                  }
+                })
+                .catch(function() { alert('Upload failed. Please try again.'); })
+                .finally(function() { saveBtn.disabled = false; saveBtn.textContent = 'Save'; });
+            });
+          })();
         </script>
       </body>
       </html>

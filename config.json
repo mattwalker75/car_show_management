@@ -31,7 +31,7 @@
     "animatedLogin": true,
     "loginBackground": {
         "useImage": true,
-        "imageUrl": "/images/app_config/f40bfa1cb78e0aed38fd83b029d8f553.jpg",
+        "imageUrl": "/images/app_config/0ee5884facf4db57ffc92468f5b1163c.jpg",
         "backgroundColor": "#002e7a",
         "useTint": true,
         "tintColor": "#0056d6",
@@ -40,12 +40,13 @@
     },
     "appBackground": {
         "useImage": true,
-        "imageUrl": "/images/app_config/54432b542c3b0c1c68724472820657f5.jpg",
+        "imageUrl": "/images/app_config/2821216dc760ba656f79b0e05d91a585.jpg",
         "backgroundColor": "#1a1a2e",
         "useTint": true,
         "tintColor": "#1a1a2e",
         "tintOpacity": 0.5,
         "containerOpacity": 0.87
     },
-    "chatEnabled": true
+    "chatEnabled": true,
+    "chatMessageLimit": 200
 }

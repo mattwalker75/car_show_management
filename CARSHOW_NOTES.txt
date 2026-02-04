@@ -45,29 +45,7 @@ vendor
 TODO
 ----
 
-Review the similar functionality in the different sections and pick the method that I prefer and use that for everything
-
-Image upload:
-
-- "Admin", "User"  role
-   - "Profile" tab
-      - Click on "Click or tap to select an image" to select an image
-      - Then have to click "UPLOAD PHOTO" to upload the picture after it is selected 
-
-- "Admin" role
-   - "Config" tab
-      - "App Config" sub-tab
-         - Click on "Choose File" to select an image
-         - Click on "UPLOAD IMAGE" to upload the picture after it is selected
-
-- "User" role
-   - "Dashboard" tab
-      - "Edit" next to existing vehicle
-         - Click on "Upload new image to replace current" to select an image
-         - Click on "UPDATE VEHICLE" to upload new image
-      - Click on "Register New Vehicle"
-         - Click on "Click or tap to select an image" to select an image
-         - Click on "REGISTER VEHICLE" to upload image
+Review item selecting and listings:
 
 
 

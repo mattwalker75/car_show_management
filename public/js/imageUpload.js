@@ -16,15 +16,27 @@ document.addEventListener('DOMContentLoaded', function() {
     input.click();
   });
 
-  // File selected → show modal with preview
+  // File selected → validate then show modal with preview
   input.addEventListener('change', function() {
     if (!input.files || !input.files[0]) return;
+    var file = input.files[0];
+    var allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedTypes.indexOf(file.type) === -1) {
+      alert('Invalid file type. Please select a JPEG, PNG, GIF, or WebP image.');
+      input.value = '';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File is too large. Maximum size is 5MB.');
+      input.value = '';
+      return;
+    }
     var reader = new FileReader();
     reader.onload = function(e) {
       preview.src = e.target.result;
       modal.style.display = 'flex';
     };
-    reader.readAsDataURL(input.files[0]);
+    reader.readAsDataURL(file);
   });
 
   // Cancel → close modal, clear input

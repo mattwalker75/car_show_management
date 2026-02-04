@@ -37,6 +37,25 @@ module.exports = function (db, appConfig, upload) {
             <h3 class="section-title">Edit Business Information</h3>
 
             <form method="POST" action="/vendor/save-business" enctype="multipart/form-data" style="max-width:600px;">
+              <div class="form-group" style="text-align:center;">
+                <label>Business Image (Optional)</label>
+                <div id="bizImageDisplay" style="margin:10px auto;">
+                  ${business.image_url
+                    ? `<img src="${business.image_url}" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid #e1e1e1;object-fit:cover;">`
+                    : `<div class="current-image-placeholder" style="width:120px;height:80px;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:36px;">🏪</div>`
+                  }
+                </div>
+                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                  <button type="button" id="bizImageBtn" style="background:#3498db;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;">Update Image</button>
+                  ${business.image_url ? `
+                  <button type="button" onclick="document.getElementById('removeBizImgForm').submit();"
+                    style="background:#e74c3c;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:14px;text-transform:none;letter-spacing:normal;min-height:auto;">Remove Image</button>
+                  ` : ''}
+                </div>
+                <div style="margin-top:6px;color:#999;font-size:12px;">(JPEG, PNG, GIF, or WebP - Max 5MB)</div>
+                <input type="file" name="businessImage" id="bizImageInput" accept="image/jpeg,image/png,image/gif,image/webp" style="display:none;">
+              </div>
+
               <div class="form-group">
                 <label>Business Name</label>
                 <input type="text" name="business_name" value="${business.business_name || ''}" placeholder="Enter business name">
@@ -73,36 +92,75 @@ module.exports = function (db, appConfig, upload) {
                 <small style="color:#888;display:block;margin-top:4px;">${(business.business_description || '').length}/200 characters</small>
               </div>
 
-              ${business.image_url ? `
-              <div class="form-group">
-                <label>Current Image</label>
-                <div style="margin-bottom:8px;"><img src="${business.image_url}" style="width:150px;height:100px;object-fit:cover;border-radius:8px;border:2px solid #e1e1e1;"></div>
-              </div>
-              ` : ''}
-
-              <div class="form-group">
-                <label>${business.image_url ? 'Replace' : 'Add'} Business Image (Optional)</label>
-                <input type="file" name="businessImage" accept="image/jpeg,image/png,image/gif,image/webp"
-                  style="padding:8px;border:2px solid #e1e1e1;border-radius:8px;font-size:14px;width:100%;">
-              </div>
-
-              <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                <button type="submit" style="background:#27ae60;color:white;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-size:16px;">Save Business Info</button>
-                ${business.image_url ? `
-                <button type="button" onclick="document.getElementById('removeBizImgForm').submit();"
-                  style="background:#e74c3c;color:white;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-size:14px;">Remove Image</button>
-                ` : ''}
-              </div>
+              <button type="submit" style="background:#27ae60;color:white;border:none;padding:12px 24px;border-radius:6px;cursor:pointer;font-size:16px;">Save Business Info</button>
             </form>
 
             ${business.image_url ? `
             <form id="removeBizImgForm" method="POST" action="/vendor/remove-business-image" style="display:none;"></form>
             ` : ''}
 
+            <!-- Business image preview modal (outside form to avoid nesting) -->
+            <div id="bizImageModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;">
+              <div style="background:white;border-radius:12px;padding:24px;max-width:400px;width:90%;text-align:center;">
+                <h4 style="margin:0 0 16px;color:#2c3e50;">Preview Business Image</h4>
+                <img id="bizImagePreview" style="max-width:350px;max-height:250px;border-radius:8px;border:2px solid #e1e1e1;">
+                <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
+                  <button type="button" id="bizImageSave" style="padding:10px 28px;background:#27ae60;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Save</button>
+                  <button type="button" id="bizImageCancel" style="padding:10px 28px;background:#95a5a6;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Cancel</button>
+                </div>
+              </div>
+            </div>
+
             <div class="links" style="margin-top:20px;">
               <a href="/vendor">&larr; Back to Dashboard</a>
             </div>
           </div>
+          <script>
+            (function() {
+              var btn = document.getElementById('bizImageBtn');
+              var input = document.getElementById('bizImageInput');
+              var modal = document.getElementById('bizImageModal');
+              var preview = document.getElementById('bizImagePreview');
+              var saveBtn = document.getElementById('bizImageSave');
+              var cancelBtn = document.getElementById('bizImageCancel');
+              var display = document.getElementById('bizImageDisplay');
+              if (!btn || !input) return;
+              btn.addEventListener('click', function() { input.click(); });
+              input.addEventListener('change', function() {
+                if (!input.files || !input.files[0]) return;
+                var file = input.files[0];
+                var allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                if (allowedTypes.indexOf(file.type) === -1) {
+                  alert('Invalid file type. Please select a JPEG, PNG, GIF, or WebP image.');
+                  input.value = '';
+                  return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                  alert('File is too large. Maximum size is 5MB.');
+                  input.value = '';
+                  return;
+                }
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                  preview.src = e.target.result;
+                  modal.style.display = 'flex';
+                };
+                reader.readAsDataURL(file);
+              });
+              cancelBtn.addEventListener('click', function() {
+                modal.style.display = 'none';
+                input.value = '';
+              });
+              modal.addEventListener('click', function(e) {
+                if (e.target === modal) { modal.style.display = 'none'; input.value = ''; }
+              });
+              saveBtn.addEventListener('click', function() {
+                if (!input.files || !input.files[0]) return;
+                display.innerHTML = '<img src="' + preview.src + '" style="max-width:200px;max-height:200px;border-radius:8px;border:2px solid #e1e1e1;object-fit:cover;">';
+                modal.style.display = 'none';
+              });
+            })();
+          </script>
         </body>
         </html>
       `);

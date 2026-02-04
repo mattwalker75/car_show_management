@@ -538,6 +538,26 @@ module.exports = function(db, appConfig, upload) {
                     const wrapper = document.getElementById('fileWrapper');
                     const preview = document.getElementById('imagePreview');
                     if (input.files && input.files[0]) {
+                      var file = input.files[0];
+                      var allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                      if (allowedTypes.indexOf(file.type) === -1) {
+                        alert('Invalid file type. Please select a JPEG, PNG, GIF, or WebP image.');
+                        input.value = '';
+                        fileName.textContent = '';
+                        wrapper.classList.remove('has-file');
+                        preview.style.display = 'none';
+                        preview.src = '';
+                        return;
+                      }
+                      if (file.size > 5 * 1024 * 1024) {
+                        alert('File is too large. Maximum size is 5MB.');
+                        input.value = '';
+                        fileName.textContent = '';
+                        wrapper.classList.remove('has-file');
+                        preview.style.display = 'none';
+                        preview.src = '';
+                        return;
+                      }
                       fileName.textContent = 'Selected: ' + input.files[0].name;
                       wrapper.classList.add('has-file');
                       const reader = new FileReader();
