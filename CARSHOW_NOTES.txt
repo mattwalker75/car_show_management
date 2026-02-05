@@ -40,19 +40,3 @@ user
 vendor
   - Vendors who participate in the car show
 
---------------------------------------
-
-TODO
-----
-Consider expanding the registrar to enable the ability to do the following:
-- optionally sell products, such as shirts 
-   - Will require adding products to the system, like the vendors do
-   - Be able to purchase multiple
-- optionally sell raffle tickets
-   - Will require adding ticket types
-   - Be able to purchase multiple
-- Encapsulate a transaction based on a specific user that can be saved and opened
-   - This will enable multiple registrars to interact with the same transaction
-
-
-

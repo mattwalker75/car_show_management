@@ -386,3 +386,58 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_user ON chat_messages(user_id);    
 -- Additional user indexes for chat features
 CREATE INDEX IF NOT EXISTS idx_users_chat_enabled ON users(chat_enabled);    -- Filter chat-enabled users
 CREATE INDEX IF NOT EXISTS idx_users_chat_blocked ON users(chat_blocked);    -- Filter chat-blocked users
+
+
+-- ============================================================================
+-- PRODUCTS TABLE (Event Products)
+-- ============================================================================
+-- Stores products and services offered by the event itself.
+-- This could be used for items such as raffle tickets, shirts, event merchandise, etc.
+-- Admin role creates, modifies, and deletes products.
+-- Registrar role sells products via the Registration tab.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS products (
+    product_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- Unique identifier
+    product_name TEXT NOT NULL,                     -- Product or service name
+    description TEXT,                               -- Optional one-line description
+    price TEXT,                                     -- Price info (text to allow flexibility)
+    discount_price TEXT,                            -- Optional discount/sale price
+    display_order INTEGER DEFAULT 0,               -- Sort order for display
+    available BOOLEAN DEFAULT 1,                   -- 1=available, 0=sold out
+    admin_deactivated BOOLEAN DEFAULT 0,           -- 1=deactivated by admin, 0=normal
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- Record creation timestamp
+);
+
+-- Product indexes
+CREATE INDEX IF NOT EXISTS idx_products_display_order ON products(display_order);  -- Sort by display order
+CREATE INDEX IF NOT EXISTS idx_products_available ON products(available);          -- Filter available products
+
+
+-- ============================================================================
+-- REGISTRATION TRANSACTIONS TABLE
+-- ============================================================================
+-- Tracks registration transactions for vehicle registration and product sales.
+-- Created by Registrar role when processing customer registrations.
+-- Stores JSON structures for vehicles and products being purchased.
+-- Status can be: 'active' (in progress), 'complete' (paid), 'cancel' (cancelled)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS registration_transactions (
+    transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- Unique transaction identifier
+    user_id INTEGER NOT NULL,                          -- Customer user being registered
+    registrar_id INTEGER NOT NULL,                     -- Registrar processing the transaction
+    vehicles_json TEXT,                                -- JSON: [{car_id, year, make, model, price}, ...]
+    products_json TEXT,                                -- JSON: [{product_id, name, quantity, price}, ...]
+    total_amount TEXT,                                 -- Total transaction cost
+    status TEXT NOT NULL DEFAULT 'active',             -- 'active', 'complete', or 'cancel'
+    notes TEXT,                                        -- Optional notes about the transaction
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    -- Transaction creation timestamp
+    completed_at TIMESTAMP,                            -- When transaction was completed/cancelled
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+    FOREIGN KEY (registrar_id) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+-- Registration transaction indexes
+CREATE INDEX IF NOT EXISTS idx_reg_transactions_user ON registration_transactions(user_id);           -- Transactions by customer
+CREATE INDEX IF NOT EXISTS idx_reg_transactions_registrar ON registration_transactions(registrar_id); -- Transactions by registrar
+CREATE INDEX IF NOT EXISTS idx_reg_transactions_status ON registration_transactions(status);          -- Filter by status
+CREATE INDEX IF NOT EXISTS idx_reg_transactions_created ON registration_transactions(created_at DESC); -- Recent transactions

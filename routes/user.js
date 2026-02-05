@@ -1246,7 +1246,7 @@ module.exports = function (db, appConfig, upload) {
               border-radius: 12px;
               overflow: hidden;
               background: var(--card-border);
-              margin-bottom: 20px;
+              margin: 0 auto 20px;
               cursor: pointer;
             }
             .vehicle-detail-image img {
@@ -1264,7 +1264,7 @@ module.exports = function (db, appConfig, upload) {
               align-items: center;
               justify-content: center;
               font-size: 64px;
-              margin-bottom: 20px;
+              margin: 0 auto 20px;
             }
             .detail-card {
               background: var(--modal-content-bg);

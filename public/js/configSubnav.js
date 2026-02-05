@@ -14,12 +14,13 @@ document.addEventListener('DOMContentLoaded', function() {
       var subnav = document.createElement('div');
       subnav.id = 'configSubnav';
       subnav.className = 'admin-nav config-subnav';
-      var isConfigPage = path.startsWith('/admin/app-config') || path.startsWith('/admin/vehicle-config') || path.startsWith('/admin/categories') || path.startsWith('/admin/specialty-vote') || path.startsWith('/admin/edit-category') || path.startsWith('/admin/category-questions') || path.startsWith('/admin/edit-question') || path.startsWith('/admin/add-vehicle-type') || path.startsWith('/admin/edit-vehicle-type') || path.startsWith('/admin/add-class') || path.startsWith('/admin/edit-class') || path.startsWith('/admin/edit-specialty-vote') || path.startsWith('/admin/add-specialty-vote');
+      var isConfigPage = path.startsWith('/admin/app-config') || path.startsWith('/admin/vehicle-config') || path.startsWith('/admin/categories') || path.startsWith('/admin/specialty-vote') || path.startsWith('/admin/edit-category') || path.startsWith('/admin/category-questions') || path.startsWith('/admin/edit-question') || path.startsWith('/admin/add-vehicle-type') || path.startsWith('/admin/edit-vehicle-type') || path.startsWith('/admin/add-class') || path.startsWith('/admin/edit-class') || path.startsWith('/admin/edit-specialty-vote') || path.startsWith('/admin/add-specialty-vote') || path.startsWith('/admin/products') || path.startsWith('/admin/add-product') || path.startsWith('/admin/edit-product');
       subnav.style.display = isConfigPage ? 'flex' : 'none';
-      subnav.innerHTML = '<a href="/admin/app-config"' + (path.startsWith('/admin/app-config') ? ' class="active"' : '') + '>App Config</a>' +
+      subnav.innerHTML = '<a href="/admin/app-config"' + (path.startsWith('/admin/app-config') ? ' class="active"' : '') + '>Application</a>' +
         '<a href="/admin/vehicle-config"' + (path.startsWith('/admin/vehicle-config') || path.startsWith('/admin/add-vehicle-type') || path.startsWith('/admin/edit-vehicle-type') || path.startsWith('/admin/add-class') || path.startsWith('/admin/edit-class') ? ' class="active"' : '') + '>Vehicle Config</a>' +
-        '<a href="/admin/categories"' + (path.startsWith('/admin/categories') || path.startsWith('/admin/edit-category') || path.startsWith('/admin/category-questions') || path.startsWith('/admin/edit-question') ? ' class="active"' : '') + '>Judge Config</a>' +
-        '<a href="/admin/specialty-votes"' + (path.startsWith('/admin/specialty-vote') || path.startsWith('/admin/edit-specialty-vote') || path.startsWith('/admin/add-specialty-vote') ? ' class="active"' : '') + '>Special Vote Config</a>';
+        '<a href="/admin/categories"' + (path.startsWith('/admin/categories') || path.startsWith('/admin/edit-category') || path.startsWith('/admin/category-questions') || path.startsWith('/admin/edit-question') ? ' class="active"' : '') + '>Judge</a>' +
+        '<a href="/admin/specialty-votes"' + (path.startsWith('/admin/specialty-vote') || path.startsWith('/admin/edit-specialty-vote') || path.startsWith('/admin/add-specialty-vote') ? ' class="active"' : '') + '>Special Vote</a>' +
+        '<a href="/admin/products"' + (path.startsWith('/admin/products') || path.startsWith('/admin/add-product') || path.startsWith('/admin/edit-product') ? ' class="active"' : '') + '>Products</a>';
       nav.parentNode.insertBefore(subnav, nav.nextSibling);
     }
 

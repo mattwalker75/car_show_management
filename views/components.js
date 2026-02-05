@@ -58,7 +58,7 @@ function dashboardHeader(role, user, title) {
 
 /**
  * Admin navigation bar with Config sub-nav toggle.
- * @param {string} activeTab - Currently active tab: 'users', 'vehicles', 'config', 'judge-status', 'vote-status', 'reports'
+ * @param {string} activeTab - Currently active tab: 'dashboard', 'config', 'users', 'vehicles', 'voting', 'vendors', 'reports'
  * @returns {string} Admin nav HTML
  */
 function adminNav(activeTab, chatEnabled) {
@@ -69,10 +69,10 @@ function adminNav(activeTab, chatEnabled) {
       <a href="/admin"${activeTab === 'users' ? ' class="active"' : ''}>Users</a>
       <a href="/admin/vehicles"${activeTab === 'vehicles' ? ' class="active"' : ''}>Vehicles</a>
       <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;"${activeTab === 'voting' ? ' class="active"' : ''}>Voting</a>
-      <a href="/admin/reports"${activeTab === 'reports' ? ' class="active"' : ''}>Reports</a>
       <a href="/admin/vendors"${activeTab === 'vendors' ? ' class="active"' : ''}>Vendors</a>
       ${chatEnabled ? `<a href="/chat"${activeTab === 'chat' ? ' class="active"' : ''}>Chat</a>` : ''}
       <a href="/user/vote">Vote Here!</a>
+      <a href="/admin/reports"${activeTab === 'reports' ? ' class="active"' : ''}>Reports</a>
     </div>`;
 }
 
@@ -97,13 +97,14 @@ function judgeNav(activeTab, chatEnabled) {
 
 /**
  * Registrar navigation bar.
- * @param {string} activeTab - Currently active tab: 'dashboard', 'vehicles', 'users'
+ * @param {string} activeTab - Currently active tab: 'dashboard', 'registration', 'vehicles', 'users', 'vendors'
  * @returns {string} Registrar nav HTML
  */
 function registrarNav(activeTab, chatEnabled) {
   return `
     <div class="admin-nav">
       <a href="/registrar"${activeTab === 'dashboard' ? ' class="active"' : ''}>Dashboard</a>
+      <a href="/registrar/registration"${activeTab === 'registration' ? ' class="active"' : ''}>Registration</a>
       <a href="/registrar/vehicles"${activeTab === 'vehicles' ? ' class="active"' : ''}>Vehicles</a>
       <a href="/registrar/users"${activeTab === 'users' ? ' class="active"' : ''}>Users</a>
       <a href="/registrar/vendors"${activeTab === 'vendors' ? ' class="active"' : ''}>Vendors</a>
