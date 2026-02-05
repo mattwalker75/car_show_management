@@ -763,7 +763,6 @@ module.exports = function (db, appConfig, upload, port) {
       <body data-theme="${appConfig.theme || 'light'}">
         <div class="container">
           <div class="logo">
-            <div class="logo-icon">🏎️</div>
             <h1>${appConfig.appTitle}</h1>
             ${appConfig.appSubtitle ? `<p class="subtitle">${appConfig.appSubtitle}</p>` : ''}
           </div>
