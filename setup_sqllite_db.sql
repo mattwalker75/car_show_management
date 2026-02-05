@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,                 -- Bcrypt hashed password
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Account creation timestamp
     is_active BOOLEAN DEFAULT 1,                 -- 1=active, 0=deactivated account
-    chat_enabled BOOLEAN DEFAULT 0               -- 1=can access group chat, 0=no chat access
+    chat_enabled BOOLEAN DEFAULT 0,              -- 1=can access group chat, 0=no chat access
+    chat_blocked BOOLEAN DEFAULT 0               -- 1=blocked from chat by admin, 0=normal
 );
 
 -- ============================================================================
