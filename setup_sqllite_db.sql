@@ -37,7 +37,8 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash TEXT NOT NULL,                 -- Bcrypt hashed password
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,  -- Account creation timestamp
     is_active BOOLEAN DEFAULT 1,                 -- 1=active, 0=deactivated account
-    chat_enabled BOOLEAN DEFAULT 0               -- 1=can access group chat, 0=no chat access
+    chat_enabled BOOLEAN DEFAULT 0,              -- 1=can access group chat, 0=no chat access
+    chat_blocked BOOLEAN DEFAULT 0               -- 1=blocked from chat by admin, 0=normal
 );
 
 -- ============================================================================
@@ -323,6 +324,7 @@ CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);        -- Fast
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);              -- Fast email lookup
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);                -- Filter users by role
 CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);         -- Filter active users
+CREATE INDEX IF NOT EXISTS idx_users_role_active ON users(role, is_active);  -- Vendor browsing, active user by role
 
 -- Car lookups and filtering
 CREATE INDEX IF NOT EXISTS idx_cars_active ON cars(is_active);           -- Filter active cars
@@ -330,6 +332,7 @@ CREATE INDEX IF NOT EXISTS idx_cars_user ON cars(user_id);               -- Find
 CREATE INDEX IF NOT EXISTS idx_cars_vehicle_type ON cars(vehicle_id);    -- Filter cars by vehicle type
 CREATE INDEX IF NOT EXISTS idx_cars_class ON cars(class_id);             -- Filter cars by class
 CREATE INDEX IF NOT EXISTS idx_cars_voter_id ON cars(voter_id);          -- Lookup by voter ID
+CREATE INDEX IF NOT EXISTS idx_cars_active_class ON cars(is_active, class_id);  -- Active cars by class (scoring)
 
 -- Class lookups
 CREATE INDEX IF NOT EXISTS idx_classes_vehicle ON classes(vehicle_id);   -- Find classes by vehicle type
@@ -362,7 +365,9 @@ CREATE INDEX IF NOT EXISTS idx_published_results_specialty ON published_results(
 
 -- Vendor lookups
 CREATE INDEX IF NOT EXISTS idx_vendor_business_user ON vendor_business(user_id);      -- Find business by vendor user
+CREATE INDEX IF NOT EXISTS idx_vendor_business_active ON vendor_business(user_id, admin_disabled);  -- Active vendor business
 CREATE INDEX IF NOT EXISTS idx_vendor_products_user ON vendor_products(user_id);      -- Find products by vendor user
+CREATE INDEX IF NOT EXISTS idx_vendor_products_user_active ON vendor_products(user_id, admin_deactivated);  -- Active products by vendor
 
 -- ============================================================================
 -- CHAT MESSAGES TABLE
@@ -386,3 +391,58 @@ CREATE INDEX IF NOT EXISTS idx_chat_messages_user ON chat_messages(user_id);    
 -- Additional user indexes for chat features
 CREATE INDEX IF NOT EXISTS idx_users_chat_enabled ON users(chat_enabled);    -- Filter chat-enabled users
 CREATE INDEX IF NOT EXISTS idx_users_chat_blocked ON users(chat_blocked);    -- Filter chat-blocked users
+
+
+-- ============================================================================
+-- PRODUCTS TABLE (Event Products)
+-- ============================================================================
+-- Stores products and services offered by the event itself.
+-- This could be used for items such as raffle tickets, shirts, event merchandise, etc.
+-- Admin role creates, modifies, and deletes products.
+-- Registrar role sells products via the Registration tab.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS products (
+    product_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- Unique identifier
+    product_name TEXT NOT NULL,                     -- Product or service name
+    description TEXT,                               -- Optional one-line description
+    price TEXT,                                     -- Price info (text to allow flexibility)
+    discount_price TEXT,                            -- Optional discount/sale price
+    display_order INTEGER DEFAULT 0,               -- Sort order for display
+    available BOOLEAN DEFAULT 1,                   -- 1=available, 0=sold out
+    admin_deactivated BOOLEAN DEFAULT 0,           -- 1=deactivated by admin, 0=normal
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- Record creation timestamp
+);
+
+-- Product indexes
+CREATE INDEX IF NOT EXISTS idx_products_display_order ON products(display_order);  -- Sort by display order
+CREATE INDEX IF NOT EXISTS idx_products_available ON products(available);          -- Filter available products
+
+
+-- ============================================================================
+-- REGISTRATION TRANSACTIONS TABLE
+-- ============================================================================
+-- Tracks registration transactions for vehicle registration and product sales.
+-- Created by Registrar role when processing customer registrations.
+-- Stores JSON structures for vehicles and products being purchased.
+-- Status can be: 'active' (in progress), 'complete' (paid), 'cancel' (cancelled)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS registration_transactions (
+    transaction_id INTEGER PRIMARY KEY AUTOINCREMENT,  -- Unique transaction identifier
+    user_id INTEGER NOT NULL,                          -- Customer user being registered
+    registrar_id INTEGER NOT NULL,                     -- Registrar processing the transaction
+    vehicles_json TEXT,                                -- JSON: [{car_id, year, make, model, price}, ...]
+    products_json TEXT,                                -- JSON: [{product_id, name, quantity, price}, ...]
+    total_amount TEXT,                                 -- Total transaction cost
+    status TEXT NOT NULL DEFAULT 'active',             -- 'active', 'complete', or 'cancel'
+    notes TEXT,                                        -- Optional notes about the transaction
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,    -- Transaction creation timestamp
+    completed_at TIMESTAMP,                            -- When transaction was completed/cancelled
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+    FOREIGN KEY (registrar_id) REFERENCES users (user_id) ON DELETE SET NULL
+);
+
+-- Registration transaction indexes
+CREATE INDEX IF NOT EXISTS idx_reg_transactions_user ON registration_transactions(user_id);           -- Transactions by customer
+CREATE INDEX IF NOT EXISTS idx_reg_transactions_registrar ON registration_transactions(registrar_id); -- Transactions by registrar
+CREATE INDEX IF NOT EXISTS idx_reg_transactions_status ON registration_transactions(status);          -- Filter by status
+CREATE INDEX IF NOT EXISTS idx_reg_transactions_created ON registration_transactions(created_at DESC); -- Recent transactions

@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_users_email (email),
     INDEX idx_users_role (role),
     INDEX idx_users_active (is_active),
+    INDEX idx_users_role_active (role, is_active),
     INDEX idx_users_chat_enabled (chat_enabled),
     INDEX idx_users_chat_blocked (chat_blocked)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -166,7 +167,8 @@ CREATE TABLE IF NOT EXISTS cars (
     INDEX idx_cars_user (user_id),
     INDEX idx_cars_vehicle_type (vehicle_id),
     INDEX idx_cars_class (class_id),
-    INDEX idx_cars_voter_id (voter_id)
+    INDEX idx_cars_voter_id (voter_id),
+    INDEX idx_cars_active_class (is_active, class_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
@@ -370,7 +372,8 @@ CREATE TABLE IF NOT EXISTS vendor_business (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,   -- Record creation timestamp
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Last update timestamp
     FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
-    INDEX idx_vendor_business_user (user_id)
+    INDEX idx_vendor_business_user (user_id),
+    INDEX idx_vendor_business_active (user_id, admin_disabled)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
@@ -393,7 +396,8 @@ CREATE TABLE IF NOT EXISTS vendor_products (
     admin_deactivated TINYINT(1) DEFAULT 0,           -- 1=deactivated by admin, 0=normal
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,   -- Record creation timestamp
     FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
-    INDEX idx_vendor_products_user (user_id)
+    INDEX idx_vendor_products_user (user_id),
+    INDEX idx_vendor_products_user_active (user_id, admin_deactivated)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
@@ -411,4 +415,55 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
     INDEX idx_chat_messages_created (created_at),
     INDEX idx_chat_messages_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================================
+-- PRODUCTS TABLE (Event Products)
+-- ============================================================================
+-- Stores products and services offered by the event itself.
+-- This could be used for items such as raffle tickets, shirts, event merchandise, etc.
+-- Admin role creates, modifies, and deletes products.
+-- Registrar role sells products via the Registration tab.
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS products (
+    product_id INT AUTO_INCREMENT PRIMARY KEY,        -- Unique identifier
+    product_name VARCHAR(255) NOT NULL,               -- Product or service name
+    description TEXT,                                 -- Optional one-line description
+    price VARCHAR(100),                               -- Price info (text to allow flexibility)
+    discount_price VARCHAR(100),                      -- Optional discount/sale price
+    display_order INT DEFAULT 0,                      -- Sort order for display
+    available TINYINT(1) DEFAULT 1,                   -- 1=available, 0=sold out
+    admin_deactivated TINYINT(1) DEFAULT 0,           -- 1=deactivated by admin, 0=normal
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,   -- Record creation timestamp
+    INDEX idx_products_display_order (display_order),
+    INDEX idx_products_available (available)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ============================================================================
+-- REGISTRATION TRANSACTIONS TABLE
+-- ============================================================================
+-- Tracks registration transactions for vehicle registration and product sales.
+-- Created by Registrar role when processing customer registrations.
+-- Stores JSON structures for vehicles and products being purchased.
+-- Status can be: 'active' (in progress), 'complete' (paid), 'cancel' (cancelled)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS registration_transactions (
+    transaction_id INT AUTO_INCREMENT PRIMARY KEY,    -- Unique transaction identifier
+    user_id INT NOT NULL,                             -- Customer user being registered
+    registrar_id INT NOT NULL,                        -- Registrar processing the transaction
+    vehicles_json TEXT,                               -- JSON: [{car_id, year, make, model, price}, ...]
+    products_json TEXT,                               -- JSON: [{product_id, name, quantity, price}, ...]
+    total_amount VARCHAR(100),                        -- Total transaction cost
+    status VARCHAR(50) NOT NULL DEFAULT 'active',     -- 'active', 'complete', or 'cancel'
+    notes TEXT,                                       -- Optional notes about the transaction
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,   -- Transaction creation timestamp
+    completed_at TIMESTAMP NULL,                      -- When transaction was completed/cancelled
+    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+    FOREIGN KEY (registrar_id) REFERENCES users (user_id) ON DELETE SET NULL,
+    INDEX idx_reg_transactions_user (user_id),
+    INDEX idx_reg_transactions_registrar (registrar_id),
+    INDEX idx_reg_transactions_status (status),
+    INDEX idx_reg_transactions_created (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

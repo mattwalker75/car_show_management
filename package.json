@@ -16,10 +16,13 @@
     "bcrypt": "Password hashing and verification for user authentication",
     "cookie-session": "Session management via signed cookies (login state)",
     "express": "Web server framework for routing and HTTP handling",
+    "express-rate-limit": "Rate limiting middleware to prevent brute force attacks and API abuse (per IP address)",
+    "helmet": "Security headers middleware (X-Frame-Options, HSTS, X-Content-Type-Options, etc.)",
     "morgan": "HTTP request logging middleware for debugging",
     "multer": "File upload handling for profile photos and vehicle images",
+    "mysql2": "MySQL database driver for production deployments",
     "sharp": "Image resizing and optimization for uploaded photos",
-    "socket.io": "WebSocket library for real-time notifications, live status updates, and future chat",
+    "socket.io": "WebSocket library for real-time notifications, live status updates, and group chat",
     "sqlite3": "Embedded SQL database for storing users, vehicles, scores, and votes"
   },
   "dependencies": {
@@ -27,6 +30,8 @@
     "bcrypt": "^6.0.0",
     "cookie-session": "^2.1.1",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "mysql2": "^3.16.2",

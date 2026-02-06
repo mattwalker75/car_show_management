@@ -4,22 +4,21 @@ const router = express.Router();
 
 module.exports = function (db, appConfig, upload) {
   const { requireAuth } = require('../middleware/auth');
-  const { errorPage, getAppBackgroundStyles } = require('../views/layout');
-  const { getInitials, getAvatarContent, getNav, dashboardHeader } = require('../views/components');
+  const { errorPage } = require('../views/layout');
+  const { styles, adminStyles, getBodyTag, getAppBgStyles } = require('../views/htmlHelpers');
+  const { getAvatarContent, getNav, isChatEnabled, profileButton, dashboardHeader } = require('../views/components');
   const { handleVehiclePhotoUpload, deleteVehicleImage } = require('../helpers/imageUpload');
   const { renderVendorListPage, renderVendorDetailPage, renderProductDetailPage } = require('../helpers/vendorViews');
 
-  const styles = '<link rel="stylesheet" href="/css/styles.css">';
-  const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
-  const appBgStyles = () => getAppBackgroundStyles(appConfig);
-  const bodyTag = (req) => { const u = req.session && req.session.user; const theme = appConfig.theme || 'light'; return `<body data-theme="${theme}" data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
+  const appBgStyles = () => getAppBgStyles(appConfig);
+  const bodyTag = (req) => getBodyTag(req, appConfig);
+
+  // User styles loaded from external CSS file
+  const userStyles = '<link rel="stylesheet" href="/css/user.css">';
 
   router.get('/', requireAuth, (req, res) => {
     const user = req.session.user;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     // Get user's registered vehicles (both active and pending) with class names
     db.all(`SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.is_active, c.voter_id,
@@ -65,213 +64,8 @@ module.exports = function (db, appConfig, upload) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
-        ${appBgStyles()}
-          <style>
-            .vehicle-card {
-              background: var(--card-bg);
-              border-radius: 12px;
-              padding: 12px;
-              margin-bottom: 12px;
-              border: 1px solid var(--card-border);
-              display: flex;
-              flex-direction: row;
-              gap: 12px;
-              align-items: flex-start;
-            }
-            .vehicle-image {
-              width: 100px;
-              height: 75px;
-              border-radius: 8px;
-              overflow: hidden;
-              background: var(--card-border);
-              flex-shrink: 0;
-              cursor: pointer;
-            }
-            .vehicle-image img {
-              width: 100%;
-              height: 100%;
-              object-fit: contain;
-            }
-            .vehicle-placeholder {
-              width: 100%;
-              height: 100%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 32px;
-              background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            }
-            .vehicle-info {
-              flex: 1;
-              min-width: 0;
-            }
-            .vehicle-title {
-              font-size: 16px;
-              font-weight: 700;
-              color: var(--text-primary);
-              margin-bottom: 6px;
-            }
-            .vehicle-class {
-              margin-bottom: 6px;
-              display: flex;
-              flex-wrap: wrap;
-              gap: 4px;
-            }
-            .type-badge {
-              background: var(--btn-edit-bg);
-              color: white;
-              padding: 3px 8px;
-              border-radius: 20px;
-              font-size: 10px;
-              font-weight: 600;
-            }
-            .class-badge {
-              background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
-              color: white;
-              padding: 3px 8px;
-              border-radius: 20px;
-              font-size: 10px;
-              font-weight: 600;
-            }
-            .voter-badge {
-              background: #9b59b6;
-              color: white;
-              padding: 3px 8px;
-              border-radius: 20px;
-              font-size: 10px;
-              font-weight: 600;
-            }
-            .registration-fee {
-              font-size: 14px;
-              color: #000;
-              font-weight: 700;
-              margin-top: 4px;
-            }
-            .vehicle-description {
-              font-size: 12px;
-              color: var(--text-secondary);
-              line-height: 1.3;
-              display: -webkit-box;
-              -webkit-line-clamp: 2;
-              -webkit-box-orient: vertical;
-              overflow: hidden;
-            }
-            .vehicle-actions {
-              display: flex;
-              flex-direction: column;
-              gap: 6px;
-              flex-shrink: 0;
-            }
-            .vehicle-actions .action-btn {
-              font-size: 12px;
-              padding: 6px 12px;
-            }
-            .register-btn {
-              display: block;
-              width: 100%;
-              padding: 16px;
-              background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-              color: white;
-              text-align: center;
-              text-decoration: none;
-              border-radius: 12px;
-              font-weight: 600;
-              font-size: 16px;
-              margin-top: 20px;
-            }
-            .register-btn:active {
-              opacity: 0.9;
-              transform: scale(0.98);
-            }
-            .vehicle-card.pending {
-              opacity: 0.7;
-              border-style: dashed;
-            }
-            .status-badge.pending {
-              background: #f39c12;
-              color: white;
-              padding: 3px 8px;
-              border-radius: 20px;
-              font-size: 10px;
-              font-weight: 600;
-            }
-            /* Fullscreen image modal */
-            .image-modal {
-              display: none;
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background: rgba(0, 0, 0, 0.95);
-              z-index: 10000;
-              justify-content: center;
-              align-items: center;
-              padding: 20px;
-            }
-            .image-modal.active {
-              display: flex;
-            }
-            .image-modal img {
-              max-width: 100%;
-              max-height: 100%;
-              object-fit: contain;
-              border-radius: 8px;
-            }
-            .image-modal-close {
-              position: absolute;
-              top: 20px;
-              right: 20px;
-              background: rgba(255, 255, 255, 0.2);
-              color: white;
-              border: none;
-              width: 44px;
-              height: 44px;
-              border-radius: 50%;
-              font-size: 24px;
-              cursor: pointer;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            }
-            .image-modal-close:hover {
-              background: rgba(255, 255, 255, 0.3);
-            }
-            @media (min-width: 768px) {
-              .vehicle-card {
-                padding: 16px;
-                align-items: center;
-              }
-              .vehicle-image {
-                width: 200px;
-                height: 120px;
-              }
-              .vehicle-title {
-                font-size: 18px;
-              }
-              .vehicle-placeholder {
-                font-size: 48px;
-              }
-              .type-badge, .class-badge, .status-badge.pending {
-                font-size: 12px;
-                padding: 4px 12px;
-              }
-              .vehicle-description {
-                font-size: 14px;
-              }
-              .vehicle-actions {
-                flex-direction: row;
-              }
-              .vehicle-actions .action-btn {
-                font-size: 14px;
-                padding: 8px 16px;
-              }
-              .register-btn:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 10px 30px rgba(39, 174, 96, 0.4);
-              }
-            }
-          </style>
+          ${userStyles}
+          ${appBgStyles()}
         </head>
         ${bodyTag(req)}
           <div class="container dashboard-container">
@@ -279,7 +73,7 @@ module.exports = function (db, appConfig, upload) {
               <h1>🏎️ Car Show Manager</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
-                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                ${profileButton('user')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -341,10 +135,7 @@ module.exports = function (db, appConfig, upload) {
 
   router.get('/register-vehicle', requireAuth, (req, res) => {
     const user = req.session.user;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     // Get active vehicles and classes from database
     db.all('SELECT vehicle_id, vehicle_name FROM vehicles WHERE is_active = 1 ORDER BY vehicle_name', (err, vehicleTypes) => {
@@ -372,69 +163,8 @@ module.exports = function (db, appConfig, upload) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             ${styles}
             ${adminStyles}
-        ${appBgStyles()}
-            <style>
-              .file-input-wrapper {
-                position: relative;
-                overflow: hidden;
-                display: inline-block;
-                width: 100%;
-              }
-              .file-input-wrapper input[type=file] {
-                position: absolute;
-                left: 0;
-                top: 0;
-                opacity: 0;
-                width: 100%;
-                height: 100%;
-                cursor: pointer;
-              }
-              .file-input-label {
-                display: block;
-                padding: 14px 16px;
-                background: var(--card-bg);
-                border: 2px dashed var(--card-border);
-                border-radius: 12px;
-                text-align: center;
-                color: var(--text-secondary);
-                font-size: 14px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-              }
-              .file-input-wrapper:hover .file-input-label {
-                border-color: var(--accent-primary);
-                background: var(--error-bg);
-              }
-              .file-input-wrapper.has-file .file-input-label {
-                border-color: var(--success-color);
-                background: rgba(39, 174, 96, 0.1);
-                color: var(--success-color);
-              }
-              .file-name {
-                margin-top: 8px;
-                font-size: 13px;
-                color: var(--success-color);
-                text-align: center;
-                font-weight: 600;
-              }
-              textarea {
-                width: 100%;
-                padding: 16px;
-                border: 2px solid var(--card-border);
-                border-radius: 12px;
-                font-size: 16px;
-                font-family: inherit;
-                resize: vertical;
-                min-height: 100px;
-                background: var(--card-bg);
-              }
-              textarea:focus {
-                border-color: var(--accent-primary);
-                outline: none;
-                background: var(--modal-content-bg);
-                box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.1);
-              }
-            </style>
+            ${userStyles}
+            ${appBgStyles()}
           </head>
           ${bodyTag(req)}
             <div class="container dashboard-container">
@@ -442,7 +172,7 @@ module.exports = function (db, appConfig, upload) {
                 <h1>🏎️ Car Show Manager</h1>
                 <div class="user-info">
                   <div class="user-avatar">${avatarContent}</div>
-                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  ${profileButton('user')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
                 </div>
               </div>
@@ -629,10 +359,7 @@ module.exports = function (db, appConfig, upload) {
   router.get('/edit-vehicle/:id', requireAuth, (req, res) => {
     const user = req.session.user;
     const carId = req.params.id;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     // Get the vehicle with its current vehicle_id and class_id
     db.get('SELECT car_id, year, make, model, vehicle_id, class_id, description, image_url FROM cars WHERE car_id = ? AND user_id = ?', [carId, user.user_id], (err, car) => {
@@ -672,105 +399,8 @@ module.exports = function (db, appConfig, upload) {
               <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
               ${styles}
               ${adminStyles}
-        ${appBgStyles()}
-              <style>
-                .current-image {
-                  width: 100%;
-                  max-width: 300px;
-                  border-radius: 12px;
-                  margin-bottom: 15px;
-                }
-                .current-image-placeholder {
-                  width: 100%;
-                  max-width: 300px;
-                  height: 150px;
-                  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-                  border-radius: 12px;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-size: 48px;
-                  margin-bottom: 15px;
-                }
-                .file-input-wrapper {
-                  position: relative;
-                  overflow: hidden;
-                  display: inline-block;
-                  width: 100%;
-                }
-                .file-input-wrapper input[type=file] {
-                  position: absolute;
-                  left: 0;
-                  top: 0;
-                  opacity: 0;
-                  width: 100%;
-                  height: 100%;
-                  cursor: pointer;
-                }
-                .file-input-label {
-                  display: block;
-                  padding: 14px 16px;
-                  background: var(--card-bg);
-                  border: 2px dashed var(--card-border);
-                  border-radius: 12px;
-                  text-align: center;
-                  color: var(--text-secondary);
-                  font-size: 14px;
-                  cursor: pointer;
-                  transition: all 0.2s ease;
-                }
-                .file-input-wrapper:hover .file-input-label {
-                  border-color: var(--accent-primary);
-                  background: var(--error-bg);
-                }
-                .file-input-wrapper.has-file .file-input-label {
-                  border-color: var(--success-color);
-                  background: rgba(39, 174, 96, 0.1);
-                  color: var(--success-color);
-                }
-                .file-name {
-                  margin-top: 8px;
-                  font-size: 13px;
-                  color: var(--success-color);
-                  text-align: center;
-                  font-weight: 600;
-                }
-                textarea {
-                  width: 100%;
-                  padding: 16px;
-                  border: 2px solid var(--card-border);
-                  border-radius: 12px;
-                  font-size: 16px;
-                  font-family: inherit;
-                  resize: vertical;
-                  min-height: 100px;
-                  background: var(--card-bg);
-                }
-                textarea:focus {
-                  border-color: var(--accent-primary);
-                  outline: none;
-                  background: var(--modal-content-bg);
-                  box-shadow: 0 0 0 4px rgba(233, 69, 96, 0.1);
-                }
-                .delete-btn {
-                  display: block;
-                  width: 100%;
-                  padding: 16px;
-                  background: var(--btn-delete-bg);
-                  color: white;
-                  text-align: center;
-                  text-decoration: none;
-                  border-radius: 12px;
-                  font-weight: 600;
-                  font-size: 16px;
-                  margin-top: 10px;
-                  border: none;
-                  cursor: pointer;
-                }
-                .delete-btn:active {
-                  opacity: 0.9;
-                }
-              </style>
+              ${userStyles}
+              ${appBgStyles()}
             </head>
             ${bodyTag(req)}
               <div class="container dashboard-container">
@@ -778,7 +408,7 @@ module.exports = function (db, appConfig, upload) {
                   <h1>🏎️ Car Show Manager</h1>
                   <div class="user-info">
                     <div class="user-avatar">${avatarContent}</div>
-                    <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                    ${profileButton('user')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
                   </div>
                 </div>
@@ -1046,124 +676,8 @@ module.exports = function (db, appConfig, upload) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
-        ${appBgStyles()}
-          <style>
-            .vehicle-browse-card {
-              background: var(--card-bg);
-              border-radius: 12px;
-              padding: 12px;
-              margin-bottom: 12px;
-              border: 1px solid var(--card-border);
-              display: flex;
-              flex-direction: row;
-              gap: 12px;
-              align-items: center;
-              text-decoration: none;
-              color: inherit;
-              transition: all 0.2s ease;
-            }
-            .vehicle-browse-card:active {
-              background: var(--card-bg);
-            }
-            .vehicle-browse-image {
-              width: 100px;
-              height: 75px;
-              border-radius: 8px;
-              overflow: hidden;
-              background: var(--card-border);
-              flex-shrink: 0;
-              cursor: pointer;
-            }
-            .vehicle-browse-image img {
-              width: 100%;
-              height: 100%;
-              object-fit: contain;
-            }
-            .vehicle-placeholder {
-              width: 100%;
-              height: 100%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 32px;
-              background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            }
-            .vehicle-browse-info {
-              flex: 1;
-              min-width: 0;
-            }
-            .vehicle-browse-title {
-              font-size: 16px;
-              font-weight: 700;
-              color: var(--text-primary);
-            }
-            .vehicle-browse-owner {
-              font-size: 13px;
-              color: var(--text-muted);
-              margin-top: 4px;
-            }
-            /* Fullscreen image modal */
-            .image-modal {
-              display: none;
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background: rgba(0, 0, 0, 0.95);
-              z-index: 10000;
-              justify-content: center;
-              align-items: center;
-              padding: 20px;
-            }
-            .image-modal.active {
-              display: flex;
-            }
-            .image-modal img {
-              max-width: 100%;
-              max-height: 100%;
-              object-fit: contain;
-              border-radius: 8px;
-            }
-            .image-modal-close {
-              position: absolute;
-              top: 20px;
-              right: 20px;
-              background: rgba(255, 255, 255, 0.2);
-              color: white;
-              border: none;
-              width: 44px;
-              height: 44px;
-              border-radius: 50%;
-              font-size: 24px;
-              cursor: pointer;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            }
-            .image-modal-close:hover {
-              background: rgba(255, 255, 255, 0.3);
-            }
-            @media (min-width: 768px) {
-              .vehicle-browse-card {
-                padding: 16px;
-              }
-              .vehicle-browse-card:hover {
-                border-color: var(--accent-primary);
-                box-shadow: 0 2px 10px var(--container-shadow);
-              }
-              .vehicle-browse-image {
-                width: 200px;
-                height: 120px;
-              }
-              .vehicle-browse-title {
-                font-size: 18px;
-              }
-              .vehicle-placeholder {
-                font-size: 48px;
-              }
-            }
-          </style>
+          ${userStyles}
+          ${appBgStyles()}
         </head>
         ${bodyTag(req)}
           <div class="container dashboard-container">
@@ -1237,126 +751,8 @@ module.exports = function (db, appConfig, upload) {
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
           ${styles}
           ${adminStyles}
-        ${appBgStyles()}
-          <style>
-            .vehicle-detail-image {
-              width: 100%;
-              max-width: 400px;
-              height: 250px;
-              border-radius: 12px;
-              overflow: hidden;
-              background: var(--card-border);
-              margin-bottom: 20px;
-              cursor: pointer;
-            }
-            .vehicle-detail-image img {
-              width: 100%;
-              height: 100%;
-              object-fit: contain;
-            }
-            .vehicle-detail-placeholder {
-              width: 100%;
-              max-width: 400px;
-              height: 250px;
-              background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-              border-radius: 12px;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 64px;
-              margin-bottom: 20px;
-            }
-            .detail-card {
-              background: var(--modal-content-bg);
-              border-radius: 12px;
-              padding: 20px;
-              box-shadow: 0 2px 10px var(--container-shadow);
-              margin-bottom: 20px;
-            }
-            .detail-row {
-              display: flex;
-              justify-content: space-between;
-              padding: 10px 0;
-              border-bottom: 1px solid var(--divider-color);
-            }
-            .detail-row:last-child {
-              border-bottom: none;
-            }
-            .detail-label {
-              font-weight: 600;
-              color: var(--text-secondary);
-            }
-            .detail-value {
-              color: var(--text-dark);
-              text-align: right;
-              max-width: 60%;
-            }
-            .description-section {
-              background: var(--card-bg);
-              padding: 16px;
-              border-radius: 12px;
-              margin-bottom: 20px;
-            }
-            .description-section h4 {
-              color: var(--text-primary);
-              margin-bottom: 8px;
-            }
-            .description-section p {
-              color: var(--text-secondary);
-              font-size: 14px;
-              line-height: 1.5;
-            }
-            /* Fullscreen image modal */
-            .image-modal {
-              display: none;
-              position: fixed;
-              top: 0;
-              left: 0;
-              width: 100%;
-              height: 100%;
-              background: rgba(0, 0, 0, 0.95);
-              z-index: 10000;
-              justify-content: center;
-              align-items: center;
-              padding: 20px;
-            }
-            .image-modal.active {
-              display: flex;
-            }
-            .image-modal img {
-              max-width: 100%;
-              max-height: 100%;
-              object-fit: contain;
-              border-radius: 8px;
-            }
-            .image-modal-close {
-              position: absolute;
-              top: 20px;
-              right: 20px;
-              background: rgba(255, 255, 255, 0.2);
-              color: white;
-              border: none;
-              width: 44px;
-              height: 44px;
-              border-radius: 50%;
-              font-size: 24px;
-              cursor: pointer;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-            }
-            .image-modal-close:hover {
-              background: rgba(255, 255, 255, 0.3);
-            }
-            @media (min-width: 768px) {
-              .vehicle-detail-image {
-                height: 350px;
-              }
-              .vehicle-detail-placeholder {
-                height: 350px;
-              }
-            }
-          </style>
+          ${userStyles}
+          ${appBgStyles()}
         </head>
         ${bodyTag(req)}
           <div class="container dashboard-container">
@@ -1451,10 +847,7 @@ module.exports = function (db, appConfig, upload) {
   // User voting page - shows available specialty votes
   router.get('/vote', requireAuth, (req, res) => {
     const user = req.session.user;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     // Find all specialty votes this user can participate in
     // Either allow_all_users=1 OR user is in specialty_vote_voters
@@ -1493,44 +886,8 @@ module.exports = function (db, appConfig, upload) {
             <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
             ${styles}
             ${adminStyles}
-        ${appBgStyles()}
-            <style>
-              .vote-select-card {
-                background: var(--card-bg);
-                border-radius: 12px;
-                padding: 20px;
-                margin-bottom: 20px;
-                border: 1px solid var(--card-border);
-              }
-              .vote-btn {
-                display: block;
-                width: 100%;
-                padding: 16px;
-                background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
-                color: white;
-                text-align: center;
-                text-decoration: none;
-                border-radius: 12px;
-                font-weight: 600;
-                font-size: 16px;
-                border: none;
-                cursor: pointer;
-                margin-top: 15px;
-              }
-              .vote-btn:disabled {
-                background: var(--card-border);
-                cursor: not-allowed;
-              }
-              .no-votes-message {
-                text-align: center;
-                padding: 40px 20px;
-                color: var(--text-secondary);
-              }
-              .no-votes-message .icon {
-                font-size: 48px;
-                margin-bottom: 15px;
-              }
-            </style>
+            ${userStyles}
+            ${appBgStyles()}
           </head>
           ${bodyTag(req)}
             <div class="container dashboard-container">
@@ -1599,10 +956,7 @@ module.exports = function (db, appConfig, upload) {
   router.get('/vote/:id', requireAuth, (req, res) => {
     const user = req.session.user;
     const specialtyVoteId = req.params.id;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     // First verify the user can participate in this vote
     db.get(`
@@ -1686,230 +1040,8 @@ module.exports = function (db, appConfig, upload) {
               <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
               ${styles}
               ${adminStyles}
-        ${appBgStyles()}
-              <style>
-                .vote-header {
-                  background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
-                  color: white;
-                  padding: 20px;
-                  border-radius: 12px;
-                  margin-bottom: 20px;
-                  text-align: center;
-                }
-                .vote-header h2 {
-                  color: white;
-                  margin-bottom: 5px;
-                }
-                .vehicle-vote-card {
-                  display: block;
-                  background: var(--card-bg);
-                  border-radius: 12px;
-                  margin-bottom: 12px;
-                  border: 2px solid var(--card-border);
-                  cursor: pointer;
-                  transition: all 0.2s ease;
-                }
-                .vehicle-vote-card:hover {
-                  border-color: var(--accent-primary);
-                }
-                .vehicle-vote-card input[type="radio"] {
-                  display: none;
-                }
-                .vehicle-vote-card input[type="radio"]:checked + .vehicle-vote-content {
-                  border-color: var(--accent-primary);
-                  background: var(--error-bg);
-                }
-                .vehicle-vote-card input[type="radio"]:checked + .vehicle-vote-content .checkmark {
-                  background: #e94560;
-                  border-color: var(--accent-primary);
-                }
-                .vehicle-vote-card input[type="radio"]:checked + .vehicle-vote-content .checkmark::after {
-                  display: block;
-                }
-                .vehicle-vote-content {
-                  display: flex;
-                  padding: 12px;
-                  gap: 12px;
-                  align-items: center;
-                  border-radius: 10px;
-                  border: 2px solid transparent;
-                }
-                .vehicle-vote-image {
-                  width: 80px;
-                  height: 60px;
-                  border-radius: 8px;
-                  overflow: hidden;
-                  background: var(--card-border);
-                  flex-shrink: 0;
-                }
-                .vehicle-vote-image img {
-                  width: 100%;
-                  height: 100%;
-                  object-fit: contain;
-                  cursor: zoom-in;
-                }
-                .vehicle-placeholder {
-                  width: 100%;
-                  height: 100%;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-size: 24px;
-                  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-                }
-                .vehicle-vote-info {
-                  flex: 1;
-                  min-width: 0;
-                }
-                .vehicle-vote-title {
-                  font-weight: 700;
-                  font-size: 14px;
-                  color: var(--text-primary);
-                  margin-bottom: 4px;
-                }
-                .vehicle-vote-details {
-                  display: flex;
-                  flex-wrap: wrap;
-                  gap: 4px;
-                  margin-bottom: 4px;
-                }
-                .vehicle-vote-desc {
-                  font-size: 11px;
-                  color: var(--text-secondary);
-                  display: -webkit-box;
-                  -webkit-line-clamp: 1;
-                  -webkit-box-orient: vertical;
-                  overflow: hidden;
-                }
-                .vehicle-vote-owner {
-                  font-size: 11px;
-                  color: var(--text-muted);
-                  margin-top: 2px;
-                }
-                .vehicle-vote-check {
-                  flex-shrink: 0;
-                }
-                .checkmark {
-                  display: block;
-                  width: 24px;
-                  height: 24px;
-                  border: 2px solid var(--card-border);
-                  border-radius: 50%;
-                  position: relative;
-                }
-                .checkmark::after {
-                  content: '';
-                  display: none;
-                  position: absolute;
-                  left: 7px;
-                  top: 3px;
-                  width: 6px;
-                  height: 12px;
-                  border: solid white;
-                  border-width: 0 2px 2px 0;
-                  transform: rotate(45deg);
-                }
-                .voter-badge {
-                  background: var(--btn-dark-bg);
-                  color: white;
-                  padding: 2px 6px;
-                  border-radius: 4px;
-                  font-size: 11px;
-                  font-weight: 600;
-                  margin-right: 6px;
-                }
-                .type-badge {
-                  background: var(--btn-edit-bg);
-                  color: white;
-                  padding: 2px 6px;
-                  border-radius: 10px;
-                  font-size: 10px;
-                  font-weight: 600;
-                }
-                .class-badge {
-                  background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
-                  color: white;
-                  padding: 2px 6px;
-                  border-radius: 10px;
-                  font-size: 10px;
-                  font-weight: 600;
-                }
-                .submit-vote-btn {
-                  display: block;
-                  width: 100%;
-                  padding: 18px;
-                  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-                  color: white;
-                  text-align: center;
-                  border: none;
-                  border-radius: 12px;
-                  font-weight: 600;
-                  font-size: 18px;
-                  cursor: pointer;
-                  margin-top: 20px;
-                  position: sticky;
-                  bottom: 20px;
-                }
-                .submit-vote-btn:hover {
-                  transform: translateY(-2px);
-                  box-shadow: 0 10px 30px rgba(39, 174, 96, 0.4);
-                }
-                .back-link {
-                  display: block;
-                  text-align: center;
-                  margin-top: 15px;
-                  color: var(--text-secondary);
-                }
-                /* Fullscreen image modal */
-                .image-modal {
-                  display: none;
-                  position: fixed;
-                  top: 0;
-                  left: 0;
-                  width: 100%;
-                  height: 100%;
-                  background: rgba(0, 0, 0, 0.95);
-                  z-index: 10000;
-                  justify-content: center;
-                  align-items: center;
-                  padding: 20px;
-                }
-                .image-modal.active {
-                  display: flex;
-                }
-                .image-modal img {
-                  max-width: 100%;
-                  max-height: 100%;
-                  object-fit: contain;
-                  border-radius: 8px;
-                }
-                .image-modal-close {
-                  position: absolute;
-                  top: 20px;
-                  right: 20px;
-                  background: rgba(255, 255, 255, 0.2);
-                  color: white;
-                  border: none;
-                  width: 44px;
-                  height: 44px;
-                  border-radius: 50%;
-                  font-size: 24px;
-                  cursor: pointer;
-                }
-                @media (min-width: 768px) {
-                  .vehicle-vote-image {
-                    width: 120px;
-                    height: 80px;
-                  }
-                  .vehicle-vote-title {
-                    font-size: 16px;
-                  }
-                  .type-badge, .class-badge {
-                    font-size: 12px;
-                    padding: 3px 10px;
-                  }
-                }
-              </style>
+              ${userStyles}
+              ${appBgStyles()}
             </head>
             ${bodyTag(req)}
               <div class="container dashboard-container">

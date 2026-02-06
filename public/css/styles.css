@@ -244,6 +244,7 @@ body {
   width: 100%;
   max-width: 500px;
   margin: 0 auto;
+  margin-top: 15vh;
 }
 
 .logo {
@@ -389,6 +390,7 @@ button[type="submit"]:active {
 .dashboard-container {
   max-width: 100%;
   padding: 16px;
+  margin-top: 0;
 }
 
 .dashboard-header {
@@ -526,6 +528,7 @@ button[type="submit"]:active {
   .container {
     padding: 40px;
     border-radius: 20px;
+    margin-top: 0;
   }
 
   .dashboard-container {

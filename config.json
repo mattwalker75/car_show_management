@@ -1,5 +1,12 @@
 {
+    "_documentation": "See config.md for detailed documentation of all configuration options",
     "port": 3001,
+    "server": {
+        "ssl": true,
+        "keyPath": "/Users/matt/Desktop/My_Data/AI/Vibe_Coding/REPOS/key.pem",
+        "certPath": "/Users/matt/Desktop/My_Data/AI/Vibe_Coding/REPOS/cert.pem",
+        "trustProxy": false
+    },
     "sessionKeys": [
         "change-this-to-a-random-secret-key",
         "change-this-backup-key-too"
@@ -17,21 +24,21 @@
             "password": "PASSWORD",
             "connectionLimit": 10,
             "waitForConnections": true,
-            "queueLimit": 0
+            "queueLimit": 100
         },
         "_comment": "Set 'engine' to 'sqlite' or 'mysql'. SQLite requires no setup. For MySQL: run setup_mysql_db.sql first, then update credentials below."
     },
-    "appTitle": "Testing Car Show",
+    "appTitle": "Matt’s Car Show",
     "appSubtitle": "Sign in to your account",
-    "judgeVotingStatus": "Open",
-    "specialtyVotingStatus": "Open",
+    "judgeVotingStatus": "Close",
+    "specialtyVotingStatus": "Close",
     "defaultRegistrationPrice": 25,
     "defaultMinScore": 0,
     "defaultMaxScore": 5,
-    "animatedLogin": true,
+    "animatedLogin": false,
     "loginBackground": {
-        "useImage": true,
-        "imageUrl": "/images/app_config/0ee5884facf4db57ffc92468f5b1163c.jpg",
+        "useImage": false,
+        "imageUrl": "",
         "backgroundColor": "#002e7a",
         "useTint": true,
         "tintColor": "#0056d6",
@@ -39,15 +46,37 @@
         "cardOpacity": 1
     },
     "appBackground": {
-        "useImage": true,
-        "imageUrl": "/images/app_config/2821216dc760ba656f79b0e05d91a585.jpg",
-        "backgroundColor": "#1a1a2e",
+        "useImage": false,
+        "imageUrl": "",
+        "backgroundColor": "#7b219f",
         "useTint": true,
         "tintColor": "#1a1a2e",
         "tintOpacity": 0.5,
         "containerOpacity": 1
     },
     "theme": "light",
-    "chatEnabled": true,
-    "chatMessageLimit": 200
+    "chatEnabled": false,
+    "chatMessageLimit": 200,
+    "security": {
+        "rateLimiting": {
+            "auth": {
+                "windowSeconds": 300,
+                "maxAttempts": 10
+            },
+            "api": {
+                "windowSeconds": 60,
+                "maxRequests": 100
+            }
+        },
+        "headers": {
+            "enabled": true,
+            "contentSecurityPolicy": false,
+            "crossOriginEmbedderPolicy": false
+        },
+        "session": {
+            "secure": true,
+            "httpOnly": true,
+            "sameSite": "strict"
+        }
+    }
 }

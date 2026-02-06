@@ -103,6 +103,35 @@
   padding: 16px;
   margin-bottom: 12px;
   border: 1px solid var(--card-border);
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.user-card-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: white;
+  background: var(--accent-primary);
+}
+
+.user-card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-card-content {
+  flex: 1;
+  min-width: 0;
 }
 
 .user-card-header {

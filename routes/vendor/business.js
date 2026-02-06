@@ -194,7 +194,10 @@ module.exports = function (db, appConfig, upload) {
            business_street || null, business_city || null, business_state || null, business_zip || null,
            business_description || null, imageUrl, user.user_id],
           (err) => {
-            if (err) return res.send(errorPage('Error saving business info: ' + err.message, '/vendor/edit-business', 'Try Again'));
+            if (err) {
+              console.error('Error saving business info:', err.message);
+              return res.send(errorPage('Error saving business info. Please try again.', '/vendor/edit-business', 'Try Again'));
+            }
             res.redirect('/vendor');
           });
       } else {
@@ -204,7 +207,10 @@ module.exports = function (db, appConfig, upload) {
            business_street || null, business_city || null, business_state || null, business_zip || null,
            business_description || null, newImageUrl],
           (err) => {
-            if (err) return res.send(errorPage('Error saving business info: ' + err.message, '/vendor/edit-business', 'Try Again'));
+            if (err) {
+              console.error('Error saving business info:', err.message);
+              return res.send(errorPage('Error saving business info. Please try again.', '/vendor/edit-business', 'Try Again'));
+            }
             res.redirect('/vendor');
           });
       }
@@ -278,13 +284,19 @@ module.exports = function (db, appConfig, upload) {
       if (existing) {
         db.run('UPDATE vendor_business SET booth_location = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
           [booth_location || null, user.user_id], (err) => {
-            if (err) return res.send(errorPage('Error saving booth info: ' + err.message, '/vendor/edit-booth', 'Try Again'));
+            if (err) {
+              console.error('Error saving booth info:', err.message);
+              return res.send(errorPage('Error saving booth info. Please try again.', '/vendor/edit-booth', 'Try Again'));
+            }
             res.redirect('/vendor');
           });
       } else {
         db.run('INSERT INTO vendor_business (user_id, booth_location) VALUES (?, ?)',
           [user.user_id, booth_location || null], (err) => {
-            if (err) return res.send(errorPage('Error saving booth info: ' + err.message, '/vendor/edit-booth', 'Try Again'));
+            if (err) {
+              console.error('Error saving booth info:', err.message);
+              return res.send(errorPage('Error saving booth info. Please try again.', '/vendor/edit-booth', 'Try Again'));
+            }
             res.redirect('/vendor');
           });
       }

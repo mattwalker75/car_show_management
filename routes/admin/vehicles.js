@@ -50,7 +50,7 @@ module.exports = function(db, appConfig, upload) {
         if (err) inactiveCars = [];
 
       const makeCard = (car) => `
-        <div class="vehicle-card" data-year="${(car.year || '').toString().toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-username="${(car.owner_username || '').toLowerCase()}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-voterid="${car.voter_id || ''}" data-status="active">
+        <div class="vehicle-card" data-year="${(car.year || '').toString().toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-username="${(car.owner_username || '').toLowerCase()}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-voterid="${car.voter_id || ''}" data-status="active" onclick="window.location.href='/admin/view-vehicle/${car.car_id}'" style="cursor:pointer;">
           <div class="vehicle-image">
             ${car.image_url
               ? `<img src="${car.image_url}" alt="${car.year ? car.year + ' ' : ''}${car.make} ${car.model}">`
@@ -67,7 +67,7 @@ module.exports = function(db, appConfig, upload) {
             </div>
             ${car.description ? `<div class="vehicle-description">${car.description}</div>` : ''}
           </div>
-          <div class="vehicle-actions">
+          <div class="vehicle-actions" onclick="event.stopPropagation()">
             <a href="/admin/edit-vehicle/${car.car_id}" class="action-btn edit">Edit</a>
             <a href="/admin/delete-vehicle/${car.car_id}" class="action-btn delete" onclick="return confirm('Are you sure you want to permanently delete this vehicle?')">Delete</a>
           </div>
@@ -81,7 +81,7 @@ module.exports = function(db, appConfig, upload) {
       const activeVehicleCards = activeCars.map(makeCard).join('');
 
       const inactiveVehicleCards = inactiveCars.map(car => `
-        <div class="vehicle-card" data-year="${(car.year || '').toString().toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-username="${(car.owner_username || '').toLowerCase()}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-voterid="${car.voter_id || ''}" data-status="pending" style="opacity: 0.7; border-color: var(--warning-border);">
+        <div class="vehicle-card" data-year="${(car.year || '').toString().toLowerCase()}" data-make="${(car.make || '').toLowerCase()}" data-model="${(car.model || '').toLowerCase()}" data-username="${(car.owner_username || '').toLowerCase()}" data-name="${(car.owner_name || '').toLowerCase()}" data-email="${(car.owner_email || '').toLowerCase()}" data-voterid="${car.voter_id || ''}" data-status="pending" style="opacity: 0.7; border-color: var(--warning-border); cursor:pointer;" onclick="window.location.href='/admin/view-vehicle/${car.car_id}'">
           <div class="vehicle-image">
             ${car.image_url
               ? `<img src="${car.image_url}" alt="${car.year ? car.year + ' ' : ''}${car.make} ${car.model}">`
@@ -98,7 +98,7 @@ module.exports = function(db, appConfig, upload) {
             </div>
             ${car.description ? `<div class="vehicle-description">${car.description}</div>` : ''}
           </div>
-          <div class="vehicle-actions">
+          <div class="vehicle-actions" onclick="event.stopPropagation()">
             <a href="/admin/edit-vehicle/${car.car_id}" class="action-btn edit">Edit</a>
             <a href="/admin/delete-vehicle/${car.car_id}" class="action-btn delete" onclick="return confirm('Are you sure you want to permanently delete this vehicle?')">Delete</a>
           </div>
@@ -122,15 +122,17 @@ module.exports = function(db, appConfig, upload) {
               margin-bottom: 12px;
               border: 1px solid var(--card-border);
               display: flex;
-              flex-direction: column;
+              flex-direction: row;
+              align-items: center;
               gap: 12px;
             }
             .vehicle-image {
-              width: 100%;
-              height: 120px;
+              width: 100px;
+              height: 70px;
               border-radius: 8px;
               overflow: hidden;
               background: var(--card-border);
+              flex-shrink: 0;
             }
             .vehicle-image img {
               width: 100%;
@@ -199,18 +201,13 @@ module.exports = function(db, appConfig, upload) {
               display: flex;
               gap: 8px;
             }
+            .vehicle-actions {
+              flex-shrink: 0;
+            }
             @media (min-width: 768px) {
-              .vehicle-card {
-                flex-direction: row;
-                align-items: center;
-              }
               .vehicle-image {
                 width: 150px;
                 height: 100px;
-                flex-shrink: 0;
-              }
-              .vehicle-actions {
-                flex-shrink: 0;
               }
             }
           </style>
@@ -301,6 +298,262 @@ module.exports = function(db, appConfig, upload) {
         </html>
       `);
       });
+    });
+  });
+
+  // ============================================================
+  // View Vehicle - Detail page
+  // ============================================================
+  router.get('/view-vehicle/:id', requireAdmin, (req, res) => {
+    const user = req.session.user;
+    const carId = req.params.id;
+
+    db.get(`SELECT c.*, u.name as owner_name, u.username as owner_username, u.email as owner_email, u.phone as owner_phone,
+            cl.class_name, v.vehicle_name
+            FROM cars c
+            LEFT JOIN users u ON c.user_id = u.user_id
+            LEFT JOIN classes cl ON c.class_id = cl.class_id
+            LEFT JOIN vehicles v ON c.vehicle_id = v.vehicle_id
+            WHERE c.car_id = ?`, [carId], (err, car) => {
+      if (err || !car) {
+        res.redirect('/admin/vehicles');
+        return;
+      }
+
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>View Vehicle - Admin Dashboard</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          ${styles}
+          ${adminStyles}
+          ${getAppBgStyles(appConfig)}
+          <style>
+            .vehicle-detail-image {
+              width: 100%;
+              max-width: 400px;
+              height: 250px;
+              border-radius: 12px;
+              overflow: hidden;
+              background: var(--card-border);
+              margin: 0 auto 20px;
+              cursor: pointer;
+            }
+            .vehicle-detail-image img {
+              width: 100%;
+              height: 100%;
+              object-fit: contain;
+            }
+            .vehicle-detail-placeholder {
+              width: 100%;
+              max-width: 400px;
+              height: 250px;
+              background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+              border-radius: 12px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 64px;
+              margin: 0 auto 20px;
+            }
+            .detail-card {
+              background: var(--modal-content-bg);
+              border-radius: 12px;
+              padding: 20px;
+              box-shadow: 0 2px 10px var(--container-shadow);
+              margin-bottom: 20px;
+            }
+            .detail-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 10px 0;
+              border-bottom: 1px solid var(--divider-color);
+            }
+            .detail-row:last-child {
+              border-bottom: none;
+            }
+            .detail-label {
+              font-weight: 600;
+              color: var(--text-secondary);
+            }
+            .detail-value {
+              color: var(--text-dark);
+              text-align: right;
+              max-width: 60%;
+            }
+            .description-section {
+              background: var(--card-bg);
+              padding: 16px;
+              border-radius: 12px;
+              margin-bottom: 20px;
+            }
+            .description-section h4 {
+              color: var(--text-primary);
+              margin-bottom: 8px;
+            }
+            .description-section p {
+              color: var(--text-secondary);
+              font-size: 14px;
+              line-height: 1.5;
+            }
+            .owner-details {
+              background: var(--info-highlight-bg);
+              padding: 16px;
+              border-radius: 12px;
+              margin-bottom: 20px;
+            }
+            .owner-details h4 {
+              color: var(--info-highlight-text);
+              margin-bottom: 10px;
+            }
+            .owner-details p {
+              margin: 4px 0;
+              color: var(--text-dark);
+            }
+            .image-modal {
+              display: none;
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0, 0, 0, 0.95);
+              z-index: 10000;
+              justify-content: center;
+              align-items: center;
+              padding: 20px;
+            }
+            .image-modal.active {
+              display: flex;
+            }
+            .image-modal img {
+              max-width: 100%;
+              max-height: 100%;
+              object-fit: contain;
+              border-radius: 8px;
+            }
+            .image-modal-close {
+              position: absolute;
+              top: 20px;
+              right: 20px;
+              background: rgba(255, 255, 255, 0.2);
+              color: white;
+              border: none;
+              width: 44px;
+              height: 44px;
+              border-radius: 50%;
+              font-size: 24px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+            @media (min-width: 768px) {
+              .vehicle-detail-image {
+                height: 350px;
+              }
+              .vehicle-detail-placeholder {
+                height: 350px;
+              }
+            }
+          </style>
+        </head>
+        ${getBodyTag(req, appConfig)}
+          <div class="container dashboard-container">
+            ${adminHeader(user)}
+
+            ${getAdminNav('vehicles', isChatEnabled(appConfig, user))}
+
+            <h3 class="section-title">${car.year ? car.year + ' ' : ''}${car.make} ${car.model}</h3>
+
+            ${car.image_url
+              ? `<div class="vehicle-detail-image" onclick="openImageModal('${car.image_url}', '${car.year ? car.year + ' ' : ''}${car.make} ${car.model}')"><img src="${car.image_url}" alt="${car.year ? car.year + ' ' : ''}${car.make} ${car.model}"></div>`
+              : `<div class="vehicle-detail-placeholder">🚗</div>`
+            }
+
+            <div class="detail-card">
+              <div class="detail-row">
+                <span class="detail-label">Year</span>
+                <span class="detail-value">${car.year || 'N/A'}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Make</span>
+                <span class="detail-value">${car.make}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Model</span>
+                <span class="detail-value">${car.model}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Type</span>
+                <span class="detail-value">${car.vehicle_name || 'N/A'}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Class</span>
+                <span class="detail-value">${car.class_name || 'N/A'}</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Status</span>
+                <span class="detail-value"><span class="status-badge ${car.is_active ? 'active' : 'pending'}">${car.is_active ? 'Active' : 'Pending Payment'}</span></span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Registration Number</span>
+                <span class="detail-value">${car.voter_id ? '#' + car.voter_id : 'Not assigned'}</span>
+              </div>
+            </div>
+
+            ${car.description ? `
+              <div class="description-section">
+                <h4>Description</h4>
+                <p>${car.description}</p>
+              </div>
+            ` : ''}
+
+            <a href="/admin/view-user/${car.user_id}" style="text-decoration:none;color:inherit;display:block;">
+              <div class="owner-details" style="cursor:pointer;transition:border-color 0.2s;">
+                <h4>Owner Information</h4>
+                <p><strong>Name:</strong> ${car.owner_name || 'Unknown'}</p>
+                <p><strong>Username:</strong> @${car.owner_username || 'N/A'}</p>
+                <p><strong>Email:</strong> ${car.owner_email || 'N/A'}</p>
+                <p><strong>Phone:</strong> ${car.owner_phone || 'N/A'}</p>
+              </div>
+            </a>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">
+              <a href="/admin/edit-vehicle/${car.car_id}" class="action-btn edit">Edit</a>
+              <a href="/admin/delete-vehicle/${car.car_id}" class="action-btn delete" onclick="return confirm('Are you sure you want to permanently delete this vehicle?')">Delete</a>
+            </div>
+            <div class="links" style="margin-top:20px;text-align:center;">
+              <a href="/admin/vehicles">&larr; Back to Vehicles</a>
+            </div>
+          </div>
+
+          <div class="image-modal" id="imageModal" onclick="closeImageModal()">
+            <button class="image-modal-close" onclick="closeImageModal()">&times;</button>
+            <img id="modalImage" src="" alt="">
+          </div>
+
+          <script>
+            function openImageModal(src, alt) {
+              var modal = document.getElementById('imageModal');
+              var img = document.getElementById('modalImage');
+              img.src = src;
+              img.alt = alt;
+              modal.classList.add('active');
+              document.body.style.overflow = 'hidden';
+            }
+            function closeImageModal() {
+              document.getElementById('imageModal').classList.remove('active');
+              document.body.style.overflow = '';
+            }
+            document.addEventListener('keydown', function(e) {
+              if (e.key === 'Escape') closeImageModal();
+            });
+          </script>
+        </body>
+        </html>
+      `);
     });
   });
 
@@ -513,6 +766,9 @@ module.exports = function(db, appConfig, upload) {
                     <button type="submit">Update Vehicle</button>
                   </div>
                 </form>
+                <div class="links" style="margin-top:20px;">
+                  <a href="/admin/vehicles">&larr; Back to Vehicles</a>
+                </div>
 
                 <script>
                   const allClasses = ${classesJson};

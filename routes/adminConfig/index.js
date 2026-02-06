@@ -8,6 +8,7 @@ module.exports = function (db, appConfig, upload, saveConfig) {
   router.use('/', require('./classes')(db, appConfig, upload));
   router.use('/', require('./categories')(db, appConfig, upload));
   router.use('/', require('./specialtyVotes')(db, appConfig, upload));
+  router.use('/', require('./products')(db, appConfig, upload));
   router.use('/', require('./appConfig')(db, appConfig, upload, saveConfig));
 
   return router;

@@ -2,25 +2,23 @@
 // Provides avatar, navigation bars, dashboard headers, and vehicle card helpers
 // to eliminate duplication across route files.
 
+// Local escapeHtml to avoid circular dependency (htmlHelpers -> layout -> components)
+function escapeHtml(text) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+  return String(text).replace(/[&<>"']/g, c => map[c]);
+}
+
 /**
  * Get initials from a user name string (up to 2 characters).
- * Safe against null/undefined names.
+ * Safe against null/undefined names and XSS.
  * @param {string} name - User's display name
  * @returns {string} Uppercase initials (e.g. "JD") or "?" if name is empty
  */
 function getInitials(name) {
   if (!name) return '?';
-  return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
-}
-
-/**
- * Generate avatar HTML — shows profile image if available, otherwise initials.
- * @param {Object} user - User object with name and optional image_url
- * @returns {string} HTML for the avatar div
- */
-function getAvatar(user) {
-  const avatarContent = getAvatarContent(user);
-  return `<div class="user-avatar">${avatarContent}</div>`;
+  // Extract initials from alphanumeric characters only to prevent XSS
+  const initials = name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
+  return escapeHtml(initials);
 }
 
 /**
@@ -31,8 +29,9 @@ function getAvatar(user) {
  */
 function getAvatarContent(user) {
   const initials = getInitials(user.name);
+  // Escape image_url to prevent XSS via malicious URLs
   return user.image_url
-    ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+    ? `<img src="${escapeHtml(user.image_url)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
     : initials;
 }
 
@@ -58,7 +57,7 @@ function dashboardHeader(role, user, title) {
 
 /**
  * Admin navigation bar with Config sub-nav toggle.
- * @param {string} activeTab - Currently active tab: 'users', 'vehicles', 'config', 'judge-status', 'vote-status', 'reports'
+ * @param {string} activeTab - Currently active tab: 'dashboard', 'config', 'users', 'vehicles', 'voting', 'vendors', 'reports'
  * @returns {string} Admin nav HTML
  */
 function adminNav(activeTab, chatEnabled) {
@@ -69,10 +68,10 @@ function adminNav(activeTab, chatEnabled) {
       <a href="/admin"${activeTab === 'users' ? ' class="active"' : ''}>Users</a>
       <a href="/admin/vehicles"${activeTab === 'vehicles' ? ' class="active"' : ''}>Vehicles</a>
       <a href="#" onclick="var sn=document.getElementById('votingSubnav');sn.style.display=sn.style.display==='flex'?'none':'flex';return false;"${activeTab === 'voting' ? ' class="active"' : ''}>Voting</a>
-      <a href="/admin/reports"${activeTab === 'reports' ? ' class="active"' : ''}>Reports</a>
       <a href="/admin/vendors"${activeTab === 'vendors' ? ' class="active"' : ''}>Vendors</a>
       ${chatEnabled ? `<a href="/chat"${activeTab === 'chat' ? ' class="active"' : ''}>Chat</a>` : ''}
       <a href="/user/vote">Vote Here!</a>
+      <a href="/admin/reports"${activeTab === 'reports' ? ' class="active"' : ''}>Reports</a>
     </div>`;
 }
 
@@ -97,13 +96,14 @@ function judgeNav(activeTab, chatEnabled) {
 
 /**
  * Registrar navigation bar.
- * @param {string} activeTab - Currently active tab: 'dashboard', 'vehicles', 'users'
+ * @param {string} activeTab - Currently active tab: 'dashboard', 'registration', 'vehicles', 'users', 'vendors'
  * @returns {string} Registrar nav HTML
  */
 function registrarNav(activeTab, chatEnabled) {
   return `
     <div class="admin-nav">
       <a href="/registrar"${activeTab === 'dashboard' ? ' class="active"' : ''}>Dashboard</a>
+      <a href="/registrar/registration"${activeTab === 'registration' ? ' class="active"' : ''}>Registration</a>
       <a href="/registrar/vehicles"${activeTab === 'vehicles' ? ' class="active"' : ''}>Vehicles</a>
       <a href="/registrar/users"${activeTab === 'users' ? ' class="active"' : ''}>Users</a>
       <a href="/registrar/vendors"${activeTab === 'vendors' ? ' class="active"' : ''}>Vendors</a>
@@ -159,12 +159,43 @@ function getNav(role, activeTab, chatEnabled) {
   }
 }
 
+/**
+ * Helper: build the admin dashboard header.
+ * @param {Object} user - User object
+ * @returns {string} Admin dashboard header HTML
+ */
+function adminHeader(user) {
+  return dashboardHeader('admin', user, 'Admin Dashboard');
+}
+
+/**
+ * Helper: check if chat is enabled for a user.
+ * @param {Object} appConfig - Application config object
+ * @param {Object} user - User object
+ * @returns {boolean} True if chat is enabled for this user
+ */
+function isChatEnabled(appConfig, user) {
+  return appConfig.chatEnabled !== false && user.chat_enabled;
+}
+
+/**
+ * Generate a profile button link for a given role.
+ * @param {string} role - User role: 'admin', 'judge', 'registrar', 'user', 'vendor'
+ * @returns {string} Profile button HTML
+ */
+function profileButton(role) {
+  return `<a href="/${role}/profile" class="profile-btn">Profile</a>`;
+}
+
 module.exports = {
   getInitials,
-  getAvatar,
   getAvatarContent,
   dashboardHeader,
+  adminHeader,
+  isChatEnabled,
+  profileButton,
   adminNav,
+  getAdminNav: adminNav,
   judgeNav,
   registrarNav,
   vendorNav,

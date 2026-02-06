@@ -81,11 +81,28 @@ routes/
 ├── admin.js               # Admin core routes (users, vehicles, classes)
 ├── adminConfig.js         # Admin configuration routes
 ├── adminVoting.js         # Admin voting management routes
+├── adminShared.js         # Shared helpers for all admin routes
 ├── judge.js               # Judge scoring routes
 ├── registrar.js           # Registrar check-in routes
 ├── user.js                # User vehicle and results routes
 ├── vendor.js              # Vendor business and product routes
-└── chat.js                # Group chat routes
+├── chat.js                # Group chat routes
+│
+├── admin/                 # Admin sub-routes
+│   ├── shared.js          # Re-exports from adminShared.js
+│   └── ...                # Route handlers
+│
+├── adminConfig/           # Admin config sub-routes
+│   ├── shared.js          # Re-exports from adminShared.js
+│   └── ...                # Route handlers
+│
+├── adminVoting/           # Admin voting sub-routes
+│   ├── shared.js          # Re-exports from adminShared.js
+│   └── ...                # Route handlers
+│
+└── vendor/                # Vendor sub-routes
+    ├── shared.js          # Vendor-specific shared helpers
+    └── ...                # Route handlers
 ```
 
 ### Route Details
@@ -131,12 +148,17 @@ views/
 public/
 ├── css/
 │   ├── styles.css         # Main application styles
-│   └── admin.css          # Admin-specific styles
+│   ├── admin.css          # Admin-specific styles
+│   ├── chat.css           # Chat UI styles
+│   ├── user.css           # User dashboard and voting styles
+│   └── vendor.css         # Vendor dashboard and product styles
 │
 ├── js/
 │   ├── chat.js            # Chat client (Socket.io)
 │   ├── configSubnav.js    # Admin config tab navigation
-│   └── notifications.js   # Real-time notification handling
+│   ├── notifications.js   # Real-time notification handling
+│   ├── priceInput.js      # Price input validation and formatting
+│   └── vendorScrollbar.js # Custom scrollbar for vendor products
 │
 └── images/
     └── (static images)    # Application icons, logos
@@ -148,6 +170,9 @@ public/
 |------|---------|
 | `styles.css` | Global styles, login page, forms, buttons |
 | `admin.css` | Admin dashboard, data tables, modals |
+| `chat.css` | Chat container, messages, sidebar, online users |
+| `user.css` | Vehicle cards, voting UI, image modal, badges |
+| `vendor.css` | Vendor sections, product cards, toggle switches |
 
 ### JavaScript Files
 
@@ -156,6 +181,8 @@ public/
 | `chat.js` | Socket.io chat client, message rendering, sidebar |
 | `configSubnav.js` | Tab switching on admin config pages |
 | `notifications.js` | Real-time toast notifications via Socket.io |
+| `priceInput.js` | Price field validation (numbers, decimal formatting) |
+| `vendorScrollbar.js` | Custom scrollbar for vendor product lists |
 
 ---
 

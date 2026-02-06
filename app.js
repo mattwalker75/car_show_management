@@ -2,10 +2,13 @@
 // Sets up Express, session, static files, and mounts all route modules.
 
 const express = require('express');
+const http = require('http');
 const https = require('https');
 const fs = require('fs');
 const cookieSession = require('cookie-session');
 const morgan = require('morgan');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { Server: SocketIOServer } = require('socket.io');
 const Filter = require('bad-words-plus');
 const profanityFilter = new Filter({ firstLetter: true });
@@ -19,10 +22,63 @@ const { appConfig, saveConfig, upload } = require('./config/appConfig');
 const app = express();
 const port = appConfig.port || 3001;
 
-// Trust proxy headers (X-Forwarded-For) for correct client IP logging when behind
-// a load balancer (e.g., AWS ALB). Safe to enable even without a proxy — Express
-// falls back to direct connection IP when X-Forwarded-For is not present.
-app.set('trust proxy', true);
+// Server configuration for SSL, trust proxy, and certificate paths
+// Configured via config.json server section. See config.md for details.
+const serverConfig = appConfig.server || {};
+
+// Trust proxy setting for deployments behind a reverse proxy/load balancer.
+app.set('trust proxy', serverConfig.trustProxy || false);
+
+// ── Security Middleware ────────────────────────────────────────────────
+const securityConfig = appConfig.security || {};
+const headersConfig = securityConfig.headers || {};
+const sessionConfig = securityConfig.session || {};
+const rateLimitConfig = securityConfig.rateLimiting || {};
+
+// Security headers via Helmet (see config.md for details)
+if (headersConfig.enabled !== false) {
+  app.use(helmet({
+    contentSecurityPolicy: headersConfig.contentSecurityPolicy || false,
+    crossOriginEmbedderPolicy: headersConfig.crossOriginEmbedderPolicy || false
+  }));
+}
+
+// Rate limiting for auth endpoints (per IP address)
+// Uses req.ip which respects the 'trust proxy' setting
+const authRateConfig = rateLimitConfig.auth || {};
+const authLimiter = rateLimit({
+  windowMs: (authRateConfig.windowSeconds || 900) * 1000,
+  limit: authRateConfig.maxAttempts || 5,
+  message: 'Too many login attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Explicit keyGenerator to ensure per-IP rate limiting
+  keyGenerator: (req) => req.ip || req.socket?.remoteAddress || 'unknown',
+  // Disable validation warnings - we handle proxy config ourselves and the IPv6 warning
+  // is a false positive since req.ip already handles IPv4-mapped IPv6 addresses correctly
+  validate: { trustProxy: false, xForwardedForHeader: false, default: false }
+});
+app.use('/login', authLimiter);
+app.use('/register', authLimiter);
+
+// Rate limiting for general API endpoints (per IP address)
+const apiRateConfig = rateLimitConfig.api || {};
+const apiLimiter = rateLimit({
+  windowMs: (apiRateConfig.windowSeconds || 60) * 1000,
+  limit: apiRateConfig.maxRequests || 100,
+  message: 'Too many requests, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Explicit keyGenerator to ensure per-IP rate limiting
+  keyGenerator: (req) => req.ip || req.socket?.remoteAddress || 'unknown',
+  validate: { trustProxy: false, xForwardedForHeader: false, default: false }
+});
+app.use('/admin', apiLimiter);
+app.use('/judge', apiLimiter);
+app.use('/registrar', apiLimiter);
+app.use('/user', apiLimiter);
+app.use('/vendor', apiLimiter);
+app.use('/chat', apiLimiter);
 
 // ── Middleware ─────────────────────────────────────────────────────────
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
@@ -33,11 +89,36 @@ app.use('/images', express.static('images'));
 // Session keys from config.json - CHANGE THESE IN PRODUCTION!
 // Use long, random strings (32+ characters) for security.
 const sessionKeys = appConfig.sessionKeys || ['fallback-key-change-me', 'fallback-backup-key'];
+const defaultKeys = ['change-this-to-a-random-secret-key', 'change-this-backup-key-too'];
+if (sessionKeys[0] === defaultKeys[0] || sessionKeys[1] === defaultKeys[1]) {
+  console.warn('\n⚠️  WARNING: Using default session keys. Change sessionKeys in config.json for production!\n');
+}
 app.use(cookieSession({
   name: 'session',
   keys: sessionKeys,
-  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  maxAge: 24 * 60 * 60 * 1000, // 24 hours
+  secure: sessionConfig.secure !== false, // Only send over HTTPS (default: true)
+  httpOnly: sessionConfig.httpOnly !== false, // Prevent JS access (default: true)
+  sameSite: sessionConfig.sameSite || 'strict' // CSRF protection (default: strict)
 }));
+
+// CSRF protection: verify Origin header on state-changing requests
+// Works with SameSite=strict cookies to prevent cross-site request forgery
+app.use((req, res, next) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+    return next();
+  }
+  const origin = req.get('Origin');
+  const host = req.get('Host');
+  // Allow requests without Origin header (same-origin form submissions from some browsers)
+  // Allow Origin: null (privacy contexts, redirects, or file:// during development)
+  // Allow when Origin contains the Host (normal same-origin requests)
+  if (!origin || origin === 'null' || origin.includes(host)) {
+    return next();
+  }
+  console.warn(`CSRF blocked: Origin ${origin} != Host ${host}`);
+  return res.status(403).send('Forbidden');
+});
 
 // Custom morgan token for logged-in username
 morgan.token('username', (req) => {
@@ -65,13 +146,53 @@ app.use('/vendor', require('./routes/vendor')(db, appConfig, upload));
 // Chat routes (group chat for users with chat_enabled)
 app.use('/chat', require('./routes/chat')(db, appConfig, upload));
 
-// ── HTTPS Server ──────────────────────────────────────────────────────
-const options = {
-  key: fs.readFileSync('/Users/matt/Desktop/My_Data/AI/Vibe_Coding/REPOS/key.pem'),
-  cert: fs.readFileSync('/Users/matt/Desktop/My_Data/AI/Vibe_Coding/REPOS/cert.pem')
-};
+// ── Health Check Endpoint ─────────────────────────────────────────────
+// Used by load balancers and monitoring systems
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime() });
+});
 
-const server = https.createServer(options, app);
+// ── 404 Handler ───────────────────────────────────────────────────────
+// Must be after all routes - catches requests that don't match any route
+app.use((req, res) => {
+  res.status(404).send('Not Found');
+});
+
+// ── Global Error Handler ──────────────────────────────────────────────
+// Must be last middleware - catches unhandled errors from routes
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).send('Internal Server Error');
+});
+
+// ── HTTP/HTTPS Server ─────────────────────────────────────────────────
+// When server.ssl is true (default), runs HTTPS with certificate files.
+// When server.ssl is false, runs plain HTTP (for use behind ALB/proxy).
+const sslEnabled = serverConfig.ssl !== false; // Default to true for backward compatibility
+
+let server;
+if (sslEnabled) {
+  const keyPath = serverConfig.keyPath || './key.pem';
+  const certPath = serverConfig.certPath || './cert.pem';
+
+  if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
+    console.error('SSL certificate files not found. Please configure server.keyPath and server.certPath in config.json');
+    console.error('Or set server.ssl to false for HTTP mode (when behind a load balancer).');
+    process.exit(1);
+  }
+
+  const options = {
+    key: fs.readFileSync(keyPath),
+    cert: fs.readFileSync(certPath)
+  };
+
+  server = https.createServer(options, app);
+} else {
+  server = http.createServer(app);
+}
+
+// Set request timeout to prevent long-running requests from exhausting resources
+server.setTimeout(30000); // 30 seconds
 
 // ── Socket.io for real-time notifications ──────────────────────────────
 const io = new SocketIOServer(server);
@@ -80,6 +201,21 @@ app.set('io', io);
 // Rate limiting: track last message timestamp per user_id (500ms between messages)
 const chatRateLimit = new Map();
 const CHAT_RATE_LIMIT_MS = 500;
+
+// Clean up stale rate limit entries every 5 minutes to prevent memory leaks
+// Entries older than 1 minute are removed (well past the 500ms window)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, timestamp] of chatRateLimit.entries()) {
+    if (now - timestamp > 60000) {
+      chatRateLimit.delete(key);
+    }
+  }
+}, 300000);
+
+// Track message count for periodic cleanup instead of per-message
+let chatMessageCount = 0;
+const CHAT_CLEANUP_INTERVAL = 100;
 
 // Helper: broadcast presence list with active/away/blocked status
 // 'active' = user has the chat page open, 'away' = user is in the app but on another page
@@ -141,7 +277,7 @@ function broadcastPresence() {
 }
 
 io.on('connection', (socket) => {
-  // Notification room joining
+  // Notification room joining - only allow valid roles
   socket.on('join-role', (role) => {
     if (['admin', 'judge', 'registrar', 'vendor', 'user'].includes(role)) {
       socket.join('role:' + role);
@@ -150,29 +286,49 @@ io.on('connection', (socket) => {
   });
 
   // App-level presence: track that user is somewhere in the app
-  socket.on('join-app', (data) => {
-    if (!data || !data.user_id || !data.name) return;
-    socket.appUser = {
-      user_id: data.user_id,
-      name: data.name,
-      role: data.role || 'user',
-      image_url: data.image_url || null
-    };
-    socket.join('app');
-    broadcastPresence();
+  // Verifies user exists in database and uses DB values (not client-provided)
+  socket.on('join-app', async (data) => {
+    if (!data || !data.user_id) return;
+    try {
+      const user = await db.getAsync(
+        'SELECT user_id, name, role, image_url FROM users WHERE user_id = ?',
+        [data.user_id]
+      );
+      if (!user) return; // Invalid user_id
+      socket.appUser = {
+        user_id: user.user_id,
+        name: user.name,
+        role: user.role,
+        image_url: user.image_url || null
+      };
+      socket.join('app');
+      broadcastPresence();
+    } catch (err) {
+      console.error('join-app verification error:', err.message);
+    }
   });
 
   // Chat: join the chat room
-  socket.on('join-chat', (data) => {
-    if (!data || !data.user_id || !data.name) return;
-    socket.chatUser = {
-      user_id: data.user_id,
-      name: data.name,
-      role: data.role || 'user',
-      image_url: data.image_url || null
-    };
-    socket.join('chat');
-    broadcastPresence();
+  // Verifies user exists and has chat access, uses DB values
+  socket.on('join-chat', async (data) => {
+    if (!data || !data.user_id) return;
+    try {
+      const user = await db.getAsync(
+        'SELECT user_id, name, role, image_url, chat_enabled FROM users WHERE user_id = ?',
+        [data.user_id]
+      );
+      if (!user || !user.chat_enabled) return; // Invalid user or chat not enabled
+      socket.chatUser = {
+        user_id: user.user_id,
+        name: user.name,
+        role: user.role,
+        image_url: user.image_url || null
+      };
+      socket.join('chat');
+      broadcastPresence();
+    } catch (err) {
+      console.error('join-chat verification error:', err.message);
+    }
   });
 
   // Chat: send a message
@@ -220,14 +376,19 @@ io.on('connection', (socket) => {
           created_at: new Date().toISOString()
         });
 
-        // Cleanup: delete oldest messages if over the configured limit
-        const limit = appConfig.chatMessageLimit || 200;
-        return db.runAsync(
-          `DELETE FROM chat_messages WHERE message_id NOT IN (
-            SELECT message_id FROM chat_messages ORDER BY message_id DESC LIMIT ?
-          )`,
-          [limit]
-        );
+        // Cleanup: delete oldest messages periodically (every N messages)
+        // instead of on every message to reduce database overhead
+        chatMessageCount++;
+        if (chatMessageCount >= CHAT_CLEANUP_INTERVAL) {
+          chatMessageCount = 0;
+          const limit = appConfig.chatMessageLimit || 200;
+          return db.runAsync(
+            `DELETE FROM chat_messages WHERE message_id NOT IN (
+              SELECT message_id FROM chat_messages ORDER BY message_id DESC LIMIT ?
+            )`,
+            [limit]
+          );
+        }
       });
     }).catch((err) => {
       console.error('Chat message error:', err.message);
@@ -297,11 +458,63 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(port, () => {
-  console.log(`Car Show Voting App listening at https://localhost:${port}`);
-  console.log('Note: You may see a security warning in your browser - this is expected for self-signed certificates');
+// Wait for database migrations to complete before starting server
+db.ready.then(() => {
+  const protocol = sslEnabled ? 'https' : 'http';
+  server.listen(port, () => {
+    console.log(`Car Show Voting App listening at ${protocol}://localhost:${port}`);
+    if (sslEnabled) {
+      console.log('Note: You may see a security warning in your browser - this is expected for self-signed certificates');
+    } else {
+      console.log('Running in HTTP mode (SSL disabled) - ensure you are behind a secure proxy');
+    }
+  });
+}).catch((err) => {
+  console.error('Failed to initialize database:', err.message);
+  process.exit(1);
 });
 
-console.log('To access the application:');
-console.log('1. Open your browser and go to: https://localhost:3001');
-console.log('2. You will see a security warning - accept it to continue');
+// ── Graceful Shutdown ─────────────────────────────────────────────────
+// Handle shutdown signals to close connections cleanly
+const gracefulShutdown = async (signal) => {
+  console.log(`\n${signal} received, shutting down gracefully...`);
+
+  // Force exit after 10 seconds if graceful shutdown takes too long
+  const forceExitTimeout = setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+
+  try {
+    // Close Socket.io connections
+    await new Promise((resolve) => {
+      io.close(() => {
+        console.log('Socket.io connections closed');
+        resolve();
+      });
+    });
+
+    // Close HTTP server
+    await new Promise((resolve) => {
+      server.close(() => {
+        console.log('HTTP server closed');
+        resolve();
+      });
+    });
+
+    // Close database connection
+    if (db.close) {
+      await db.close();
+    }
+
+    clearTimeout(forceExitTimeout);
+    process.exit(0);
+  } catch (err) {
+    console.error('Error during shutdown:', err.message);
+    clearTimeout(forceExitTimeout);
+    process.exit(1);
+  }
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

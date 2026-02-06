@@ -157,7 +157,10 @@ module.exports = function (db, appConfig, upload) {
       db.run('INSERT INTO vendor_products (user_id, product_name, description, price, image_url, display_order) VALUES (?, ?, ?, ?, ?, ?)',
         [user.user_id, product_name.trim(), description || null, formattedPrice, imageUrl, nextOrder],
         (err) => {
-          if (err) return res.send(errorPage('Error adding product: ' + err.message, '/vendor/add-product', 'Try Again'));
+          if (err) {
+            console.error('Error adding product:', err.message);
+            return res.send(errorPage('Error adding product. Please try again.', '/vendor/add-product', 'Try Again'));
+          }
           res.redirect('/vendor');
         });
     });
@@ -347,7 +350,10 @@ module.exports = function (db, appConfig, upload) {
       db.run('UPDATE vendor_products SET product_name = ?, description = ?, price = ?, discount_price = ?, image_url = ? WHERE product_id = ? AND user_id = ?',
         [product_name.trim(), description || null, formattedPrice, formattedDiscount, imageUrl, productId, user.user_id],
         (err) => {
-          if (err) return res.send(errorPage('Error updating product: ' + err.message, `/vendor/edit-product/${productId}`, 'Try Again'));
+          if (err) {
+            console.error('Error updating product:', err.message);
+            return res.send(errorPage('Error updating product. Please try again.', `/vendor/edit-product/${productId}`, 'Try Again'));
+          }
 
           // Notify all users if a discount price was added or changed
           if (formattedDiscount && formattedDiscount !== product.discount_price) {

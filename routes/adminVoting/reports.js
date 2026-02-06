@@ -8,98 +8,101 @@ module.exports = function (db, appConfig, upload) {
 
   // ─── Reports Index Page ──────────────────────────────────────────────────────
 
-  router.get('/reports', requireAdmin, (req, res) => {
+  router.get('/reports', requireAdmin, async (req, res) => {
     const user = req.session.user;
     const chatEnabled = isChatEnabled(appConfig, user);
 
-    // Gather counts for each report
-    db.get('SELECT COUNT(*) as cnt FROM users', (err, userCount) => {
-      db.get('SELECT COUNT(*) as cnt FROM cars', (err, carCount) => {
-        db.get('SELECT COUNT(*) as cnt FROM classes', (err, classCount) => {
-          db.get('SELECT COUNT(*) as cnt FROM specialty_votes', (err, svCount) => {
-            db.get('SELECT COUNT(*) as cnt FROM judge_catagories', (err, catCount) => {
+    // Gather all counts in a single query for better performance
+    try {
+      const counts = await db.getAsync(`
+        SELECT
+          (SELECT COUNT(*) FROM users) as user_count,
+          (SELECT COUNT(*) FROM cars) as car_count,
+          (SELECT COUNT(*) FROM classes) as class_count,
+          (SELECT COUNT(*) FROM specialty_votes) as sv_count,
+          (SELECT COUNT(*) FROM judge_catagories) as cat_count
+      `);
 
-              const reports = [
-                {
-                  id: 'users',
-                  title: 'Users & Contact Information',
-                  description: 'List of all users with their name, username, email, phone, role, and account status.',
-                  count: (userCount ? userCount.cnt : 0) + ' users'
-                },
-                {
-                  id: 'vehicles-winners',
-                  title: 'Registered Vehicles with Winners',
-                  description: 'All registered vehicles with owner info and any places won in judging or specialty votes.',
-                  count: (carCount ? carCount.cnt : 0) + ' vehicles'
-                },
-                {
-                  id: 'vehicles-classes',
-                  title: 'Vehicles by Class',
-                  description: 'All vehicles grouped with their assigned vehicle type and competition class.',
-                  count: (classCount ? classCount.cnt : 0) + ' classes'
-                },
-                {
-                  id: 'specialty-votes',
-                  title: 'Specialty Votes',
-                  description: 'All specialty vote categories with their configuration, voter counts, and vote tallies.',
-                  count: (svCount ? svCount.cnt : 0) + ' votes'
-                },
-                {
-                  id: 'judging-config',
-                  title: 'Judging Categories, Questions & Scoring',
-                  description: 'Complete judging configuration including categories, questions, and score ranges.',
-                  count: (catCount ? catCount.cnt : 0) + ' categories'
-                }
-              ];
+      const reports = [
+        {
+          id: 'users',
+          title: 'Users & Contact Information',
+          description: 'List of all users with their name, username, email, phone, role, and account status.',
+          count: (counts ? counts.user_count : 0) + ' users'
+        },
+        {
+          id: 'vehicles-winners',
+          title: 'Registered Vehicles with Winners',
+          description: 'All registered vehicles with owner info and any places won in judging or specialty votes.',
+          count: (counts ? counts.car_count : 0) + ' vehicles'
+        },
+        {
+          id: 'vehicles-classes',
+          title: 'Vehicles by Class',
+          description: 'All vehicles grouped with their assigned vehicle type and competition class.',
+          count: (counts ? counts.class_count : 0) + ' classes'
+        },
+        {
+          id: 'specialty-votes',
+          title: 'Specialty Votes',
+          description: 'All specialty vote categories with their configuration, voter counts, and vote tallies.',
+          count: (counts ? counts.sv_count : 0) + ' votes'
+        },
+        {
+          id: 'judging-config',
+          title: 'Judging Categories, Questions & Scoring',
+          description: 'Complete judging configuration including categories, questions, and score ranges.',
+          count: (counts ? counts.cat_count : 0) + ' categories'
+        }
+      ];
 
-              const reportCards = reports.map(r => `
-                <div class="profile-card" style="margin-bottom:15px;">
-                  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
-                    <div style="flex:1;min-width:200px;">
-                      <h4 style="margin:0 0 5px 0;">${r.title}</h4>
-                      <p style="color:var(--text-secondary);margin:0 0 8px 0;font-size:14px;">${r.description}</p>
-                      <span style="background:var(--btn-edit-bg);color:white;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">${r.count}</span>
-                    </div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                      <a href="/admin/reports/view/${r.id}" class="action-btn" style="background:var(--success-color);">View</a>
-                      <a href="/admin/reports/export/${r.id}" class="action-btn" style="background:var(--btn-edit-bg);">Export CSV</a>
-                    </div>
-                  </div>
-                </div>
-              `).join('');
+      const reportCards = reports.map(r => `
+        <div class="profile-card" style="margin-bottom:15px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+            <div style="flex:1;min-width:200px;">
+              <h4 style="margin:0 0 5px 0;">${r.title}</h4>
+              <p style="color:var(--text-secondary);margin:0 0 8px 0;font-size:14px;">${r.description}</p>
+              <span style="background:var(--btn-edit-bg);color:white;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;">${r.count}</span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <a href="/admin/reports/view/${r.id}" class="action-btn" style="background:var(--success-color);">View</a>
+              <a href="/admin/reports/export/${r.id}" class="action-btn" style="background:var(--btn-edit-bg);">Export CSV</a>
+            </div>
+          </div>
+        </div>
+      `).join('');
 
-              res.send(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                  <title>Reports - Admin</title>
-                  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-                  ${styles}
-                  ${adminStyles}
-                  ${getAppBgStyles(appConfig)}
-                </head>
-                ${getBodyTag(req)}
-                  <div class="container dashboard-container">
-                    ${adminHeader(user)}
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Reports - Admin</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          ${styles}
+          ${adminStyles}
+          ${getAppBgStyles(appConfig)}
+        </head>
+        ${getBodyTag(req)}
+          <div class="container dashboard-container">
+            ${adminHeader(user)}
 
-                    ${getAdminNav('reports', chatEnabled)}
+            ${getAdminNav('reports', chatEnabled)}
 
-                    <h3 class="section-title">Reports</h3>
-                    <p style="color:var(--text-secondary);margin-bottom:15px;">View and export reports as CSV files.</p>
+            <h3 class="section-title">Reports</h3>
+            <p style="color:var(--text-secondary);margin-bottom:15px;">View and export reports as CSV files.</p>
 
-                    ${reportCards}
-                    <div class="links" style="margin-top:20px;">
-                      <a href="/admin/dashboard">&larr; Back to Dashboard</a>
-                    </div>
-                  </div>
-                </body>
-                </html>
-              `);
-            });
-          });
-        });
-      });
-    });
+            ${reportCards}
+            <div class="links" style="margin-top:20px;">
+              <a href="/admin/dashboard">&larr; Back to Dashboard</a>
+            </div>
+          </div>
+        </body>
+        </html>
+      `);
+    } catch (err) {
+      console.error('Reports page error:', err.message);
+      res.status(500).send('Error loading reports');
+    }
   });
 
   // ─── View a Specific Report ──────────────────────────────────────────────────
