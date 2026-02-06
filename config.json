@@ -55,7 +55,7 @@
         "containerOpacity": 1
     },
     "theme": "light",
-    "chatEnabled": true,
+    "chatEnabled": false,
     "chatMessageLimit": 200,
     "security": {
         "rateLimiting": {
