@@ -4,24 +4,20 @@ const router = express.Router();
 
 module.exports = function (db, appConfig, upload) {
   const { requireJudge, hashPassword } = require('../middleware/auth');
-  const { errorPage, getAppBackgroundStyles } = require('../views/layout');
-  const { getInitials, getAvatarContent, judgeNav, dashboardHeader, getNav } = require('../views/components');
+  const { errorPage } = require('../views/layout');
+  const { styles, adminStyles, getBodyTag, getAppBgStyles } = require('../views/htmlHelpers');
+  const { getInitials, getAvatarContent, judgeNav, dashboardHeader, isChatEnabled, profileButton } = require('../views/components');
   const { renderVendorListPage, renderVendorDetailPage, renderProductDetailPage } = require('../helpers/vendorViews');
 
-  const styles = '<link rel="stylesheet" href="/css/styles.css">';
-  const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
-  const appBgStyles = () => getAppBackgroundStyles(appConfig);
-  const bodyTag = (req) => { const u = req.session && req.session.user; const theme = appConfig.theme || 'light'; return `<body data-theme="${theme}" data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
+  const appBgStyles = () => getAppBgStyles(appConfig);
+  const bodyTag = (req) => getBodyTag(req, appConfig);
 
   // ============================================================
   // Judge Dashboard
   // ============================================================
   router.get('/', requireJudge, (req, res) => {
     const user = req.session.user;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     // Get count of active cars this judge has NOT yet scored
     db.get(`
@@ -62,7 +58,7 @@ module.exports = function (db, appConfig, upload) {
                   <h1>🏎️ Car Judge</h1>
                   <div class="user-info">
                     <div class="user-avatar">${avatarContent}</div>
-                    <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                    ${profileButton('judge')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
                   </div>
                 </div>
@@ -125,10 +121,7 @@ module.exports = function (db, appConfig, upload) {
   // ============================================================
   router.get('/users', requireJudge, (req, res) => {
     const user = req.session.user;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     // Get all non-admin users
     db.all('SELECT user_id as id, username, name, email, phone, role, is_active, image_url, created_at FROM users WHERE role != ? ORDER BY role, name', ['admin'], (err, users) => {
@@ -179,7 +172,7 @@ module.exports = function (db, appConfig, upload) {
               <h1>🏎️ Car Judge</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
-                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                ${profileButton('judge')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -237,10 +230,7 @@ module.exports = function (db, appConfig, upload) {
   // ============================================================
   router.get('/view-user/:id', requireJudge, (req, res) => {
     const user = req.session.user;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
     const userId = req.params.id;
 
     // Only allow viewing non-admin users
@@ -437,7 +427,7 @@ module.exports = function (db, appConfig, upload) {
                 <h1>🏎️ Car Judge</h1>
                 <div class="user-info">
                   <div class="user-avatar">${avatarContent}</div>
-                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  ${profileButton('judge')}
                     <a href="/logout" class="logout-btn">Sign Out</a>
                 </div>
               </div>
@@ -505,10 +495,7 @@ module.exports = function (db, appConfig, upload) {
   // ============================================================
   router.get('/reset-password/:id', requireJudge, (req, res) => {
     const user = req.session.user;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
     const userId = req.params.id;
 
     // Get the user but only if they're not an admin
@@ -534,7 +521,7 @@ module.exports = function (db, appConfig, upload) {
               <h1>🏎️ Car Judge</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
-                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                ${profileButton('judge')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -676,10 +663,7 @@ module.exports = function (db, appConfig, upload) {
   // ============================================================
   router.get('/judge-vehicles', requireJudge, (req, res) => {
     const user = req.session.user;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     // Check if voting is not open
     if (appConfig.judgeVotingStatus !== 'Open') {
@@ -700,7 +684,7 @@ module.exports = function (db, appConfig, upload) {
               <h1>🏎️ Car Judge</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
-                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                ${profileButton('judge')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -903,7 +887,7 @@ module.exports = function (db, appConfig, upload) {
                 <h1>🏎️ Car Judge</h1>
                 <div class="user-info">
                   <div class="user-avatar">${avatarContent}</div>
-                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  ${profileButton('judge')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
                 </div>
               </div>
@@ -978,10 +962,7 @@ module.exports = function (db, appConfig, upload) {
   router.get('/score-vehicle/:carId', requireJudge, (req, res) => {
     const user = req.session.user;
     const carId = req.params.carId;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     // Check if voting is not open
     if (appConfig.judgeVotingStatus !== 'Open') {
@@ -1206,7 +1187,7 @@ module.exports = function (db, appConfig, upload) {
                     <h1>🏎️ Car Judge</h1>
                     <div class="user-info">
                       <div class="user-avatar">${avatarContent}</div>
-                      <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                      ${profileButton('judge')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
                     </div>
                   </div>
@@ -1342,10 +1323,7 @@ module.exports = function (db, appConfig, upload) {
   // ============================================================
   router.get('/results', requireJudge, (req, res) => {
     const user = req.session.user;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     // Check if results are published
     const judgeResultsPublished = appConfig.judgeVotingStatus === 'Lock';
@@ -1368,7 +1346,7 @@ module.exports = function (db, appConfig, upload) {
               <h1>🏎️ Judge Dashboard</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
-                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                ${profileButton('judge')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -1498,7 +1476,7 @@ module.exports = function (db, appConfig, upload) {
                 <h1>🏎️ Judge Dashboard</h1>
                 <div class="user-info">
                   <div class="user-avatar">${avatarContent}</div>
-                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  ${profileButton('judge')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
                 </div>
               </div>
@@ -1529,10 +1507,7 @@ module.exports = function (db, appConfig, upload) {
   // ============================================================
   router.get('/vehicles', requireJudge, (req, res) => {
     const user = req.session.user;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     // Get all active vehicles with owner info and class names
     db.all(`SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.voter_id, c.vehicle_id, c.class_id,
@@ -1721,7 +1696,7 @@ module.exports = function (db, appConfig, upload) {
               <h1>🏎️ Car Judge</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
-                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                ${profileButton('judge')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -1826,10 +1801,7 @@ module.exports = function (db, appConfig, upload) {
   router.get('/view-vehicle/:id', requireJudge, (req, res) => {
     const user = req.session.user;
     const carId = req.params.id;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     db.get(`SELECT c.*, u.name as owner_name, u.username as owner_username, u.email as owner_email, u.phone as owner_phone,
             cl.class_name, v.vehicle_name
@@ -1988,7 +1960,7 @@ module.exports = function (db, appConfig, upload) {
               <h1>🏎️ Judge Dashboard</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
-                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                ${profileButton('judge')}
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -2101,10 +2073,7 @@ module.exports = function (db, appConfig, upload) {
   router.get('/edit-vehicle/:id', requireJudge, (req, res) => {
     const user = req.session.user;
     const carId = req.params.id;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     db.get(`SELECT c.*, u.name as owner_name, cl.class_name, v.vehicle_name
             FROM cars c
@@ -2183,7 +2152,7 @@ module.exports = function (db, appConfig, upload) {
                 <h1>🏎️ Car Judge</h1>
                 <div class="user-info">
                   <div class="user-avatar">${avatarContent}</div>
-                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  ${profileButton('judge')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
                 </div>
               </div>

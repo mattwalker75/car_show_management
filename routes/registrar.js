@@ -4,22 +4,29 @@ const router = express.Router();
 
 module.exports = function (db, appConfig, upload) {
   const { requireRegistrar, hashPassword } = require('../middleware/auth');
-  const { errorPage, getAppBackgroundStyles } = require('../views/layout');
-  const { getInitials, getAvatarContent, registrarNav, dashboardHeader, getNav } = require('../views/components');
+  const { errorPage } = require('../views/layout');
+  const { styles, adminStyles, getBodyTag, getAppBgStyles } = require('../views/htmlHelpers');
+  const { getInitials, getAvatarContent, registrarNav, isChatEnabled, profileButton } = require('../views/components');
   const { renderVendorListPage, renderVendorDetailPage, renderProductDetailPage } = require('../helpers/vendorViews');
 
-  const styles = '<link rel="stylesheet" href="/css/styles.css">';
-  const adminStyles = '<link rel="stylesheet" href="/css/admin.css"><script src="/js/configSubnav.js"></script><script src="/socket.io/socket.io.js"></script><script src="/js/notifications.js"></script>';
-  const appBgStyles = () => getAppBackgroundStyles(appConfig);
-  const bodyTag = (req) => { const u = req.session && req.session.user; const theme = appConfig.theme || 'light'; return `<body data-theme="${theme}" data-user-role="${u ? u.role : ''}" data-user-id="${u ? u.user_id : ''}" data-user-name="${u ? u.name : ''}" data-user-image="${u && u.image_url ? u.image_url : ''}">`; };
+  const appBgStyles = () => getAppBgStyles(appConfig);
+  const bodyTag = (req) => getBodyTag(req, appConfig);
+
+  // Safe JSON parse helper - returns default value if parsing fails
+  const safeJsonParse = (jsonString, defaultValue = []) => {
+    if (!jsonString) return defaultValue;
+    try {
+      return JSON.parse(jsonString);
+    } catch (err) {
+      console.error('JSON parse error:', err.message);
+      return defaultValue;
+    }
+  };
 
   // ── Registrar Dashboard ───────────────────────────────────────────────
   router.get('/', requireRegistrar, (req, res) => {
     const user = req.session.user;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     // Get count of users for stats
     db.all('SELECT user_id as id, username, name, email, phone, role, is_active FROM users WHERE role = ? ORDER BY name', ['user'], (err, users) => {
@@ -48,7 +55,7 @@ module.exports = function (db, appConfig, upload) {
               <h1>🏎️ Registrar</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
-                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                ${profileButton('registrar')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -86,10 +93,7 @@ module.exports = function (db, appConfig, upload) {
   // ── User List ─────────────────────────────────────────────────────────
   router.get('/users', requireRegistrar, (req, res) => {
     const user = req.session.user;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     // Get all users (not admins)
     db.all('SELECT user_id as id, username, name, email, phone, role, is_active, image_url FROM users WHERE role NOT IN (?, ?) ORDER BY name', ['admin', 'registrar'], (err, users) => {
@@ -140,7 +144,7 @@ module.exports = function (db, appConfig, upload) {
               <h1>🏎️ Registrar</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
-                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                ${profileButton('registrar')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -188,10 +192,7 @@ module.exports = function (db, appConfig, upload) {
   router.get('/view-user/:id', requireRegistrar, (req, res) => {
     const user = req.session.user;
     const userId = req.params.id;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     db.get('SELECT user_id as id, username, name, email, phone, role, is_active, image_url FROM users WHERE user_id = ?', [userId], (err, viewUser) => {
       if (err || !viewUser) {
@@ -386,7 +387,7 @@ module.exports = function (db, appConfig, upload) {
                 <h1>🏎️ Registrar</h1>
                 <div class="user-info">
                   <div class="user-avatar">${avatarContent}</div>
-                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  ${profileButton('registrar')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
                 </div>
               </div>
@@ -443,10 +444,7 @@ module.exports = function (db, appConfig, upload) {
   // ── Reset Password (GET form) ─────────────────────────────────────────
   router.get('/reset-password/:id', requireRegistrar, (req, res) => {
     const user = req.session.user;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
     const userId = req.params.id;
 
     // Get the user but only if they're not an admin or registrar
@@ -472,7 +470,7 @@ module.exports = function (db, appConfig, upload) {
               <h1>🏎️ Registrar</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
-                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                ${profileButton('registrar')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -601,10 +599,7 @@ module.exports = function (db, appConfig, upload) {
   // ── Vehicle List with Filters ─────────────────────────────────────────
   router.get('/vehicles', requireRegistrar, (req, res) => {
     const user = req.session.user;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     // Get all vehicles with owner info and class names
     db.all(`SELECT c.car_id, c.year, c.make, c.model, c.description, c.image_url, c.voter_id, c.is_active,
@@ -830,7 +825,7 @@ module.exports = function (db, appConfig, upload) {
               <h1>🏎️ Registrar</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
-                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                ${profileButton('registrar')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -951,10 +946,7 @@ module.exports = function (db, appConfig, upload) {
   router.get('/view-vehicle/:id', requireRegistrar, (req, res) => {
     const user = req.session.user;
     const carId = req.params.id;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     db.get(`SELECT c.*, u.name as owner_name, u.username as owner_username, u.email as owner_email, u.phone as owner_phone,
             cl.class_name, v.vehicle_name
@@ -1113,7 +1105,7 @@ module.exports = function (db, appConfig, upload) {
               <h1>🏎️ Registrar</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
-                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                ${profileButton('registrar')}
                 <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -1215,10 +1207,7 @@ module.exports = function (db, appConfig, upload) {
   router.get('/edit-vehicle/:id', requireRegistrar, (req, res) => {
     const user = req.session.user;
     const carId = req.params.id;
-    const initials = getInitials(user.name);
-    const avatarContent = user.image_url
-      ? `<img src="${user.image_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
-      : initials;
+    const avatarContent = getAvatarContent(user);
 
     db.get(`SELECT c.*, u.name as owner_name, u.username as owner_username, u.email as owner_email, u.phone as owner_phone,
             cl.class_name, v.vehicle_name
@@ -1308,7 +1297,7 @@ module.exports = function (db, appConfig, upload) {
               <h1>🏎️ Registrar</h1>
               <div class="user-info">
                 <div class="user-avatar">${avatarContent}</div>
-                <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                ${profileButton('registrar')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
               </div>
             </div>
@@ -1535,8 +1524,8 @@ module.exports = function (db, appConfig, upload) {
       if (err) activeTransactions = [];
 
       const transactionCards = activeTransactions.map(t => {
-        const vehicles = t.vehicles_json ? JSON.parse(t.vehicles_json) : [];
-        const products = t.products_json ? JSON.parse(t.products_json) : [];
+        const vehicles = safeJsonParse(t.vehicles_json);
+        const products = safeJsonParse(t.products_json);
         const vehicleCount = vehicles.length;
         const productCount = products.reduce((sum, p) => sum + (p.quantity || 1), 0);
 
@@ -1824,7 +1813,8 @@ module.exports = function (db, appConfig, upload) {
             [customerId, user.user_id, '[]', '[]', '0.00', 'active'],
             function(err) {
               if (err) {
-                return res.send(errorPage('Error creating transaction: ' + err.message, '/registrar/registration/new', 'Try Again'));
+                console.error('Error creating transaction:', err.message);
+                return res.send(errorPage('Error creating transaction. Please try again.', '/registrar/registration/new', 'Try Again'));
               }
               const transactionId = this.lastID;
               res.redirect(`/registrar/registration/edit/${transactionId}`);
@@ -1862,8 +1852,8 @@ module.exports = function (db, appConfig, upload) {
         db.all('SELECT * FROM products WHERE available = 1 AND admin_deactivated = 0 ORDER BY display_order, product_name', (err, products) => {
           if (err) products = [];
 
-          const selectedVehicles = transaction.vehicles_json ? JSON.parse(transaction.vehicles_json) : [];
-          const selectedProducts = transaction.products_json ? JSON.parse(transaction.products_json) : [];
+          const selectedVehicles = safeJsonParse(transaction.vehicles_json);
+          const selectedProducts = safeJsonParse(transaction.products_json);
           const selectedVehicleIds = new Set(selectedVehicles.map(v => v.car_id));
           const selectedProductMap = new Map(selectedProducts.map(p => [p.product_id, p.quantity]));
 
@@ -2346,13 +2336,14 @@ module.exports = function (db, appConfig, upload) {
       function completeUpdate(vehiclesJson, productsJson) {
         if (action === 'complete') {
           // Mark transaction as complete and activate vehicles
-          const vehicleIds = JSON.parse(vehiclesJson).map(v => v.car_id);
+          const vehicleIds = safeJsonParse(vehiclesJson).map(v => v.car_id);
 
           // Update transaction
           db.run('UPDATE registration_transactions SET vehicles_json = ?, products_json = ?, total_amount = ?, status = ?, completed_at = CURRENT_TIMESTAMP WHERE transaction_id = ?',
             [vehiclesJson, productsJson, total_amount, 'complete', transactionId], (err) => {
               if (err) {
-                return res.send(errorPage('Error completing transaction: ' + err.message, `/registrar/registration/edit/${transactionId}`, 'Try Again'));
+                console.error('Error completing transaction:', err.message);
+                return res.send(errorPage('Error completing transaction. Please try again.', `/registrar/registration/edit/${transactionId}`, 'Try Again'));
               }
 
               // Activate the vehicles
@@ -2369,7 +2360,8 @@ module.exports = function (db, appConfig, upload) {
           db.run('UPDATE registration_transactions SET vehicles_json = ?, products_json = ?, total_amount = ? WHERE transaction_id = ?',
             [vehiclesJson, productsJson, total_amount, transactionId], (err) => {
               if (err) {
-                return res.send(errorPage('Error saving transaction: ' + err.message, `/registrar/registration/edit/${transactionId}`, 'Try Again'));
+                console.error('Error saving transaction:', err.message);
+                return res.send(errorPage('Error saving transaction. Please try again.', `/registrar/registration/edit/${transactionId}`, 'Try Again'));
               }
               res.redirect('/registrar/registration');
             });
@@ -2389,8 +2381,8 @@ module.exports = function (db, appConfig, upload) {
           return res.redirect('/registrar/registration');
         }
 
-        const vehicles = transaction.vehicles_json ? JSON.parse(transaction.vehicles_json) : [];
-        const products = transaction.products_json ? JSON.parse(transaction.products_json) : [];
+        const vehicles = safeJsonParse(transaction.vehicles_json);
+        const products = safeJsonParse(transaction.products_json);
         const hasItems = vehicles.length > 0 || products.some(p => (p.quantity || 0) > 0);
 
         if (hasItems) {
@@ -2423,8 +2415,8 @@ module.exports = function (db, appConfig, upload) {
       if (err) transactions = [];
 
       const transactionRows = transactions.map(t => {
-        const vehicles = t.vehicles_json ? JSON.parse(t.vehicles_json) : [];
-        const products = t.products_json ? JSON.parse(t.products_json) : [];
+        const vehicles = safeJsonParse(t.vehicles_json);
+        const products = safeJsonParse(t.products_json);
         const vehicleCount = vehicles.length;
         const productCount = products.reduce((sum, p) => sum + (p.quantity || 1), 0);
         const statusClass = t.status === 'complete' ? 'active' : 'inactive';
@@ -2552,8 +2544,8 @@ module.exports = function (db, appConfig, upload) {
         return res.redirect('/registrar/registration/history');
       }
 
-      const vehicles = transaction.vehicles_json ? JSON.parse(transaction.vehicles_json) : [];
-      const products = transaction.products_json ? JSON.parse(transaction.products_json) : [];
+      const vehicles = safeJsonParse(transaction.vehicles_json);
+      const products = safeJsonParse(transaction.products_json);
 
       const vehicleList = vehicles.map(v => `
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--divider-color);">

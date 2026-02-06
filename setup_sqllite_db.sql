@@ -324,6 +324,7 @@ CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);        -- Fast
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);              -- Fast email lookup
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);                -- Filter users by role
 CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);         -- Filter active users
+CREATE INDEX IF NOT EXISTS idx_users_role_active ON users(role, is_active);  -- Vendor browsing, active user by role
 
 -- Car lookups and filtering
 CREATE INDEX IF NOT EXISTS idx_cars_active ON cars(is_active);           -- Filter active cars
@@ -331,6 +332,7 @@ CREATE INDEX IF NOT EXISTS idx_cars_user ON cars(user_id);               -- Find
 CREATE INDEX IF NOT EXISTS idx_cars_vehicle_type ON cars(vehicle_id);    -- Filter cars by vehicle type
 CREATE INDEX IF NOT EXISTS idx_cars_class ON cars(class_id);             -- Filter cars by class
 CREATE INDEX IF NOT EXISTS idx_cars_voter_id ON cars(voter_id);          -- Lookup by voter ID
+CREATE INDEX IF NOT EXISTS idx_cars_active_class ON cars(is_active, class_id);  -- Active cars by class (scoring)
 
 -- Class lookups
 CREATE INDEX IF NOT EXISTS idx_classes_vehicle ON classes(vehicle_id);   -- Find classes by vehicle type
@@ -363,7 +365,9 @@ CREATE INDEX IF NOT EXISTS idx_published_results_specialty ON published_results(
 
 -- Vendor lookups
 CREATE INDEX IF NOT EXISTS idx_vendor_business_user ON vendor_business(user_id);      -- Find business by vendor user
+CREATE INDEX IF NOT EXISTS idx_vendor_business_active ON vendor_business(user_id, admin_disabled);  -- Active vendor business
 CREATE INDEX IF NOT EXISTS idx_vendor_products_user ON vendor_products(user_id);      -- Find products by vendor user
+CREATE INDEX IF NOT EXISTS idx_vendor_products_user_active ON vendor_products(user_id, admin_deactivated);  -- Active products by vendor
 
 -- ============================================================================
 -- CHAT MESSAGES TABLE

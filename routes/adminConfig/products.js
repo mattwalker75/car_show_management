@@ -191,7 +191,10 @@ module.exports = function (db, appConfig, upload) {
     db.run('INSERT INTO products (product_name, description, price, display_order) VALUES (?, ?, ?, ?)',
       [product_name.trim(), description || null, formattedPrice, order],
       (err) => {
-        if (err) return res.send(errorPage('Error adding product: ' + err.message, '/admin/add-product', 'Try Again'));
+        if (err) {
+          console.error('Error adding product:', err.message);
+          return res.send(errorPage('Error adding product. Please try again.', '/admin/add-product', 'Try Again'));
+        }
         res.redirect('/admin/products');
       });
   });
@@ -303,7 +306,10 @@ module.exports = function (db, appConfig, upload) {
     db.run('UPDATE products SET product_name = ?, description = ?, price = ?, discount_price = ?, display_order = ?, available = ?, admin_deactivated = ? WHERE product_id = ?',
       [product_name.trim(), description || null, formattedPrice, formattedDiscount, order, isAvailable, isDeactivated, productId],
       (err) => {
-        if (err) return res.send(errorPage('Error updating product: ' + err.message, `/admin/edit-product/${productId}`, 'Try Again'));
+        if (err) {
+          console.error('Error updating product:', err.message);
+          return res.send(errorPage('Error updating product. Please try again.', `/admin/edit-product/${productId}`, 'Try Again'));
+        }
         res.redirect('/admin/products');
       });
   });

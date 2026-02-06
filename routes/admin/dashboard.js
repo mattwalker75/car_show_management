@@ -11,7 +11,8 @@ module.exports = function (db, appConfig, upload) {
     getAppBgStyles,
     getAdminNav,
     getAvatarContent,
-    isChatEnabled
+    isChatEnabled,
+    profileButton
   } = require('./shared');
 
   // ============================================================
@@ -52,7 +53,7 @@ module.exports = function (db, appConfig, upload) {
                 <h1>Admin Dashboard</h1>
                 <div class="user-info">
                   <div class="user-avatar">${avatarContent}</div>
-                  <a href="#" class="profile-btn" onclick="const p=window.location.pathname;window.location.href=p.startsWith('/admin')?'/admin/profile':p.startsWith('/judge')?'/judge/profile':p.startsWith('/registrar')?'/registrar/profile':'/user/profile';return false;">Profile</a>
+                  ${profileButton('admin')}
                   <a href="/logout" class="logout-btn">Sign Out</a>
                 </div>
               </div>

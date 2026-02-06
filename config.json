@@ -1,5 +1,12 @@
 {
+    "_documentation": "See config.md for detailed documentation of all configuration options",
     "port": 3001,
+    "server": {
+        "ssl": true,
+        "keyPath": "/Users/matt/Desktop/My_Data/AI/Vibe_Coding/REPOS/key.pem",
+        "certPath": "/Users/matt/Desktop/My_Data/AI/Vibe_Coding/REPOS/cert.pem",
+        "trustProxy": false
+    },
     "sessionKeys": [
         "change-this-to-a-random-secret-key",
         "change-this-backup-key-too"
@@ -17,7 +24,7 @@
             "password": "PASSWORD",
             "connectionLimit": 10,
             "waitForConnections": true,
-            "queueLimit": 0
+            "queueLimit": 100
         },
         "_comment": "Set 'engine' to 'sqlite' or 'mysql'. SQLite requires no setup. For MySQL: run setup_mysql_db.sql first, then update credentials below."
     },
@@ -49,5 +56,27 @@
     },
     "theme": "light",
     "chatEnabled": false,
-    "chatMessageLimit": 200
+    "chatMessageLimit": 200,
+    "security": {
+        "rateLimiting": {
+            "auth": {
+                "windowSeconds": 900,
+                "maxAttempts": 5
+            },
+            "api": {
+                "windowSeconds": 60,
+                "maxRequests": 100
+            }
+        },
+        "headers": {
+            "enabled": true,
+            "contentSecurityPolicy": false,
+            "crossOriginEmbedderPolicy": false
+        },
+        "session": {
+            "secure": true,
+            "httpOnly": true,
+            "sameSite": "strict"
+        }
+    }
 }

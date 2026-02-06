@@ -102,6 +102,7 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_users_email (email),
     INDEX idx_users_role (role),
     INDEX idx_users_active (is_active),
+    INDEX idx_users_role_active (role, is_active),
     INDEX idx_users_chat_enabled (chat_enabled),
     INDEX idx_users_chat_blocked (chat_blocked)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -166,7 +167,8 @@ CREATE TABLE IF NOT EXISTS cars (
     INDEX idx_cars_user (user_id),
     INDEX idx_cars_vehicle_type (vehicle_id),
     INDEX idx_cars_class (class_id),
-    INDEX idx_cars_voter_id (voter_id)
+    INDEX idx_cars_voter_id (voter_id),
+    INDEX idx_cars_active_class (is_active, class_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
@@ -370,7 +372,8 @@ CREATE TABLE IF NOT EXISTS vendor_business (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,   -- Record creation timestamp
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, -- Last update timestamp
     FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
-    INDEX idx_vendor_business_user (user_id)
+    INDEX idx_vendor_business_user (user_id),
+    INDEX idx_vendor_business_active (user_id, admin_disabled)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================
@@ -393,7 +396,8 @@ CREATE TABLE IF NOT EXISTS vendor_products (
     admin_deactivated TINYINT(1) DEFAULT 0,           -- 1=deactivated by admin, 0=normal
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,   -- Record creation timestamp
     FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
-    INDEX idx_vendor_products_user (user_id)
+    INDEX idx_vendor_products_user (user_id),
+    INDEX idx_vendor_products_user_active (user_id, admin_deactivated)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================================

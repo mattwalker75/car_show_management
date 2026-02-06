@@ -2,20 +2,139 @@
 
 This guide covers deploying the Car Show Manager application locally and on AWS.
 
-## Local Deployment
+---
 
-### Basic Setup
+## Server Configuration Overview
 
-1. Complete the steps in [SETUP.md](SETUP.md)
-2. Generate self-signed SSL certificates
-3. Start the application:
-   ```bash
-   node app.js
-   ```
+All server settings are configured in `config.json` under the `server` object. See [config.md](../config.md) for full documentation.
 
-### Running in the Background
+```json
+{
+    "server": {
+        "ssl": true,           // true = HTTPS, false = HTTP
+        "keyPath": "./key.pem",
+        "certPath": "./cert.pem",
+        "trustProxy": false    // false for local, 1 for behind ALB/proxy
+    }
+}
+```
 
-#### Using nohup (Simple)
+---
+
+## Option 1: Local Development with HTTP (Simplest)
+
+For quick local testing without SSL certificates.
+
+### Configuration
+
+Edit `config.json`:
+```json
+{
+    "port": 3001,
+    "server": {
+        "ssl": false,
+        "trustProxy": false
+    },
+    "security": {
+        "session": {
+            "secure": false
+        }
+    }
+}
+```
+
+**Important**: Setting `security.session.secure` to `false` is required for HTTP mode, otherwise cookies won't be sent.
+
+### Start the Application
+
+```bash
+npm install
+sqlite3 carshow.db < setup_sqllite_db.sql  # First time only
+node app.js
+```
+
+Access at: `http://localhost:3001`
+
+---
+
+## Option 2: Local Development with HTTPS (Recommended)
+
+Uses self-signed SSL certificates for secure local development.
+
+### Generate Self-Signed Certificates
+
+```bash
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes \
+  -subj "/CN=localhost"
+```
+
+### Configuration
+
+Edit `config.json`:
+```json
+{
+    "port": 3001,
+    "server": {
+        "ssl": true,
+        "keyPath": "./key.pem",
+        "certPath": "./cert.pem",
+        "trustProxy": false
+    }
+}
+```
+
+### Start the Application
+
+```bash
+npm install
+sqlite3 carshow.db < setup_sqllite_db.sql  # First time only
+node app.js
+```
+
+Access at: `https://localhost:3001`
+
+**Note**: Your browser will show a security warning for the self-signed certificate. This is expected - click through to continue.
+
+---
+
+## Option 3: AWS EC2 with ALB (Production)
+
+This architecture uses AWS Application Load Balancer for SSL termination with AWS Certificate Manager.
+
+### Architecture
+
+```
+Users → Route53 (DNS) → ALB (HTTPS:443) → EC2 (HTTP:3001)
+                           ↓
+                    ACM Certificate
+```
+
+The ALB handles HTTPS and SSL certificates. The EC2 instance runs in HTTP mode since it only receives traffic from the ALB over the private network.
+
+### EC2 Configuration
+
+Edit `config.json` on the EC2 instance:
+```json
+{
+    "port": 3001,
+    "server": {
+        "ssl": false,
+        "trustProxy": 1
+    }
+}
+```
+
+**Key Settings**:
+- `ssl: false` - The app runs HTTP because ALB handles SSL termination
+- `trustProxy: 1` - Required for correct IP logging and rate limiting behind ALB
+
+### Full Deployment Steps
+
+---
+
+## Running in the Background
+
+### Using nohup (Simple)
 ```bash
 nohup node app.js > app.log 2>&1 &
 ```
@@ -25,7 +144,7 @@ To stop:
 pkill -f "node app.js"
 ```
 
-#### Using PM2 (Recommended for Production)
+### Using PM2 (Recommended for Production)
 
 Install PM2:
 ```bash
@@ -48,7 +167,7 @@ pm2 startup             # Configure auto-start on boot
 pm2 save                # Save current process list
 ```
 
-#### Using systemd (Linux)
+### Using systemd (Linux)
 
 Create a service file at `/etc/systemd/system/carshow.service`:
 
@@ -88,17 +207,9 @@ sudo journalctl -u carshow -f
 
 ---
 
-## AWS Deployment
+## AWS Deployment Details
 
-This section covers deploying to AWS EC2 with Route53 DNS, Application Load Balancer (ALB), and AWS Certificate Manager (ACM) for SSL.
-
-### Architecture Overview
-
-```
-Users → Route53 (DNS) → ALB (HTTPS:443) → EC2 (HTTP:3001)
-                           ↓
-                    ACM Certificate
-```
+This section provides detailed steps for deploying to AWS EC2 with ALB.
 
 ### Step 1: Launch EC2 Instance
 
@@ -135,14 +246,22 @@ Users → Route53 (DNS) → ALB (HTTPS:443) → EC2 (HTTP:3001)
 
 5. **Configure for ALB** (HTTP mode):
 
-   Since ALB handles SSL termination, modify `app.js` for HTTP:
-   ```javascript
-   // For ALB deployment, use HTTP instead of HTTPS
-   const http = require('http');
-   const server = http.createServer(app);
+   Edit `config.json` to run HTTP behind ALB:
+   ```json
+   {
+       "port": 3001,
+       "server": {
+           "ssl": false,
+           "trustProxy": 1
+       },
+       "sessionKeys": [
+           "your-production-secret-key-here",
+           "your-backup-key-here"
+       ]
+   }
    ```
 
-   Or create a separate `app-alb.js` that uses HTTP.
+   **Important**: Change the `sessionKeys` to secure random strings for production!
 
 6. **Start with PM2**:
    ```bash
@@ -203,7 +322,7 @@ Users → Route53 (DNS) → ALB (HTTPS:443) → EC2 (HTTP:3001)
    - Name: `carshow-tg`
    - Protocol: HTTP
    - Port: 3001
-   - Health check path: `/login`
+   - Health check path: `/health`
    - Register your EC2 instance
 
 8. **Create the load balancer**
@@ -243,30 +362,63 @@ Update your EC2 security group to only allow traffic from the ALB:
 
 ## Environment-Specific Configuration
 
-### Development (Local)
+### Development (Local with HTTPS)
 ```json
 {
-  "port": 3001,
-  "database": {
-    "engine": "sqlite"
-  }
+    "port": 3001,
+    "server": {
+        "ssl": true,
+        "keyPath": "./key.pem",
+        "certPath": "./cert.pem",
+        "trustProxy": false
+    },
+    "database": {
+        "engine": "sqlite"
+    }
 }
 ```
 
-### Production (AWS)
+### Development (Local with HTTP)
 ```json
 {
-  "port": 3001,
-  "database": {
-    "engine": "mysql",
-    "mysql": {
-      "host": "your-rds-endpoint.region.rds.amazonaws.com",
-      "port": 3306,
-      "database": "carshow",
-      "user": "carshow_app",
-      "password": "SECURE_PASSWORD"
+    "port": 3001,
+    "server": {
+        "ssl": false,
+        "trustProxy": false
+    },
+    "security": {
+        "session": {
+            "secure": false
+        }
+    },
+    "database": {
+        "engine": "sqlite"
     }
-  }
+}
+```
+
+### Production (AWS with ALB)
+```json
+{
+    "port": 3001,
+    "server": {
+        "ssl": false,
+        "trustProxy": 1
+    },
+    "sessionKeys": [
+        "your-production-secret-key-here-make-it-long",
+        "your-backup-key-here-also-long"
+    ],
+    "database": {
+        "engine": "mysql",
+        "mysql": {
+            "host": "your-rds-endpoint.region.rds.amazonaws.com",
+            "port": 3306,
+            "database": "carshow",
+            "user": "carshow_app",
+            "password": "SECURE_PASSWORD"
+        }
+    }
 }
 ```
 
@@ -317,11 +469,12 @@ mysqldump -h hostname -u user -p carshow > backup_$(date +%Y%m%d).sql
 
 ### Health Checks
 
-The ALB health check verifies the `/login` endpoint returns HTTP 200.
+The app provides a `/health` endpoint for ALB health checks. Configure the ALB target group to use this endpoint.
 
 To manually check:
 ```bash
-curl -I http://localhost:3001/login
+curl http://localhost:3001/health
+# Returns: {"status":"ok","uptime":123.456}
 ```
 
 ---

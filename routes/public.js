@@ -127,58 +127,80 @@ module.exports = function (db, appConfig, upload, port) {
   router.post('/create-admin', async (req, res) => {
     const { username, name, email, password, confirm_password } = req.body;
 
+    // Helper to render error with form
+    const renderError = (message) => `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Car Show Setup</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        ${styles}
+      </head>
+      <body data-theme="${appConfig.theme || 'light'}">
+        <div class="container">
+          <div class="logo">
+            <div class="logo-icon">🏎️</div>
+            <h1>Car Show Manager</h1>
+            <p class="subtitle">Initial Setup - Create Admin Account</p>
+          </div>
+          <div class="error-message">${message}</div>
+          <form method="POST" action="/create-admin">
+            <div class="form-group">
+              <label>Username</label>
+              <input type="text" name="username" required placeholder="Enter username" value="${(username || '').replace(/"/g, '&quot;')}">
+            </div>
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" name="name" required placeholder="Enter your name" value="${(name || '').replace(/"/g, '&quot;')}">
+            </div>
+            <div class="form-group">
+              <label>Email Address</label>
+              <input type="email" name="email" required placeholder="Enter email" value="${(email || '').replace(/"/g, '&quot;')}">
+            </div>
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" name="password" required placeholder="Create password">
+            </div>
+            <div class="form-group">
+              <label>Confirm Password</label>
+              <input type="password" name="confirm_password" required placeholder="Confirm password">
+            </div>
+            <button type="submit">Create Admin Account</button>
+          </form>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Validate required fields
+    const trimmedUsername = (username || '').trim();
+    const trimmedName = (name || '').trim();
+    const trimmedEmail = (email || '').trim();
+
+    if (!trimmedUsername) {
+      return res.send(renderError('Username is required.'));
+    }
+    if (!trimmedName) {
+      return res.send(renderError('Full name is required.'));
+    }
+    if (!trimmedEmail) {
+      return res.send(renderError('Email address is required.'));
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      return res.send(renderError('Please enter a valid email address.'));
+    }
+    if (!password || password.length < 6) {
+      return res.send(renderError('Password must be at least 6 characters.'));
+    }
     // Check if passwords match
     if (password !== confirm_password) {
-      res.send(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Car Show Setup</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-          ${styles}
-        </head>
-        <body data-theme="${appConfig.theme || 'light'}">
-          <div class="container">
-            <div class="logo">
-              <div class="logo-icon">🏎️</div>
-              <h1>Car Show Manager</h1>
-              <p class="subtitle">Initial Setup - Create Admin Account</p>
-            </div>
-            <div class="error-message">Passwords do not match!</div>
-            <form method="POST" action="/create-admin">
-              <div class="form-group">
-                <label>Username</label>
-                <input type="text" name="username" required placeholder="Enter username">
-              </div>
-              <div class="form-group">
-                <label>Full Name</label>
-                <input type="text" name="name" required placeholder="Enter your name">
-              </div>
-              <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email" required placeholder="Enter email">
-              </div>
-              <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" required placeholder="Create password">
-              </div>
-              <div class="form-group">
-                <label>Confirm Password</label>
-                <input type="password" name="confirm_password" required placeholder="Confirm password">
-              </div>
-              <button type="submit">Create Admin Account</button>
-            </form>
-          </div>
-        </body>
-        </html>
-      `);
-      return;
+      return res.send(renderError('Passwords do not match!'));
     }
 
     const hashedPassword = await hashPassword(password);
 
     db.run('INSERT INTO users (username, name, email, password_hash, role, chat_enabled) VALUES (?, ?, ?, ?, ?, 1)',
-      [username, name, email, hashedPassword, 'admin'],
+      [trimmedUsername, trimmedName, trimmedEmail, hashedPassword, 'admin'],
       function(err) {
         if (err) {
           console.error('Admin creation error:', err.message);
@@ -1144,19 +1166,51 @@ module.exports = function (db, appConfig, upload, port) {
       </html>
     `;
 
+    // Validate required fields are not empty/whitespace
+    const trimmedUsername = (username || '').trim();
+    const trimmedName = (name || '').trim();
+    const trimmedEmail = (email || '').trim();
+
+    if (!trimmedUsername) {
+      res.send(renderRegisterError('Username is required.', { username, name, email, phone }));
+      return;
+    }
+    if (!trimmedName) {
+      res.send(renderRegisterError('Full name is required.', { username, name, email, phone }));
+      return;
+    }
+    if (!trimmedEmail) {
+      res.send(renderRegisterError('Email address is required.', { username, name, email, phone }));
+      return;
+    }
+    // Basic email format validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      res.send(renderRegisterError('Please enter a valid email address.', { username, name, email, phone }));
+      return;
+    }
     // Check if passwords match
     if (password !== confirm_password) {
       res.send(renderRegisterError('Passwords do not match!', { username, name, email, phone }));
+      return;
+    }
+    // Password minimum length
+    if (!password || password.length < 6) {
+      res.send(renderRegisterError('Password must be at least 6 characters.', { username, name, email, phone }));
       return;
     }
 
     const hashedPassword = await hashPassword(password);
 
     db.run('INSERT INTO users (username, name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, ?, ?)',
-      [username, name, email, phone, hashedPassword, 'user'],
+      [trimmedUsername, trimmedName, trimmedEmail, (phone || '').trim(), hashedPassword, 'user'],
       function(err) {
         if (err) {
-          res.send(renderRegisterError('Error registering user: ' + err.message, { username, name, email, phone }));
+          console.error('Error registering user:', err.message);
+          // Check for common errors and provide friendly messages
+          const userMessage = err.message.includes('UNIQUE constraint') || err.message.includes('Duplicate entry')
+            ? 'Username or email already exists.'
+            : 'Error registering user. Please try again.';
+          res.send(renderRegisterError(userMessage, { username, name, email, phone }));
         } else {
           res.send(`
             <!DOCTYPE html>

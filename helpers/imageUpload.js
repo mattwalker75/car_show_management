@@ -10,6 +10,18 @@ const fs = require('fs');
 const BASE_DIR = path.join(__dirname, '..');
 
 /**
+ * Delete a file with error logging.
+ * Logs errors but doesn't throw - file may not exist (already deleted, etc.)
+ */
+function deleteFileWithLogging(filePath) {
+  fs.unlink(filePath, (err) => {
+    if (err && err.code !== 'ENOENT') {
+      console.error('File deletion error:', err.message, '| Path:', filePath);
+    }
+  });
+}
+
+/**
  * Process and save a profile photo upload.
  * Resizes to 200x200, converts to JPEG, deletes old photo if present.
  * @param {Object} db - The database instance
@@ -39,7 +51,7 @@ async function handleProfilePhotoUpload(db, userId, file) {
       db.get('SELECT image_url FROM users WHERE user_id = ?', [userId], (err, row) => {
         if (row && row.image_url) {
           const oldPath = path.join(BASE_DIR, row.image_url);
-          fs.unlink(oldPath, () => {}); // Ignore errors on old file deletion
+          deleteFileWithLogging(oldPath);
         }
 
         // Update the database with the new photo URL
@@ -92,7 +104,7 @@ async function handleVehiclePhotoUpload(file) {
 function deleteVehicleImage(imageUrl) {
   if (imageUrl) {
     const filePath = path.join(BASE_DIR, imageUrl);
-    fs.unlink(filePath, () => {});
+    deleteFileWithLogging(filePath);
   }
 }
 
@@ -131,7 +143,7 @@ async function handleVendorImageUpload(file) {
 function deleteVendorImage(imageUrl) {
   if (imageUrl) {
     const filePath = path.join(BASE_DIR, imageUrl);
-    fs.unlink(filePath, () => {});
+    deleteFileWithLogging(filePath);
   }
 }
 
@@ -161,7 +173,7 @@ async function handleBackgroundImageUpload(file, oldImageUrl) {
     // Delete old background image if one exists
     if (oldImageUrl) {
       const oldPath = path.join(BASE_DIR, oldImageUrl);
-      fs.unlink(oldPath, () => {});
+      deleteFileWithLogging(oldPath);
     }
 
     return { success: true, imageUrl };
@@ -177,7 +189,7 @@ async function handleBackgroundImageUpload(file, oldImageUrl) {
 function deleteBackgroundImage(imageUrl) {
   if (imageUrl) {
     const filePath = path.join(BASE_DIR, imageUrl);
-    fs.unlink(filePath, () => {});
+    deleteFileWithLogging(filePath);
   }
 }
 

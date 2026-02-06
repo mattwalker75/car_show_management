@@ -316,7 +316,8 @@ module.exports = function (db, appConfig, upload) {
         </html>
       `);
     } catch (err) {
-      res.send(errorPage('Error loading vendors: ' + err.message, '/admin/dashboard', 'Back to Dashboard'));
+      console.error('Error loading vendors:', err.message);
+      res.send(errorPage('Error loading vendors. Please try again.', '/admin/dashboard', 'Back to Dashboard'));
     }
   });
 
@@ -644,7 +645,8 @@ module.exports = function (db, appConfig, upload) {
         </html>
       `);
     } catch (err) {
-      res.send(errorPage('Error loading vendor: ' + err.message, '/admin/vendors', 'Back to Vendors'));
+      console.error('Error loading vendor:', err.message);
+      res.send(errorPage('Error loading vendor. Please try again.', '/admin/vendors', 'Back to Vendors'));
     }
   });
 
@@ -805,7 +807,8 @@ module.exports = function (db, appConfig, upload) {
         </html>
       `);
     } catch (err) {
-      res.send(errorPage('Error loading product: ' + err.message, `/admin/vendors/${vendorUserId}`, 'Back to Vendor'));
+      console.error('Error loading product:', err.message);
+      res.send(errorPage('Error loading product. Please try again.', `/admin/vendors/${vendorUserId}`, 'Back to Vendor'));
     }
   });
 
