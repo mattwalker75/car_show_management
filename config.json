@@ -21,7 +21,7 @@
         },
         "_comment": "Set 'engine' to 'sqlite' or 'mysql'. SQLite requires no setup. For MySQL: run setup_mysql_db.sql first, then update credentials below."
     },
-    "appTitle": "Brian's car show",
+    "appTitle": "Matt’s Car Show",
     "appSubtitle": "Sign in to your account",
     "judgeVotingStatus": "Close",
     "specialtyVotingStatus": "Close",
@@ -31,7 +31,7 @@
     "animatedLogin": false,
     "loginBackground": {
         "useImage": false,
-        "imageUrl": "/images/app_config/0ee5884facf4db57ffc92468f5b1163c.jpg",
+        "imageUrl": "",
         "backgroundColor": "#002e7a",
         "useTint": true,
         "tintColor": "#0056d6",
@@ -40,7 +40,7 @@
     },
     "appBackground": {
         "useImage": false,
-        "imageUrl": "/images/app_config/2821216dc760ba656f79b0e05d91a585.jpg",
+        "imageUrl": "",
         "backgroundColor": "#7b219f",
         "useTint": true,
         "tintColor": "#1a1a2e",
