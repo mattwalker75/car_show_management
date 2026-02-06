@@ -60,8 +60,8 @@
     "security": {
         "rateLimiting": {
             "auth": {
-                "windowSeconds": 900,
-                "maxAttempts": 5
+                "windowSeconds": 300,
+                "maxAttempts": 10
             },
             "api": {
                 "windowSeconds": 60,

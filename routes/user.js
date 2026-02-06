@@ -6,7 +6,7 @@ module.exports = function (db, appConfig, upload) {
   const { requireAuth } = require('../middleware/auth');
   const { errorPage } = require('../views/layout');
   const { styles, adminStyles, getBodyTag, getAppBgStyles } = require('../views/htmlHelpers');
-  const { getAvatarContent, getNav, isChatEnabled, profileButton } = require('../views/components');
+  const { getAvatarContent, getNav, isChatEnabled, profileButton, dashboardHeader } = require('../views/components');
   const { handleVehiclePhotoUpload, deleteVehicleImage } = require('../helpers/imageUpload');
   const { renderVendorListPage, renderVendorDetailPage, renderProductDetailPage } = require('../helpers/vendorViews');
 

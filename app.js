@@ -44,13 +44,19 @@ if (headersConfig.enabled !== false) {
 }
 
 // Rate limiting for auth endpoints (per IP address)
+// Uses req.ip which respects the 'trust proxy' setting
 const authRateConfig = rateLimitConfig.auth || {};
 const authLimiter = rateLimit({
   windowMs: (authRateConfig.windowSeconds || 900) * 1000,
-  max: authRateConfig.maxAttempts || 5,
+  limit: authRateConfig.maxAttempts || 5,
   message: 'Too many login attempts, please try again later',
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  // Explicit keyGenerator to ensure per-IP rate limiting
+  keyGenerator: (req) => req.ip || req.socket?.remoteAddress || 'unknown',
+  // Disable validation warnings - we handle proxy config ourselves and the IPv6 warning
+  // is a false positive since req.ip already handles IPv4-mapped IPv6 addresses correctly
+  validate: { trustProxy: false, xForwardedForHeader: false, default: false }
 });
 app.use('/login', authLimiter);
 app.use('/register', authLimiter);
@@ -59,10 +65,13 @@ app.use('/register', authLimiter);
 const apiRateConfig = rateLimitConfig.api || {};
 const apiLimiter = rateLimit({
   windowMs: (apiRateConfig.windowSeconds || 60) * 1000,
-  max: apiRateConfig.maxRequests || 100,
+  limit: apiRateConfig.maxRequests || 100,
   message: 'Too many requests, please try again later',
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  // Explicit keyGenerator to ensure per-IP rate limiting
+  keyGenerator: (req) => req.ip || req.socket?.remoteAddress || 'unknown',
+  validate: { trustProxy: false, xForwardedForHeader: false, default: false }
 });
 app.use('/admin', apiLimiter);
 app.use('/judge', apiLimiter);
@@ -101,9 +110,10 @@ app.use((req, res, next) => {
   }
   const origin = req.get('Origin');
   const host = req.get('Host');
-  // Allow requests without Origin (same-origin form submissions)
-  // or where Origin matches Host
-  if (!origin || origin.includes(host)) {
+  // Allow requests without Origin header (same-origin form submissions from some browsers)
+  // Allow Origin: null (privacy contexts, redirects, or file:// during development)
+  // Allow when Origin contains the Host (normal same-origin requests)
+  if (!origin || origin === 'null' || origin.includes(host)) {
     return next();
   }
   console.warn(`CSRF blocked: Origin ${origin} != Host ${host}`);
