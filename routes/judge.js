@@ -6,7 +6,7 @@ module.exports = function (db, appConfig, upload) {
   const { requireJudge, hashPassword } = require('../middleware/auth');
   const { errorPage } = require('../views/layout');
   const { styles, adminStyles, getBodyTag, getAppBgStyles } = require('../views/htmlHelpers');
-  const { getInitials, getAvatarContent, judgeNav, dashboardHeader, isChatEnabled, profileButton } = require('../views/components');
+  const { getInitials, getAvatarContent, judgeNav, dashboardHeader, isChatEnabled, profileButton, getNav } = require('../views/components');
   const { renderVendorListPage, renderVendorDetailPage, renderProductDetailPage } = require('../helpers/vendorViews');
 
   const appBgStyles = () => getAppBgStyles(appConfig);

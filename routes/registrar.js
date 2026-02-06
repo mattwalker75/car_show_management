@@ -6,7 +6,7 @@ module.exports = function (db, appConfig, upload) {
   const { requireRegistrar, hashPassword } = require('../middleware/auth');
   const { errorPage } = require('../views/layout');
   const { styles, adminStyles, getBodyTag, getAppBgStyles } = require('../views/htmlHelpers');
-  const { getInitials, getAvatarContent, registrarNav, isChatEnabled, profileButton } = require('../views/components');
+  const { getInitials, getAvatarContent, registrarNav, isChatEnabled, profileButton, getNav, dashboardHeader } = require('../views/components');
   const { renderVendorListPage, renderVendorDetailPage, renderProductDetailPage } = require('../helpers/vendorViews');
 
   const appBgStyles = () => getAppBgStyles(appConfig);
@@ -1852,6 +1852,10 @@ module.exports = function (db, appConfig, upload) {
         db.all('SELECT * FROM products WHERE available = 1 AND admin_deactivated = 0 ORDER BY display_order, product_name', (err, products) => {
           if (err) products = [];
 
+          // Get the next available voter ID
+          db.get('SELECT COALESCE(MAX(CAST(voter_id AS INTEGER)), 0) + 1 as next_id FROM cars WHERE voter_id IS NOT NULL', (err, nextIdRow) => {
+            const nextVoterId = nextIdRow ? nextIdRow.next_id : 1;
+
           const selectedVehicles = safeJsonParse(transaction.vehicles_json);
           const selectedProducts = safeJsonParse(transaction.products_json);
           const selectedVehicleIds = new Set(selectedVehicles.map(v => v.car_id));
@@ -1872,6 +1876,11 @@ module.exports = function (db, appConfig, upload) {
                   <div class="item-details">
                     ${v.vehicle_name ? `<span class="item-badge">${v.vehicle_name}</span>` : ''}
                     ${v.class_name ? `<span class="item-badge class">${v.class_name}</span>` : ''}
+                  </div>
+                  <div class="voter-id-row">
+                    <label>Voter ID:</label>
+                    <input type="text" name="voter_id_${v.car_id}" id="voter_id_${v.car_id}" value="${v.voter_id || ''}" placeholder="#" inputmode="numeric" maxlength="5" class="voter-id-input" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,5)">
+                    <button type="button" class="auto-assign-btn" onclick="autoAssignVoterId(${v.car_id})">Auto</button>
                   </div>
                 </div>
                 <div class="item-price">$${parseFloat(price).toFixed(2)}</div>
@@ -2010,6 +2019,52 @@ module.exports = function (db, appConfig, upload) {
                 }
                 .item-badge.class {
                   background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+                }
+                .voter-id-row {
+                  display: flex;
+                  align-items: center;
+                  justify-content: flex-end;
+                  gap: 6px;
+                  margin-top: 8px;
+                }
+                .voter-id-row label {
+                  font-size: 11px;
+                  color: var(--text-muted);
+                  white-space: nowrap;
+                }
+                input.voter-id-input[type="text"] {
+                  width: 60px;
+                  height: 32px;
+                  padding: 0 4px;
+                  font-size: 16px;
+                  font-weight: 600;
+                  border: 2px solid var(--input-border);
+                  border-radius: 6px;
+                  background: var(--input-bg);
+                  color: var(--text-primary);
+                  text-align: center;
+                }
+                input.voter-id-input[type="text"]:focus {
+                  border-color: var(--accent-color);
+                  outline: none;
+                  box-shadow: none;
+                }
+                .auto-assign-btn {
+                  padding: 4px 10px;
+                  font-size: 12px;
+                  font-weight: 600;
+                  border: none;
+                  border-radius: 6px;
+                  background: var(--btn-secondary-bg);
+                  color: white;
+                  cursor: pointer;
+                  white-space: nowrap;
+                }
+                .auto-assign-btn:hover {
+                  opacity: 0.9;
+                }
+                .auto-assign-btn:active {
+                  opacity: 0.8;
                 }
                 .item-price {
                   font-weight: 700;
@@ -2174,6 +2229,25 @@ module.exports = function (db, appConfig, upload) {
               </div>
 
               <script>
+                // Next available voter ID from server
+                var nextVoterId = ${nextVoterId};
+
+                function autoAssignVoterId(carId) {
+                  var input = document.getElementById('voter_id_' + carId);
+                  // Find the highest voter ID currently in any input field
+                  var maxInForm = nextVoterId - 1;
+                  document.querySelectorAll('.voter-id-input').forEach(function(inp) {
+                    var val = parseInt(inp.value);
+                    if (!isNaN(val) && val > maxInForm) {
+                      maxInForm = val;
+                    }
+                  });
+                  // Assign the next available ID
+                  input.value = maxInForm + 1;
+                  input.focus();
+                  input.select();
+                }
+
                 function changeQty(productId, delta, price) {
                   var input = document.getElementById('qty-' + productId);
                   var newVal = Math.max(0, parseInt(input.value || 0) + delta);
@@ -2231,6 +2305,7 @@ module.exports = function (db, appConfig, upload) {
             </body>
             </html>
           `);
+          }); // close nextVoterId query
         });
       });
     });
@@ -2249,6 +2324,18 @@ module.exports = function (db, appConfig, upload) {
 
       // Build vehicles JSON
       const vehicleIds = Array.isArray(req.body.vehicles) ? req.body.vehicles : (req.body.vehicles ? [req.body.vehicles] : []);
+
+      // Collect voter IDs from form (voter_id_<car_id>)
+      const voterIdUpdates = [];
+      for (const key of Object.keys(req.body)) {
+        if (key.startsWith('voter_id_')) {
+          const carId = parseInt(key.replace('voter_id_', ''));
+          const voterId = req.body[key] ? req.body[key].trim() : null;
+          if (carId && voterId) {
+            voterIdUpdates.push({ car_id: carId, voter_id: voterId });
+          }
+        }
+      }
 
       // Get vehicle details for the JSON
       if (vehicleIds.length > 0) {
@@ -2334,37 +2421,88 @@ module.exports = function (db, appConfig, upload) {
       }
 
       function completeUpdate(vehiclesJson, productsJson) {
-        if (action === 'complete') {
-          // Mark transaction as complete and activate vehicles
-          const vehicleIds = safeJsonParse(vehiclesJson).map(v => v.car_id);
+        // First, validate and update voter IDs if any are provided
+        if (voterIdUpdates.length > 0) {
+          // Check for duplicate voter IDs in the form submission
+          const voterIdValues = voterIdUpdates.map(u => u.voter_id);
+          const duplicatesInForm = voterIdValues.filter((v, i) => voterIdValues.indexOf(v) !== i);
+          if (duplicatesInForm.length > 0) {
+            return res.send(errorPage(`Duplicate Voter ID "${duplicatesInForm[0]}" entered for multiple vehicles. Each vehicle must have a unique Voter ID.`, `/registrar/registration/edit/${transactionId}`, 'Try Again'));
+          }
 
-          // Update transaction
-          db.run('UPDATE registration_transactions SET vehicles_json = ?, products_json = ?, total_amount = ?, status = ?, completed_at = CURRENT_TIMESTAMP WHERE transaction_id = ?',
-            [vehiclesJson, productsJson, total_amount, 'complete', transactionId], (err) => {
+          // Check for conflicts with existing voter IDs in database
+          const carIds = voterIdUpdates.map(u => u.car_id);
+          const placeholders = voterIdValues.map(() => '?').join(',');
+          const carIdPlaceholders = carIds.map(() => '?').join(',');
+
+          db.all(`SELECT car_id, voter_id FROM cars WHERE voter_id IN (${placeholders}) AND car_id NOT IN (${carIdPlaceholders})`,
+            [...voterIdValues, ...carIds], (err, conflicts) => {
               if (err) {
-                console.error('Error completing transaction:', err.message);
-                return res.send(errorPage('Error completing transaction. Please try again.', `/registrar/registration/edit/${transactionId}`, 'Try Again'));
+                console.error('Error checking voter IDs:', err.message);
+                return res.send(errorPage('Error validating voter IDs. Please try again.', `/registrar/registration/edit/${transactionId}`, 'Try Again'));
               }
 
-              // Activate the vehicles
-              if (vehicleIds.length > 0) {
-                db.run(`UPDATE cars SET is_active = 1 WHERE car_id IN (${vehicleIds.map(() => '?').join(',')})`, vehicleIds, () => {
-                  res.redirect('/registrar/registration');
-                });
-              } else {
-                res.redirect('/registrar/registration');
+              if (conflicts && conflicts.length > 0) {
+                const conflictId = conflicts[0].voter_id;
+                return res.send(errorPage(`Voter ID "${conflictId}" is already assigned to another vehicle. Each vehicle must have a unique Voter ID.`, `/registrar/registration/edit/${transactionId}`, 'Try Again'));
               }
+
+              // No conflicts, proceed with voter ID updates
+              updateVoterIds(() => {
+                finishSave(vehiclesJson, productsJson);
+              });
             });
         } else {
-          // Just save, don't complete
-          db.run('UPDATE registration_transactions SET vehicles_json = ?, products_json = ?, total_amount = ? WHERE transaction_id = ?',
-            [vehiclesJson, productsJson, total_amount, transactionId], (err) => {
-              if (err) {
-                console.error('Error saving transaction:', err.message);
-                return res.send(errorPage('Error saving transaction. Please try again.', `/registrar/registration/edit/${transactionId}`, 'Try Again'));
-              }
-              res.redirect('/registrar/registration');
+          // No voter IDs to update, proceed directly
+          finishSave(vehiclesJson, productsJson);
+        }
+
+        function updateVoterIds(callback) {
+          let pending = voterIdUpdates.length;
+          if (pending === 0) return callback();
+
+          voterIdUpdates.forEach(update => {
+            db.run('UPDATE cars SET voter_id = ? WHERE car_id = ?', [update.voter_id, update.car_id], (err) => {
+              if (err) console.error('Error updating voter_id:', err.message);
+              pending--;
+              if (pending === 0) callback();
             });
+          });
+        }
+
+        function finishSave(vehiclesJson, productsJson) {
+          if (action === 'complete') {
+            // Mark transaction as complete and activate vehicles
+            const vehicleIds = safeJsonParse(vehiclesJson).map(v => v.car_id);
+
+            // Update transaction
+            db.run('UPDATE registration_transactions SET vehicles_json = ?, products_json = ?, total_amount = ?, status = ?, completed_at = CURRENT_TIMESTAMP WHERE transaction_id = ?',
+              [vehiclesJson, productsJson, total_amount, 'complete', transactionId], (err) => {
+                if (err) {
+                  console.error('Error completing transaction:', err.message);
+                  return res.send(errorPage('Error completing transaction. Please try again.', `/registrar/registration/edit/${transactionId}`, 'Try Again'));
+                }
+
+                // Activate the vehicles
+                if (vehicleIds.length > 0) {
+                  db.run(`UPDATE cars SET is_active = 1 WHERE car_id IN (${vehicleIds.map(() => '?').join(',')})`, vehicleIds, () => {
+                    res.redirect('/registrar/registration');
+                  });
+                } else {
+                  res.redirect('/registrar/registration');
+                }
+              });
+          } else {
+            // Just save, don't complete
+            db.run('UPDATE registration_transactions SET vehicles_json = ?, products_json = ?, total_amount = ? WHERE transaction_id = ?',
+              [vehiclesJson, productsJson, total_amount, transactionId], (err) => {
+                if (err) {
+                  console.error('Error saving transaction:', err.message);
+                  return res.send(errorPage('Error saving transaction. Please try again.', `/registrar/registration/edit/${transactionId}`, 'Try Again'));
+                }
+                res.redirect('/registrar/registration');
+              });
+          }
         }
       }
     });
